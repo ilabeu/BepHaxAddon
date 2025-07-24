@@ -39,7 +39,7 @@ public class AutoItemMove extends Module {
     );
 
     public AutoItemMove() {
-        super(Bep.CATEGORY, "auto-item-move", "Automatically puts items in a container.");
+        super(Bep.IKEA, "auto-item-move", "Automatically puts items in a container.");
     }
 
     @Override

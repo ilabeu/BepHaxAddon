@@ -65,7 +65,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  **/
 public class ChatSigns extends Module {
     public ChatSigns() {
-        super(Bep.CATEGORY, "ChatSigns", "Read nearby signs in your chat.");
+        super(Bep.STARDUST, "ChatSigns", "Read nearby signs in your chat.");
     }
 
     public enum ChatMode {

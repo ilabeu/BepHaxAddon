@@ -31,7 +31,7 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class Loadouts extends Module {
-    public Loadouts() { super(Bep.CATEGORY, "Loadouts", "Save and load inventory configurations."); }
+    public Loadouts() { super(Bep.STARDUST, "Loadouts", "Save and load inventory configurations."); }
 
     public static final String LOADOUTS_FILE = "meteor-client/loadouts.json";
 

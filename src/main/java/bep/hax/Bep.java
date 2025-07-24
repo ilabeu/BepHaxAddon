@@ -53,6 +53,11 @@ public class Bep extends MeteorAddon {
     public static final Category CATEGORY = new Category("Bephax");
     public static final Category STASH = new Category("Stash Hunt");
     public static final Category BORERS= new Category("Bobers");
+    public static final Category TST= new Category("TrouserStreak");
+    public static final Category IKEA= new Category("IKEA");
+    public static final Category STARDUST= new Category("Stardust");
+    public static final Category METEORIST= new Category("Meteorist");
+    public static final Category REJECTS= new Category("Meteor Rejects");
     public static final Category HIG = new Category("HIG Tools");
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
 
@@ -165,9 +170,14 @@ public class Bep extends MeteorAddon {
     @Override
     public void onRegisterCategories() {
         Modules.registerCategory(CATEGORY);
-        Modules.registerCategory(HIG);
-        Modules.registerCategory(BORERS);
         Modules.registerCategory(STASH);
+        Modules.registerCategory(BORERS);
+        Modules.registerCategory(TST);
+        Modules.registerCategory(IKEA);
+        Modules.registerCategory(STARDUST);
+        Modules.registerCategory(METEORIST);
+        Modules.registerCategory(REJECTS);
+        Modules.registerCategory(HIG);
     }
 
     @Override

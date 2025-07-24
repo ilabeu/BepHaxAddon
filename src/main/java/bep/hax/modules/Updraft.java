@@ -24,7 +24,7 @@ import meteordevelopment.meteorclient.events.meteor.KeyEvent;
  *     Paper seems to cuck the hell out of wind charges so probably don't even bother with this. Fun in vanilla, though.
  **/
 public class Updraft extends Module {
-    public Updraft() { super(Bep.CATEGORY, "Updraft", "Automatically enhances your jumps with wind charges.");}
+    public Updraft() { super(Bep.STARDUST, "Updraft", "Automatically enhances your jumps with wind charges.");}
 
     private final Setting<Boolean> swapSetting = settings.getDefaultGroup().add(
         new BoolSetting.Builder()

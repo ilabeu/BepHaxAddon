@@ -47,7 +47,7 @@ import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class SignatureSign extends Module {
-    public SignatureSign() { super(Bep.CATEGORY, "SignatureSign", "Autofill signs with custom text."); }
+    public SignatureSign() { super(Bep.STARDUST, "SignatureSign", "Autofill signs with custom text."); }
 
     public static final String[] lineModes = {"Custom", "Empty", "File", "Username",
         "Username was here", "Timestamp", "Stardust", "Oasis", "Base64", "Hex", "0xHex", "ROT13", "Player UUID", "Random UUID", "Hashed UUID"};

@@ -22,7 +22,7 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class LoreLocator extends Module {
-    public LoreLocator() { super(Bep.CATEGORY, "LoreLocator", "Slot highlighter for rare, unique, and anomalous items."); }
+    public LoreLocator() { super(Bep.STARDUST, "LoreLocator", "Slot highlighter for rare, unique, and anomalous items."); }
 
     private final SettingGroup sgRares = settings.createGroup("Rares Settings");
     private final SettingGroup sgUniques = settings.createGroup("Uniques Settings");

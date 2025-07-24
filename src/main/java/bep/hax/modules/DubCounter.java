@@ -46,7 +46,7 @@ public class DubCounter extends Module {
     );
 
     public DubCounter() {
-        super(Bep.CATEGORY, "dub-counter", "Counts how many double chests are in render distance.");
+        super(Bep.IKEA, "dub-counter", "Counts how many double chests are in render distance.");
     }
 
     @Override

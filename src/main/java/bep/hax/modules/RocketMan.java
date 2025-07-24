@@ -52,7 +52,7 @@ import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
  **/
 public class RocketMan extends Module {
     public RocketMan() {
-        super(Bep.CATEGORY, "RocketMan", "Enhanced elytra flight using firework rockets.");
+        super(Bep.STARDUST, "RocketMan", "Enhanced elytra flight using firework rockets.");
     }
 
     public enum KeyModifiers { Alt, Ctrl, Shift, None }

@@ -27,7 +27,7 @@ import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
  **/
 public class MusicTweaks extends Module {
     public MusicTweaks() {
-        super(Bep.CATEGORY, "MusicTweaks", "Allows you to fuck with the background music.");
+        super(Bep.STARDUST, "MusicTweaks", "Allows you to fuck with the background music.");
         runInMainMenu = true;
         sgOverworldSoundtrack.sectionExpanded = false;
         sgCreativeSoundtrack.sectionExpanded = false;

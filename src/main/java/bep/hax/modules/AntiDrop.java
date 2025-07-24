@@ -36,7 +36,7 @@ public class AntiDrop extends Module {
     );
 
     public AntiDrop() {
-        super(Bep.CATEGORY, "anti-drop", "Stops you from dropping certain items.");
+        super(Bep.IKEA, "anti-drop", "Stops you from dropping certain items.");
     }
 
     @EventHandler

@@ -32,7 +32,7 @@ import net.minecraft.network.packet.s2c.play.PlaySoundFromEntityS2CPacket;
  **/
 public class Honker extends Module {
     public Honker() {
-        super(Bep.CATEGORY, "Honker", "Automatically use goat horns when a player enters your render distance.");
+        super(Bep.STARDUST, "Honker", "Automatically use goat horns when a player enters your render distance.");
     }
 
     public static String[] horns = {"Admire", "Call", "Dream", "Feel", "Ponder", "Seek", "Sing", "Yearn", "Random"};

@@ -47,7 +47,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class Archaeology extends Module {
-    public Archaeology() { super(Bep.CATEGORY, "Archaeology", "Tools to assist in your archaeological endeavors."); }
+    public Archaeology() { super(Bep.STARDUST, "Archaeology", "Tools to assist in your archaeological endeavors."); }
 
     public enum SuspiciousBlocks {
         Both, SuspiciousSand, SuspiciousGravel

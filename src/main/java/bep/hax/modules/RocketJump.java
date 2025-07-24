@@ -26,7 +26,7 @@ import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class RocketJump extends Module {
-    public RocketJump() {super(Bep.CATEGORY, "RocketJump", "Rocket-boosted jumps (requires an elytra)."); }
+    public RocketJump() {super(Bep.STARDUST, "RocketJump", "Rocket-boosted jumps (requires an elytra)."); }
 
     private final Setting<Boolean> preferChestplate = settings.getDefaultGroup().add(
         new BoolSetting.Builder()

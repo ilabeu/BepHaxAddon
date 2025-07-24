@@ -21,7 +21,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 public class AutoDrawDistance extends Module {
     public AutoDrawDistance() {
         super(
-            Bep.CATEGORY,
+            Bep.STARDUST,
             "AutoDrawDistance",
             "Automatically adjusts your render distance to maintain an FPS target."
         );

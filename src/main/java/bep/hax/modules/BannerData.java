@@ -25,7 +25,7 @@ import meteordevelopment.meteorclient.events.entity.player.InteractBlockEvent;
 public class BannerData extends Module {
     public BannerData() {
         super(
-            Bep.CATEGORY, "BannerData", "View fancy-formatted NBT data for banners."
+            Bep.STARDUST, "BannerData", "View fancy-formatted NBT data for banners."
         );
     }
 

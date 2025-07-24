@@ -45,7 +45,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class PagePirate extends Module {
-    public PagePirate() { super(Bep.CATEGORY, "PagePirate", "Pirates books that are held by other players."); }
+    public PagePirate() { super(Bep.STARDUST, "PagePirate", "Pirates books that are held by other players."); }
 
     private final SettingGroup sgChat = settings.createGroup("Chat Display");
     private final SettingGroup sgCopy = settings.createGroup("Physical Copy");

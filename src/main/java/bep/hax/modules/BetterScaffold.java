@@ -180,7 +180,7 @@ public class BetterScaffold extends Module {
     private double lastSneakingY;
 
     public BetterScaffold() {
-        super(Bep.CATEGORY, "betterScaffold", "Automatically places blocks under you. Credits to MeteorTweaks.");
+        super(Bep.TST, "betterScaffold", "Automatically places blocks under you. Credits to MeteorTweaks.");
     }
 
     @Override

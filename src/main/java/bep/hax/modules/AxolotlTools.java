@@ -39,7 +39,7 @@ import meteordevelopment.meteorclient.utils.render.WireframeEntityRenderer;
  **/
 public class AxolotlTools extends Module {
     public AxolotlTools() {
-        super(Bep.CATEGORY, "AxolotlTools", "Extrasensory perception for axolotl variants, auto-collector & auto-breeder.");
+        super(Bep.STARDUST, "AxolotlTools", "Extrasensory perception for axolotl variants, auto-collector & auto-breeder.");
     }
 
     public enum InteractionMode { Full, Trigger }

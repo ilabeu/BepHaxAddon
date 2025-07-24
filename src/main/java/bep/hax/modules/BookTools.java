@@ -11,7 +11,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
  * @author Tas [@0xTas] <root@0xTas.dev>
  **/
 public class BookTools extends Module {
-    public BookTools() { super(Bep.CATEGORY, "BookTools", "Enhancements for working with books."); }
+    public BookTools() { super(Bep.STARDUST, "BookTools", "Enhancements for working with books."); }
 
     private final SettingGroup sgFormat = settings.createGroup("Color & Formatting");
     private final SettingGroup sgDeobfuscate = settings.createGroup("Deobfuscation");

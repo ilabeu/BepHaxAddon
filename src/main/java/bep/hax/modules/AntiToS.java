@@ -20,7 +20,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class AntiToS extends Module {
-    public AntiToS() { super(Bep.CATEGORY, "AntiToS", "Censor player-generated text sources according to a content blacklist."); }
+    public AntiToS() { super(Bep.STARDUST, "AntiToS", "Censor player-generated text sources according to a content blacklist."); }
 
     private final String BLACKLIST_FILE = "meteor-client/anti-tos.txt";
 

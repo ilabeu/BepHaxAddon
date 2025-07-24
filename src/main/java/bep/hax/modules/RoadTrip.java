@@ -31,7 +31,7 @@ import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
  **/
 public class RoadTrip extends Module {
     public RoadTrip() {
-        super(Bep.CATEGORY, "RoadTrip", "Tools for AFK-travelling over long distances.");
+        super(Bep.STARDUST, "RoadTrip", "Tools for AFK-travelling over long distances.");
     }
 
     @SuppressWarnings("unused")

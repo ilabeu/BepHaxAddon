@@ -24,7 +24,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class RapidFire extends Module {
-    public RapidFire() { super(Bep.CATEGORY, "RapidFire", "Rapidly fires every crossbow you've got.");}
+    public RapidFire() { super(Bep.STARDUST, "RapidFire", "Rapidly fires every crossbow you've got.");}
 
     private final Setting<Boolean> autoLoad = settings.getDefaultGroup().add(
         new BoolSetting.Builder()

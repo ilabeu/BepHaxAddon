@@ -29,7 +29,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  **/
 public class TreasureESP extends Module {
     public TreasureESP() {
-        super(Bep.CATEGORY, "TreasureESP", "Notifies you when a buried treasure chest is nearby.");
+        super(Bep.STARDUST, "TreasureESP", "Notifies you when a buried treasure chest is nearby.");
     }
 
     private final SettingGroup sgNotifications = settings.createGroup("Notifications");

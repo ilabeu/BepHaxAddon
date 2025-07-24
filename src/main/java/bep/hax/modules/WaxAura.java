@@ -44,7 +44,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class WaxAura extends Module {
-    public WaxAura() { super(Bep.CATEGORY, "WaxAura", "Automatically waxes signs within your reach."); }
+    public WaxAura() { super(Bep.STARDUST, "WaxAura", "Automatically waxes signs within your reach."); }
 
     private final String BLACKLIST_FILE = "meteor-client/waxaura-blacklist.txt";
 

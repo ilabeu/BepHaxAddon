@@ -75,7 +75,7 @@ import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockDa
  **/
 public class SignHistorian extends Module {
     public SignHistorian() {
-        super(Bep.CATEGORY, "SignHistorian", "Records & restores broken or modified signs.");
+        super(Bep.STARDUST, "SignHistorian", "Records & restores broken or modified signs.");
     }
 
     private final String BLACKLIST_FILE = "meteor-client/sign-historian/content-blacklist.txt";
