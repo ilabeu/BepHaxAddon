@@ -1,15 +1,16 @@
 # BepHax Meteor Addon
 
-[![GitHub Release](https://img.shields.io/github/v/release/BepHax/bephax?include_prereleases&label=Latest%20Release)](https://github.com/BepHax/bephax/releases)
-[![GitHub License](https://img.shields.io/github/license/BepHax/bephax)](https://github.com/BepHax/bephax/blob/main/LICENSE)
-[![GitHub Issues](https://img.shields.io/github/issues/BepHax/bephax)](https://github.com/BepHax/bephax/issues)
+[![GitHub Release](https://img.shields.io/github/v/release/dekrom/BepHaxAddon?include_prereleases&label=Latest%20Release)](https://github.com/dekrom/BepHaxAddon/releases)
+[![GitHub License](https://img.shields.io/github/license/dekrom/BepHaxAddon)](https://github.com/dekrom/BepHaxAddon/blob/main/LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/dekrom/BepHaxAddon)](https://github.com/dekrom/BepHaxAddon/issues)
+
 ## What it is?
 
-BepHax is created to simplify 2b2t.org players life and add all the useful utility from different addons and up some extras into one easy so use meteor addon that helps everyone with access and compatibility.
+BepHax is created to simplify 2b2t.org players' lives by combining the best utility modules from various addons into one accessible Meteor Client addon, optimized for compatibility and ease of use on the 2b2t anarchy server.
 
 ## Installation
 
-1. Download the latest JAR from the [Releases](https://github.com/BepHax/bephax/releases) page.
+1. Download the latest JAR from the [Releases](https://github.com/dekrom/BepHaxAddon/releases) page.
 2. Place the JAR file in your Minecraft mods folder (typically `~/.minecraft/mods` on Fabric Loader).
 3. Launch Minecraft with Fabric and Meteor Client installed.
 4. Activate modules via the Meteor Client GUI (default key: Right Shift).
@@ -23,6 +24,9 @@ BepHax is created to simplify 2b2t.org players life and add all the useful utili
 - XaeroWorldMap
 - XaeroPlus
 
+## Features
+
+BepHax organizes modules into custom categories: **Bephax** (general utilities), **Stash Hunt** (exploration and stash finding), **Bobers** (highway borers), and **HIG Tools** (highway and infrastructure tools).
 
 ### Original/Improved Modules (by BepHax Maintainer)
 These modules were created or enhanced specifically for this addon:
@@ -61,6 +65,7 @@ These modules were created or enhanced specifically for this addon:
 - **ScaffoldHIG**: Scaffolding for highway building.
 - **Coordinates Command**: Displays or shares coordinates.
 
+### Borers
 - **AxisBorer**: Bores along axes.
 - **NegNegBorer**: Negative-negative direction borer.
 - **NegPosBorer**: Negative-positive direction borer.
@@ -84,37 +89,37 @@ These modules were created or enhanced specifically for this addon:
 
 ### Commands and Modules from Stardust (Credit: [0xTas](https://github.com/0xTas/stardust))
 - **Commands**:
-    - FirstSeen2b2t: Checks first seen date on 2b2t.
-    - LastSeen2b2t: Checks last seen date on 2b2t.
-    - Playtime2b2t: Checks playtime on 2b2t.
-    - Stats2b2t: Displays player stats on 2b2t.
-    - Panorama: Custom panorama utilities.
-    - Loadout: Manages loadouts.
+  - FirstSeen2b2t: Checks first seen date on 2b2t.
+  - LastSeen2b2t: Checks last seen date on 2b2t.
+  - Playtime2b2t: Checks playtime on 2b2t.
+  - Stats2b2t: Displays player stats on 2b2t.
+  - Panorama: Custom panorama utilities.
+  - Loadout: Manages loadouts.
 - **Modules**:
-    - Loadouts: Saves and loads player loadouts.
-    - AntiToS: Bypasses ToS restrictions.
-    - ChatSigns: Signs in chat.
-    - Archaeology: Archaeology utilities.
-    - AutoDoors: Automatically opens doors.
-    - AutoDrawDistance: Adjusts draw distance.
-    - AutoDyeShulkers: Dyes shulkers automatically.
-    - AxolotlTools: Axolotl-related tools.
-    - BannerData: Displays banner data.
-    - BookTools: Book editing tools.
-    - Honker: Custom honking sounds.
-    - LoreLocator: Locates lore items.
-    - MusicTweaks: Music system tweaks.
-    - PagePirate: Page utilities.
-    - RapidFire: Fast firing.
-    - RoadTrip: Travel utilities.
-    - RocketJump: Rocket jumping.
-    - RocketMan: Rocket enhancements.
-    - SignHistorian: Sign history.
-    - SignatureSign: Signs signatures.
-    - StashBrander: Brands stashes.
-    - WaxAura: Waxing utilities.
-    - TreasureESP: ESP for treasures.
-    - Updraft: Updraft flying.
+  - Loadouts: Saves and loads player loadouts.
+  - AntiToS: Bypasses ToS restrictions.
+  - ChatSigns: Signs in chat.
+  - Archaeology: Archaeology utilities.
+  - AutoDoors: Automatically opens doors.
+  - AutoDrawDistance: Adjusts draw distance.
+  - AutoDyeShulkers: Dyes shulkers automatically.
+  - AxolotlTools: Axolotl-related tools.
+  - BannerData: Displays banner data.
+  - BookTools: Book editing tools.
+  - Honker: Custom honking sounds.
+  - LoreLocator: Locates lore items.
+  - MusicTweaks: Music system tweaks.
+  - PagePirate: Page utilities.
+  - RapidFire: Fast firing.
+  - RoadTrip: Travel utilities.
+  - RocketJump: Rocket jumping.
+  - RocketMan: Rocket enhancements.
+  - SignHistorian: Sign history.
+  - SignatureSign: Signs signatures.
+  - StashBrander: Brands stashes.
+  - WaxAura: Waxing utilities.
+  - TreasureESP: ESP for treasures.
+  - Updraft: Updraft flying.
 
 ### Modules from Meteorist (Credit: [Zgoly](https://github.com/Zgoly/Meteorist/))
 - **DisconnectSound**: Plays sound on disconnect.
