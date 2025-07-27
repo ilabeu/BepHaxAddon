@@ -1,5 +1,6 @@
 package bep.hax.modules;
 
+import bep.hax.Bep;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
@@ -56,7 +57,7 @@ public class ShulkerOverviewModule extends Module {
     );
 
     public ShulkerOverviewModule() {
-        super(Categories.Render, "shulker-overview", "Overlays most common item icon on shulker boxes in inventory.");
+        super(Bep.CATEGORY, "shulker-overview", "Overlays most common item icon on shulker boxes in inventory.");
     }
 
     public enum IconPosition {
