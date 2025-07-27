@@ -51,7 +51,7 @@ public class AntiInteract extends Module {
 
 
     public AntiInteract() {
-        super(Bep.IKEA, "anti-interact", "Stops you from interacting (right click) with entities/blocks if you're holding certain items.");
+        super(Bep.CATEGORY, "anti-interact", "Stops you from interacting (right click) with entities/blocks if you're holding certain items by IKEA ADDON.");
     }
 
     @EventHandler

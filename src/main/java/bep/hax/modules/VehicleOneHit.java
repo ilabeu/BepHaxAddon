@@ -26,7 +26,7 @@ public class VehicleOneHit extends Module {
     );
 
     public VehicleOneHit() {
-        super(Bep.REJECTS, "vehicle-one-hit", "Destroy vehicles with one hit.");
+        super(Bep.CATEGORY, "vehicle-one-hit", "Destroy vehicles with one hit by REJECTS Anti-Cope.");
     }
 
     @EventHandler

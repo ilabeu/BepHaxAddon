@@ -5,15 +5,9 @@
   "name": "Bep Hax",
   "description": "A meteor addon collection for playing 2b2t.",
   "authors": [
-    "dekrom (maintainer)",
-    "meeerkat (based)",
-    "miles352 (JEFF Stash Hunting)",
-    "RedCarlos26 (HIGTools)",
-    "etianl (TrouserStreak)",
-    "Nooniboi (IKEA)",
-    "AntiCope (Meteor Rejects)",
-    "0xTas (Stardust)",
-    "Zgoly (Meteorist)"
+    "dekrom",
+    "meeerkat",
+    "and many more devs."
   ],
   "contact": {
     "repo": "https://github.com/dekrom/Bephax/"

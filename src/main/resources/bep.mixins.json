@@ -43,9 +43,32 @@
     "AbstractSignBlockEntityRendererMixin",
     "accessor.AbstractSignEditScreenAccessor",
     "DisconnectedScreenMixin",
-    "HandledScreenMixin"
+    "HandledScreenMixin",
+    "AccessorMinecraftClient",
+    "IBlockSettings",
+    "IEntityS2CPacket",
+    "IEntitySetHeadYawS2CPacket",
+    "IEntityStatusS2CPacket",
+    "IInteractEntityC2SPacket",
+    "IPlayerMoveC2SPacket",
+    "IRaycastContext",
+    "ISetCameraEntityS2CPacket",
+    "ISpectatorTeleportC2SPacket",
+    "MixinBackground",
+    "MixinClientCommonNetworkHandler",
+    "MixinClientPlayerEntity",
+    "MixinClientPlayerInteractionManager",
+    "MixinEntity",
+    "MixinHeldItemRenderer",
+    "MixinLivingEntityRenderer",
+    "MixinPlayerEntity",
+    "ClientWorldAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "mixins": [
+    "AccessorNbtCompound",
+    "MixinClientConnection"
+  ]
 }

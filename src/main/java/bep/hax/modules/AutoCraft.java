@@ -54,7 +54,7 @@ public class AutoCraft extends Module {
     );
 
     public AutoCraft() {
-        super(Bep.REJECTS, "auto-craft", "Automatically crafts items.");
+        super(Bep.CATEGORY, "auto-craft", "Automatically crafts items BY REJECTS ANTICOPE.");
     }
 
     @EventHandler

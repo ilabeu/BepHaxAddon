@@ -35,6 +35,7 @@ dependencies {
     mappings("net.fabricmc:yarn:${properties["yarn_mappings"] as String}:v2")
     modImplementation("net.fabricmc:fabric-loader:${properties["loader_version"] as String}")
     modApi("meteordevelopment:baritone:${properties["baritone_version"] as String}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
 
 // Meteor
     modImplementation("meteordevelopment:meteor-client:${project.property("minecraft_version")}-SNAPSHOT")

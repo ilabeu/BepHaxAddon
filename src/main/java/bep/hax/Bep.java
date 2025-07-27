@@ -1,8 +1,10 @@
 package bep.hax;
 
-import bep.hax.commands.Center;
-import bep.hax.commands.Coordinates;
+import bep.hax.commands.*;
+import bep.hax.commands.*;
+import bep.hax.globalsettings.*;
 import bep.hax.hud.*;
+import bep.hax.modules.*;
 import bep.hax.managers.PacketManager;
 import bep.hax.modules.*;
 import bep.hax.modules.highwayborers.*;
@@ -25,6 +27,7 @@ import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.mixininterface.*;
 import meteordevelopment.meteorclient.systems.modules.misc.BetterChat;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.misc.MeteorStarscript;
@@ -53,13 +56,12 @@ public class Bep extends MeteorAddon {
     public static final Category CATEGORY = new Category("Bephax");
     public static final Category STASH = new Category("Stash Hunt");
     public static final Category BORERS= new Category("Bobers");
-    public static final Category TST= new Category("TrouserStreak");
-    public static final Category IKEA= new Category("IKEA");
     public static final Category STARDUST= new Category("Stardust");
-    public static final Category METEORIST= new Category("Meteorist");
-    public static final Category REJECTS= new Category("Meteor Rejects");
     public static final Category HIG = new Category("HIG Tools");
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
+    public static final Category SETTINGS = new Category("BOSettings", Items.OBSIDIAN.getDefaultStack());
+    public static final Category BLACKOUT = new Category("BlackOut", Items.END_CRYSTAL.getDefaultStack());
+    public static final String COLOR = "Color is the visual perception of different wavelengths of light as hue, saturation, and brightness";
 
     @Override
     public void onInitialize() {
@@ -160,10 +162,70 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new TreasureESP());
         Modules.get().add(new Updraft());
 
+
         // Meteorist https://github.com/Zgoly/Meteorist/
         Modules.get().add(new DisconnectSound());
+
         // HUD
         Hud.get().register(BlockCounterHud.INFO);
+
+
+        // Blackout https://github.com/KassuK1/BlackOut
+        Modules.get().add(new FacingSettings());
+        Modules.get().add(new RangeSettings());
+        Modules.get().add(new RaytraceSettings());
+        Modules.get().add(new RotationSettings());
+        Modules.get().add(new ServerSettings());
+        Modules.get().add(new SwingSettings());
+
+        Modules.get().add(new AnchorAuraPlus());
+        Modules.get().add(new AnteroTaateli());
+        Modules.get().add(new AntiAim());
+        Modules.get().add(new AntiCrawl());
+        Modules.get().add(new AutoCraftingTable());
+        Modules.get().add(new AutoCrystalPlus());
+        Modules.get().add(new AutoEz());
+        Modules.get().add(new Automation());
+        Modules.get().add(new AutoMend());
+        Modules.get().add(new AutoMine());
+        Modules.get().add(new AutoMoan());
+        Modules.get().add(new AutoPearl());
+        Modules.get().add(new AutoTrapPlus());
+        Modules.get().add(new BedAuraPlus());
+        Modules.get().add(new Blocker());
+        Modules.get().add(new BurrowPlus());
+        Modules.get().add(new CustomFOV());
+        Modules.get().add(new ElytraFlyPlus());
+        Modules.get().add(new FastXP());
+        Modules.get().add(new FeetESP());
+        Modules.get().add(new FlightPlus());
+        Modules.get().add(new ForceSneak());
+        Modules.get().add(new HoleFillPlus());
+        Modules.get().add(new HoleFillRewrite());
+        Modules.get().add(new HoleSnap());
+        Modules.get().add(new JesusPlus());
+        Modules.get().add(new KillAuraPlus());
+        Modules.get().add(new LightsOut());
+        Modules.get().add(new MineESP());
+        Modules.get().add(new OffHandPlus());
+        Modules.get().add(new PacketFly());
+        Modules.get().add(new PacketLogger());
+        Modules.get().add(new PingSpoof());
+        Modules.get().add(new PistonCrystal());
+        Modules.get().add(new PistonPush());
+        Modules.get().add(new PortalGodMode());
+        Modules.get().add(new ScaffoldPlus());
+        Modules.get().add(new SelfTrapPlus());
+        Modules.get().add(new SoundModifier());
+        Modules.get().add(new SpeedPlus());
+        Modules.get().add(new SprintPlus());
+        Modules.get().add(new StepPlus());
+        Modules.get().add(new StrictNoSlow());
+        Modules.get().add(new Suicide());
+        Modules.get().add(new SurroundPlus());
+        Modules.get().add(new SwingModifier());
+        Modules.get().add(new TickShift());
+        Modules.get().add(new WeakAlert());
 
     }
 
@@ -173,12 +235,16 @@ public class Bep extends MeteorAddon {
         Modules.registerCategory(CATEGORY);
         Modules.registerCategory(STASH);
         Modules.registerCategory(BORERS);
-        Modules.registerCategory(TST);
-        Modules.registerCategory(IKEA);
         Modules.registerCategory(STARDUST);
-        Modules.registerCategory(METEORIST);
-        Modules.registerCategory(REJECTS);
         Modules.registerCategory(HIG);
+        Modules.registerCategory(BLACKOUT);
+        Modules.registerCategory(SETTINGS);
+    }
+    private void initializeAutoPVP(Modules modules) {
+        try {
+            Class.forName("baritone.api.BaritoneAPI");
+            modules.add(new AutoPvp());
+        } catch (ClassNotFoundException ignored) {}
     }
 
     @Override

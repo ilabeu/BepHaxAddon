@@ -160,7 +160,7 @@ public class SuperInstaMine extends Module {
     private int playerpitch;
 
     public SuperInstaMine() {
-        super(Bep.TST, "SuperInstaMine", "Attempts to instantly mine blocks. Modified to be able to break many blocks at a time.");
+        super(Bep.CATEGORY, "SuperInstaMine", "Attempts to instantly mine blocks. Modified to be able to break many blocks at a time.by Trouser-Streak");
     }
 
     @Override

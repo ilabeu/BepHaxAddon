@@ -28,7 +28,7 @@ BepHax is created to simplify 2b2t.org players' lives by combining the best util
 
 BepHax organizes modules into custom categories as they come from different addons:
 
-### Original/Improved Modules (by BepHax Maintainer)
+### Original/Improved Modules (by BepHax)
 These modules were created or enhanced specifically for this addon:
 - **AutoSmithing**: Automates smithing table upgrades.
 - **YawLock**: Locks player yaw for precise movement.
@@ -52,6 +52,57 @@ These modules were created or enhanced specifically for this addon:
 - **BetterStashFinder**: Improved stash location finder.
 - **OldChunkNotifier**: Notifies of old chunks.
 - **SearchArea**: Defines search areas for resources.
+
+### Modules from BlackOut(Credit: [KassuK1](https://github.com/KassuK1/BlackOut)) (Ported to 1.21.4 by me)
+- **AnchorAuraPlus**: Enhanced anchor aura for crystal PvP.
+- **AnteroTaateli**: Custom utility module.
+- **AntiAim**: Prevents aim assistance targeting.
+- **AntiCrawl**: Prevents crawling mechanics.
+- **AutoCraftingTable**: Automatically opens crafting tables.
+- **AutoCrystalPlus**: Enhanced auto crystal placement and breaking.
+- **AutoEz**: Automatic "ez" messages in chat.
+- **Automation**: General automation utilities.
+- **AutoMend**: Automatically mends items.
+- **AutoMine**: Automated mining assistance.
+- **AutoMoan**: Automatic chat sounds/messages.
+- **AutoPearl**: Automatic ender pearl throwing.
+- **AutoTrapPlus**: Enhanced automatic trap placement.
+- **BedAuraPlus**: Enhanced bed aura for combat.
+- **Blocker**: Blocks certain actions or packets.
+- **BurrowPlus**: Enhanced burrow mechanics.
+- **CustomFOV**: Customizable field of view.
+- **ElytraFlyPlus**: Enhanced elytra flight.
+- **FastXP**: Fast experience orb collection.
+- **FeetESP**: ESP highlighting player feet.
+- **FlightPlus**: Enhanced flight capabilities.
+- **ForceSneak**: Forces sneaking state.
+- **HoleFillPlus**: Enhanced hole filling for combat.
+- **HoleFillRewrite**: Rewritten hole fill module.
+- **HoleSnap**: Snaps to safe holes.
+- **JesusPlus**: Enhanced water walking.
+- **KillAuraPlus**: Enhanced kill aura for combat.
+- **LightsOut**: Light level modifications.
+- **MineESP**: ESP for mining locations.
+- **OffHandPlus**: Enhanced offhand management.
+- **PacketFly**: Packet-based flight.
+- ** PacketLogger**: Logs network packets.
+- **PingSpoof**: Spoofs ping values.
+- **PistonCrystal**: Piston crystal utilities.
+- **PistonPush**: Piston pushing mechanics.
+- **PortalGodMode**: God mode in portals.
+- **ScaffoldPlus**: Enhanced scaffolding placement.
+- **SelfTrapPlus**: Enhanced self-trapping.
+- **SoundModifier**: Modifies game sounds.
+- **SpeedPlus**: Enhanced movement speed.
+- **SprintPlus**: Enhanced sprinting mechanics.
+- **StepPlus**: Enhanced step height.
+- **StrictNoSlow**: Strict no slowdown.
+- **Suicide**: Self-termination command.
+- **SurroundPlus**: Enhanced surround placement.
+- **SwingModifier**: Modifies swing animations.
+- **TickShift**: Tick manipulation utilities.
+- **WeakAlert**: Alerts for weak armor/health.
+
 
 ### Modules from HIGTools (Credit: [RedCarlos26](https://github.com/RedCarlos26/HIGTools))
 - **AfkLogout**: Logs out after AFK time.
