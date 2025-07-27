@@ -70,6 +70,7 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new GrimSilentRotations());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
+        Modules.get().add(new ShulkerOverviewModule());
 
 
         // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon
@@ -187,6 +188,6 @@ public class Bep extends MeteorAddon {
 
     @Override
     public GithubRepo getRepo() {
-        return new GithubRepo("BepHax", "bephax");
+        return new GithubRepo("BepHaxAddon", "bephaxaddon");
     }
 }

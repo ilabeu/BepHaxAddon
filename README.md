@@ -6,7 +6,7 @@
 
 ## What it is?
 
-BepHax is created to simplify 2b2t.org players' lives by combining the best utility modules from various addons into one accessible Meteor Client addon, optimized for compatibility and ease of use on the 2b2t anarchy server.
+BepHax is created to simplify 2b2t.org players' lives by combining the best utility modules from various addons into one accessible Meteor Client addon, optimized for compatibility and ease of use on the 2b2t anarchy server while discarding some functionalities that might not be wanted or useful for 2b2t.
 
 ## Installation
 
@@ -16,24 +16,25 @@ BepHax is created to simplify 2b2t.org players' lives by combining the best util
 4. Activate modules via the Meteor Client GUI (default key: Right Shift).
 
 **Requirements:**
-- Minecraft 1.21.4
-- Fabric Loader 0.16.10 or compatible
-- Meteor Client (latest snapshot for 1.21.4)
-- Baritone API
-- XaeroMinimap
-- XaeroWorldMap
-- XaeroPlus
+- [Minecraft 1.21.4](https://minecraft.net/)
+- [Fabric Loader 0.16.10 or compatible](https://fabricmc.net/)
+- [Meteor Client (latest snapshot for 1.21.4)](https://github.com/MeteorDevelopment/meteor-client/tree/a96efdcdd60ed226650f6fc7f952ba65371bfc4d)
+- [Baritone API](https://github.com/cabaletta/baritone/tree/1.21.4)
+- [XaeroMinimap](https://modrinth.com/mod/xaeros-minimap)
+- [XaeroWorldMap](https://modrinth.com/mod/xaeros-world-map)
+- [XaeroPlus](https://github.com/rfresh2/XaeroPlus)
 
 ## Features
 
-BepHax organizes modules into custom categories: **Bephax** (general utilities), **Stash Hunt** (exploration and stash finding), **Bobers** (highway borers), and **HIG Tools** (highway and infrastructure tools).
+BepHax organizes modules into custom categories as they come from different addons:
 
 ### Original/Improved Modules (by BepHax Maintainer)
 These modules were created or enhanced specifically for this addon:
 - **AutoSmithing**: Automates smithing table upgrades.
 - **YawLock**: Locks player yaw for precise movement.
 - **UnfocusedFpsLimiter**: Limits FPS when the game window is unfocused.
-
+- **ShulkerOverview**: Shows the most abudant item as a mini icon on top of the shulkers in your inventory.
+- 
 ### Modules from JEFF Stash Hunting (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon))
 - **ElytraFlyPlusPlus**: Enhanced elytra flying controls.
 - **AFKVanillaFly**: AFK flying without mods.

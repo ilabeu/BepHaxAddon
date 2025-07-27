@@ -112,41 +112,10 @@ public class BetterStashFinder extends Module
         .build()
     );
 
-    private final Setting<Boolean> sendWebhook = sgGeneral.add(new BoolSetting.Builder()
-        .name("Send Webhook")
-        .description("Sends a webhook when a stash is found.")
-        .defaultValue(false)
-        .build()
-    );
-
-    public final Setting<String> webhookLink = sgGeneral.add(new StringSetting.Builder()
-        .name("Webhook Link")
-        .description("A discord webhook link. Looks like this: https://discord.com/api/webhooks/webhookUserId/webHookTokenOrSomething")
-        .defaultValue("")
-        .visible(sendWebhook::get)
-        .build()
-    );
-
     public final Setting<Boolean> advancedLogging = sgGeneral.add(new BoolSetting.Builder()
         .name("advanced-logging")
         .description("Will log more information, including the amount of each container found.")
         .defaultValue(false)
-        .build()
-    );
-
-    public final Setting<Boolean> ping = sgGeneral.add(new BoolSetting.Builder()
-        .name("Ping For Stash Finder")
-        .description("Pings you for stash finder and base finder messages")
-        .defaultValue(false)
-        .visible(sendWebhook::get)
-        .build()
-    );
-
-    public final Setting<String> discordId = sgGeneral.add(new StringSetting.Builder()
-        .name("Discord ID")
-        .description("Your discord ID")
-        .defaultValue("")
-        .visible(() -> sendWebhook.get() && ping.get())
         .build()
     );
 
@@ -234,63 +203,6 @@ public class BetterStashFinder extends Module
                         }
                     }
                 }
-
-                if (sendWebhook.get() && !webhookLink.get().isEmpty())
-                {
-                    if (advancedLogging.get())
-                    {
-                        String json = "{\"embeds\": [{" +
-                            "\"title\": \"Stash Found!\"," +
-                            "\"color\": 2154012," +
-                            "\"description\": \"Coordinates: || X: " + chunk.x + " Z: " + chunk.z + "||\"," +
-                            "\"fields\": [" +
-                            "{" +
-                            "\"name\": \"Chests\"," +
-                            "\"value\": " + chunk.chests + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Barrels\"," +
-                            "\"value\": " + chunk.barrels + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Shulkers\"," +
-                            "\"value\": " + chunk.shulkers + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Ender Chests\"," +
-                            "\"value\": " + chunk.enderChests + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Hoppers\"," +
-                            "\"value\": " + chunk.hoppers + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Dispensers/Droppers\"," +
-                            "\"value\": " + chunk.dispensersDroppers + "," +
-                            "\"inline\": true" +
-                            "}," +
-                            "{" +
-                            "\"name\": \"Furnaces\"," +
-                            "\"value\": " + chunk.furnaces + "," +
-                            "\"inline\": true" +
-                            "}" +
-                            "]" +
-                            "}]}";
-
-                        new Thread(() -> info(webhookLink.get(), json, ping.get() ? discordId.get() : null)).start();
-                    }
-                    else
-                    {
-                        String message = "Found stash at " + chunk.x + ", " + chunk.z + ".";
-                        new Thread(() -> info(webhookLink.get(), title, message, ping.get() ? discordId.get() : null, mc.player.getGameProfile().getName())).start();
-                    }
-                }
-
                 if (saveToWaypoints.get())
                 {
                     WaypointSet waypointSet = getWaypointSet();

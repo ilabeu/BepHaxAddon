@@ -42,7 +42,8 @@
     "ClientPlayerInteractionManagerMixin",
     "AbstractSignBlockEntityRendererMixin",
     "accessor.AbstractSignEditScreenAccessor",
-    "DisconnectedScreenMixin"
+    "DisconnectedScreenMixin",
+    "HandledScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

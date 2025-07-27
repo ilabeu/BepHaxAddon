@@ -60,36 +60,7 @@ public class SearchArea extends Module {
         .build()
     );
 
-    public final Setting<WebhookSettings> webhookMode = sgGeneral.add(new EnumSetting.Builder<WebhookSettings>()
-        .name("Webhook Mode")
-        .description("The mode for discord webhooks.")
-        .defaultValue(WebhookSettings.Off)
-        .build()
-    );
 
-    public final Setting<String> webhookLink = sgGeneral.add(new StringSetting.Builder()
-        .name("Webhook Link")
-        .description("A discord webhook link. Looks like this: https://discord.com/api/webhooks/webhookUserId/webHookTokenOrSomething")
-        .defaultValue("")
-        .visible(() -> webhookMode.get() != WebhookSettings.Off)
-        .build()
-    );
-
-    public final Setting<Boolean> pingForStashFinder = sgGeneral.add(new BoolSetting.Builder()
-        .name("Ping For Stash Finder")
-        .description("Pings you for stash finder and base finder messages")
-        .defaultValue(false)
-        .visible(() -> webhookMode.get() == WebhookSettings.LogBoth || webhookMode.get() == WebhookSettings.LogStashes)
-        .build()
-    );
-
-    public final Setting<String> discordId = sgGeneral.add(new StringSetting.Builder()
-        .name("Discord ID")
-        .description("Your discord ID")
-        .defaultValue("")
-        .visible(() -> webhookMode.get() != WebhookSettings.Off && pingForStashFinder.get())
-        .build()
-    );
 
     public final Setting<Boolean> disconnectOnCompletion = sgGeneral.add(new BoolSetting.Builder()
         .name("Disconnect on Completion")

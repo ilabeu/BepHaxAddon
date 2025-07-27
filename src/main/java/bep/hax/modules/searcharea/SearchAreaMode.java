@@ -53,23 +53,6 @@ public class SearchAreaMode
             // why is it a double???
             paused = (long) (System.nanoTime() + 1e10);
         }
-        if (searchArea.webhookMode.get() != SearchArea.WebhookSettings.Off)
-        {
-            String title;
-            boolean ping = false;
-            if (searchArea.pingForStashFinder.get() &&
-                (message.getString().contains("Possible build") || message.getString().contains("Stash Finder")))
-            {
-                if (!(searchArea.webhookMode.get() == SearchArea.WebhookSettings.LogBoth || searchArea.webhookMode.get() == SearchArea.WebhookSettings.LogStashes)) return;
-                title = "Something Found!";
-                ping = true;
-            }
-            else
-            {
-                if (!(searchArea.webhookMode.get() == SearchArea.WebhookSettings.LogBoth || searchArea.webhookMode.get() == SearchArea.WebhookSettings.LogChat)) return;
-                title = "Chat Message";
-            }
-        }
 
     }
 
