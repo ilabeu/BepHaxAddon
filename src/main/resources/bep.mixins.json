@@ -9,7 +9,6 @@
     "KeyBindingMixin",
     "RotationMixin",
     "SystemsMixin",
-    "ToggleCommandMixin",
     "AbstractBlockStateMixin",
     "ScreenMixin",
     "ChatHudMixin",

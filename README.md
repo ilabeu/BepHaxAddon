@@ -103,26 +103,8 @@ These modules were created or enhanced specifically for this addon:
 - **TickShift**: Tick manipulation utilities.
 - **WeakAlert**: Alerts for weak armor/health.
 
-
 ### Modules from HIGTools (Credit: [RedCarlos26](https://github.com/RedCarlos26/HIGTools))
-- **AfkLogout**: Logs out after AFK time.
-- **AutoCenter**: Centers player on blocks.
-- **AutoWalkHIG**: Automatic walking for highways.
-- **AxisViewer**: Displays axis lines.
-- **HighwayBuilderHIG**: Builds highways automatically.
-- **HighwayTools**: Tools for highway maintenance.
-- **HotbarManager**: Manages hotbar slots.
-- **LiquidFillerHIG**: Fills liquids on highways.
-- **OffhandManager**: Manages offhand items.
-- **ScaffoldHIG**: Scaffolding for highway building.
 - **Coordinates Command**: Displays or shares coordinates.
-
-### Borers
-- **AxisBorer**: Bores along axes.
-- **NegNegBorer**: Negative-negative direction borer.
-- **NegPosBorer**: Negative-positive direction borer.
-- **PosNegBorer**: Positive-negative direction borer.
-- **PosPosBorer**: Positive-positive direction borer.
 
 ### Modules from TrouserStreak (Credit: [etianl](https://github.com/etianl/Trouser-Streak))
 - **BetterScaffold**: Improved scaffolding.

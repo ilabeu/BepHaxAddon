@@ -1,64 +1,25 @@
 package bep.hax;
 
-import bep.hax.commands.*;
-import bep.hax.commands.*;
 import bep.hax.globalsettings.*;
 import bep.hax.hud.*;
 import bep.hax.modules.*;
-import bep.hax.managers.PacketManager;
-import bep.hax.modules.*;
-import bep.hax.modules.highwayborers.*;
-import bep.hax.modules.highwayborers.BorerModule.*;
-import bep.hax.modules.hud.TextPresets.*;
 import bep.hax.modules.searcharea.SearchArea;
-import bep.hax.system.HIGTab.*;
-import bep.hax.util.*;
-import bep.hax.util.StardustUtil;
-import com.jcraft.jogg.Page;
 import com.mojang.logging.LogUtils;
-import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.commands.Commands;
-import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import meteordevelopment.meteorclient.gui.tabs.Tabs;
-import meteordevelopment.meteorclient.systems.Systems;
 import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import meteordevelopment.meteorclient.mixininterface.*;
-import meteordevelopment.meteorclient.systems.modules.misc.BetterChat;
-import meteordevelopment.meteorclient.utils.Utils;
-import meteordevelopment.meteorclient.utils.misc.MeteorStarscript;
-import meteordevelopment.orbit.EventHandler;
-import meteordevelopment.orbit.EventPriority;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.minecraft.enchantment.effect.entity.SpawnParticlesEnchantmentEffect.*;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
-import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
-
-import javax.swing.text.html.parser.Entity;
-import java.awt.print.Book;
-
-import static meteordevelopment.meteorclient.MeteorClient.mc;
-
 
 public class Bep extends MeteorAddon {
     public static final Logger LOG = LogUtils.getLogger();
     public static final Category CATEGORY = new Category("Bephax");
     public static final Category STASH = new Category("Stash Hunt");
-    public static final Category BORERS= new Category("Bobers");
     public static final Category STARDUST= new Category("Stardust");
-    public static final Category HIG = new Category("HIG Tools");
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
     public static final Category SETTINGS = new Category("BOSettings", Items.OBSIDIAN.getDefaultStack());
     public static final Category BLACKOUT = new Category("BlackOut", Items.END_CRYSTAL.getDefaultStack());
@@ -101,24 +62,8 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new SearchArea());
 
         // HIGTools https://github.com/RedCarlos26/HIGTools
-        Modules.get().add(new AfkLogout());
-        Modules.get().add(new AutoCenter());
-        Modules.get().add(new AutoWalkHIG());
-        Modules.get().add(new AxisViewer());
-        Modules.get().add(new HighwayBuilderHIG());
-        Modules.get().add(new HighwayTools());
-        Modules.get().add(new HotbarManager());
-        Modules.get().add(new LiquidFillerHIG());
-        Modules.get().add(new OffhandManager());
-        Modules.get().add(new ScaffoldHIG());
         Commands.add(new bep.hax.commands.Coordinates());
 
-        // Borers
-        Modules.get().add(new AxisBorer());
-        Modules.get().add(new NegNegBorer());
-        Modules.get().add(new NegPosBorer());
-        Modules.get().add(new PosNegBorer());
-        Modules.get().add(new PosPosBorer());
 
         // TrouserStreak https://github.com/etianl/Trouser-Streak
         Modules.get().add(new BetterScaffold());
@@ -234,18 +179,11 @@ public class Bep extends MeteorAddon {
     public void onRegisterCategories() {
         Modules.registerCategory(CATEGORY);
         Modules.registerCategory(STASH);
-        Modules.registerCategory(BORERS);
         Modules.registerCategory(STARDUST);
-        Modules.registerCategory(HIG);
         Modules.registerCategory(BLACKOUT);
         Modules.registerCategory(SETTINGS);
     }
-    private void initializeAutoPVP(Modules modules) {
-        try {
-            Class.forName("baritone.api.BaritoneAPI");
-            modules.add(new AutoPvp());
-        } catch (ClassNotFoundException ignored) {}
-    }
+
 
     @Override
     public String getPackage() {
