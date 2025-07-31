@@ -10,10 +10,6 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screen.DeathScreen;
 
-/**
- * @author OLEPOSSU
- */
-
 public class Suicide extends BlackOutModule {
     public Suicide() {
         super(Bep.BLACKOUT, "Suicide", "Kills yourself. Recommended.");
@@ -34,12 +30,6 @@ public class Suicide extends BlackOutModule {
         .build()
     );
 
-    @Override
-    public void onActivate() {
-        if (enableCA.get() && !Modules.get().isActive(AutoCrystalPlus.class)) {
-            Modules.get().get(AutoCrystalPlus.class).toggle();
-        }
-    }
 
     @EventHandler(priority = 6969)
     private void onDeath(OpenScreenEvent event) {

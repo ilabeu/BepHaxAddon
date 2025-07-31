@@ -388,14 +388,14 @@ public class PistonPush extends BlackOutModule {
             return;
         }
 
-        if (Modules.get().isActive(AutoMine.class) && redstonePos.equals(Modules.get().get(AutoMine.class).targetPos())) {
+        if (Modules.get().isActive(AutoMine.class) && redstonePos.equals(Modules.get().get(AutoMine.class).isTargeting(redstonePos))) {
             return;
         }
 
         AutoMine autoMine = Modules.get().get(AutoMine.class);
 
         if (autoMine.isActive()) {
-            if (redstonePos.equals(autoMine.targetPos())) return;
+            if (redstonePos.equals(autoMine.isTargeting(redstonePos))) return;
 
             autoMine.onStart(redstonePos);
         } else {

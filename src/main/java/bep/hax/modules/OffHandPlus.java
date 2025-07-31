@@ -109,25 +109,10 @@ public class OffHandPlus extends BlackOutModule {
     private double timer = 0;
     private Item item = null;
     private Suicide suicide = null;
-    private AutoCrystalPlus autoCrystalRewrite = null;
     private CrystalAura crystalAura = null;
     private AutoMine autoMine = null;
     private long lastTime = 0;
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    private void onRender(Render3DEvent event) {
-        if (mc.player == null || mc.world == null) return;
-        timer -= (System.currentTimeMillis() - lastTime) / 1000d;
-        lastTime = System.currentTimeMillis();
-
-        if (suicide == null) suicide = Modules.get().get(Suicide.class);
-        if (autoCrystalRewrite == null) autoCrystalRewrite = Modules.get().get(AutoCrystalPlus.class);
-        if (crystalAura == null) crystalAura = Modules.get().get(CrystalAura.class);
-        if (autoMine == null) autoMine = Modules.get().get(AutoMine.class);
-
-        item = getItem();
-        if (item != null) update();
-    }
 
     private void update() {
         if (timer > 0) return;

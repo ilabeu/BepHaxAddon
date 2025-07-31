@@ -432,7 +432,7 @@ public class PistonCrystal extends BlackOutModule {
         AutoMine autoMine = Modules.get().get(AutoMine.class);
 
         if (autoMine.isActive()) {
-            if (redstonePos.equals(autoMine.targetPos())) return;
+            if (redstonePos.equals(autoMine.isTargeting(redstonePos))) return;
 
             autoMine.onStart(redstonePos);
         } else {

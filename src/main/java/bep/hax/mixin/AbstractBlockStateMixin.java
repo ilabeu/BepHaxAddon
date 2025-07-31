@@ -16,8 +16,14 @@ public abstract class AbstractBlockStateMixin {
     @Inject(method = "calcBlockBreakingDelta", at = @At("RETURN"), cancellable = true)
     private void onCalcBlockBreakingDelta(PlayerEntity player, BlockView world, BlockPos pos, CallbackInfoReturnable<Float> info) {
         BepMine bepMine = Modules.get().get(BepMine.class);
-        if (bepMine.isActive()) {
-            info.setReturnValue(info.getReturnValueF() * (float) bepMine.mineSpeed.get().doubleValue());
+        if (bepMine != null && bepMine.isActive()) {
+            if (bepMine.getModeConfig().get() == BepMine.SpeedmineMode.DAMAGE) {
+                // For damage mode, multiply the breaking speed
+                float originalDelta = info.getReturnValueF();
+                float speedMultiplier = 1.0f / bepMine.getSpeedConfig().get().floatValue();
+                info.setReturnValue(originalDelta * speedMultiplier);
+            }
+            // PACKET mode calculates its own progress
         }
     }
 }

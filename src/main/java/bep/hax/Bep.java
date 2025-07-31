@@ -46,6 +46,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 
+import javax.swing.text.html.parser.Entity;
 import java.awt.print.Book;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
@@ -67,12 +68,18 @@ public class Bep extends MeteorAddon {
     public void onInitialize() {
         LOG.info("BEPHAX LOADING.");
 
+        // HUD
+        Hud.get().register(BlockCounterHud.INFO);
+        Hud.get().register(EntityList.INFO);
+
         Modules.get().add(new AutoSmithing());
         Modules.get().add(new BepMine());
         Modules.get().add(new GrimSilentRotations());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
         Modules.get().add(new ShulkerOverviewModule());
+        //Modules.get().add(new Miner());
+        //Modules.get().add(new Autoduper());
 
 
         // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon
@@ -126,7 +133,6 @@ public class Bep extends MeteorAddon {
 
         // Meteor Rejects https://github.com/AntiCope
         Modules.get().add(new AutoCraft());
-        Modules.get().add(new VehicleOneHit());
 
         // Stardust https://github.com/0xTas/stardust
         Commands.add(new bep.hax.commands.FirstSeen2b2t());
@@ -166,8 +172,7 @@ public class Bep extends MeteorAddon {
         // Meteorist https://github.com/Zgoly/Meteorist/
         Modules.get().add(new DisconnectSound());
 
-        // HUD
-        Hud.get().register(BlockCounterHud.INFO);
+
 
 
         // Blackout https://github.com/KassuK1/BlackOut
@@ -179,16 +184,11 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new SwingSettings());
 
         Modules.get().add(new AnchorAuraPlus());
-        Modules.get().add(new AnteroTaateli());
         Modules.get().add(new AntiAim());
         Modules.get().add(new AntiCrawl());
         Modules.get().add(new AutoCraftingTable());
-        Modules.get().add(new AutoCrystalPlus());
-        Modules.get().add(new AutoEz());
-        Modules.get().add(new Automation());
         Modules.get().add(new AutoMend());
         Modules.get().add(new AutoMine());
-        Modules.get().add(new AutoMoan());
         Modules.get().add(new AutoPearl());
         Modules.get().add(new AutoTrapPlus());
         Modules.get().add(new BedAuraPlus());

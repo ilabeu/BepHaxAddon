@@ -199,7 +199,7 @@ public class AutoMend extends BlackOutModule {
     private void onRender(Render3DEvent event) {
         if (mc.player == null || mc.world == null) return;
 
-        if (AutoCrystalPlus.placing) acTimer = autoCrystalTicks.get();
+
 
         if (SurroundPlus.placing) surroundTimer = surroundTicks.get();
 

@@ -14,10 +14,14 @@ import com.llamalad7.mixinextras.sugar.ref.LocalRef;
 import org.spongepowered.asm.mixin.injection.Inject;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import bep.hax.modules.ShulkerOverviewModule;
+import net.minecraft.block.ShulkerBoxBlock;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.BlockItem;
+import net.minecraft.util.Arm;
 
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(InGameHud.class)
 public class InGameHudMixin {
     @Shadow
@@ -38,6 +42,43 @@ public class InGameHudMixin {
 
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
             itemName.set(Text.empty().append(antiToS.censorText(itemName.get().getString())).formatted(this.currentStack.getRarity().getFormatting()));
+        }
+    }
+
+    @Inject(method = "renderHotbar", at = @At("TAIL"))
+    private void onRenderHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        ShulkerOverviewModule module = Modules.get().get(ShulkerOverviewModule.class);
+        if (module == null || !module.isActive()) return;
+
+        MinecraftClient mc = MinecraftClient.getInstance();
+        PlayerEntity player = mc.player;
+        if (player == null) return;
+
+        int scaledWidth = mc.getWindow().getScaledWidth();
+        int scaledHeight = mc.getWindow().getScaledHeight();
+        int center = scaledWidth / 2;
+
+        // Hotbar slots 0-8
+        int hotbarY = scaledHeight - 19;
+        for (int i = 0; i < 9; i++) {
+            int posX = center - 90 + i * 20 + 2;
+            ItemStack stack = player.getInventory().getStack(i);
+            if (stack.isEmpty()) continue;
+            if (!(stack.getItem() instanceof BlockItem blockItem) || !(blockItem.getBlock() instanceof ShulkerBoxBlock)) continue;
+            module.renderShulkerOverlay(context, posX, hotbarY, stack);
+        }
+
+        // Offhand slot
+        ItemStack offhandStack = player.getOffHandStack();
+        if (!offhandStack.isEmpty() && offhandStack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof ShulkerBoxBlock) {
+            int offY = scaledHeight - 20;
+            int offX;
+            if (player.getMainArm() == Arm.LEFT) {
+                offX = center - 91 - 26;
+            } else {
+                offX = center + 94;
+            }
+            module.renderShulkerOverlay(context, offX, offY, offhandStack);
         }
     }
 }

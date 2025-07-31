@@ -34,7 +34,13 @@ These modules were created or enhanced specifically for this addon:
 - **YawLock**: Locks player yaw for precise movement.
 - **UnfocusedFpsLimiter**: Limits FPS when the game window is unfocused.
 - **ShulkerOverview**: Shows the most abudant item as a mini icon on top of the shulkers in your inventory.
-- 
+- **BepMine**: Speedmine with focus on 2b2t with a queue system to mine blocks.
+- **Automine**: Automatically mines enemies surroundings to attack effectively.
+- **BlockCounterHud**: Shows the amount of any desired item into the HUD.
+- **EntityList**: Shows a configurable list of any entity in render distance.
+
+
+
 ### Modules from JEFF Stash Hunting (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon))
 - **ElytraFlyPlusPlus**: Enhanced elytra flying controls.
 - **AFKVanillaFly**: AFK flying without mods.
@@ -55,16 +61,10 @@ These modules were created or enhanced specifically for this addon:
 
 ### Modules from BlackOut(Credit: [KassuK1](https://github.com/KassuK1/BlackOut)) (Ported to 1.21.4 by me)
 - **AnchorAuraPlus**: Enhanced anchor aura for crystal PvP.
-- **AnteroTaateli**: Custom utility module.
 - **AntiAim**: Prevents aim assistance targeting.
 - **AntiCrawl**: Prevents crawling mechanics.
 - **AutoCraftingTable**: Automatically opens crafting tables.
-- **AutoCrystalPlus**: Enhanced auto crystal placement and breaking.
-- **AutoEz**: Automatic "ez" messages in chat.
-- **Automation**: General automation utilities.
 - **AutoMend**: Automatically mends items.
-- **AutoMine**: Automated mining assistance.
-- **AutoMoan**: Automatic chat sounds/messages.
 - **AutoPearl**: Automatic ender pearl throwing.
 - **AutoTrapPlus**: Enhanced automatic trap placement.
 - **BedAuraPlus**: Enhanced bed aura for combat.
@@ -85,7 +85,7 @@ These modules were created or enhanced specifically for this addon:
 - **MineESP**: ESP for mining locations.
 - **OffHandPlus**: Enhanced offhand management.
 - **PacketFly**: Packet-based flight.
-- ** PacketLogger**: Logs network packets.
+- **PacketLogger**: Logs network packets.
 - **PingSpoof**: Spoofs ping values.
 - **PistonCrystal**: Piston crystal utilities.
 - **PistonPush**: Piston pushing mechanics.
@@ -137,7 +137,6 @@ These modules were created or enhanced specifically for this addon:
 
 ### Modules from Meteor Rejects (Credit: [AntiCope](https://github.com/AntiCope))
 - **AutoCraft**: Automates crafting.
-- **VehicleOneHit**: One-hit vehicle destruction.
 
 ### Commands and Modules from Stardust (Credit: [0xTas](https://github.com/0xTas/stardust))
 - **Commands**:
@@ -175,9 +174,6 @@ These modules were created or enhanced specifically for this addon:
 
 ### Modules from Meteorist (Credit: [Zgoly](https://github.com/Zgoly/Meteorist/))
 - **DisconnectSound**: Plays sound on disconnect.
-
-### HUD Elements
-- **BlockCounterHud**: Counts blocks in inventory.
 
 ## Credits
 This addon aggregates modules from the following projects—huge thanks to their creators for open-sourcing their work:

@@ -5,11 +5,6 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
-/**
- * @author OLEPOSSU
- */
-
 public class RotationUtils {
     public static float nextYaw(double current, double target, double step) {
         double i = yawAngle(current, target);
@@ -43,9 +38,9 @@ public class RotationUtils {
         return Math.acos(p);
     }
 
-    // These 2 are from meteor rotation utils
+    // Updated to match Shoreline's getRotationsTo
     public static double getYaw(Vec3d start, Vec3d target) {
-        return mc.player.getYaw() + MathHelper.wrapDegrees((float) Math.toDegrees(Math.atan2(target.getZ() - start.getZ(), target.getX() - start.getX())) - 90f - mc.player.getYaw());
+        return MathHelper.wrapDegrees((float) (Math.toDegrees(Math.atan2(target.getZ() - start.getZ(), target.getX() - start.getX())) - 90));
     }
 
     public static double getPitch(Vec3d start, Vec3d target) {
@@ -55,6 +50,37 @@ public class RotationUtils {
 
         double diffXZ = Math.sqrt(diffX * diffX + diffZ * diffZ);
 
-        return mc.player.getPitch() + MathHelper.wrapDegrees((float) -Math.toDegrees(Math.atan2(diffY, diffXZ)) - mc.player.getPitch());
+        return MathHelper.wrapDegrees((float) -Math.toDegrees(Math.atan2(diffY, diffXZ)));
+    }
+
+    // Smoothing method adapted from Shoreline's RotationUtil
+    public static Vec2f smooth(Vec2f target, Vec2f previous, float rotationSpeed) {
+        float speed = (1.0f - (MathHelper.clamp(rotationSpeed / 100.0f, 0.1f, 0.9f))) * 10.0f;
+
+        float newYaw = previous.x + (float) (-getYawDifference(previous.x, target.x) / speed);
+        float newPitch = previous.y + (-(previous.y - target.y) / speed);
+
+        // force pitch to be in between -90 and 90
+        newPitch = MathHelper.clamp(newPitch, -90.0f, 90.0f);
+
+        return new Vec2f(newYaw, newPitch);
+    }
+
+    public static double getYawDifference(float client, float yaw) {
+        return ((client - yaw) % 360.0 + 540.0) % 360.0 - 180.0;
+    }
+
+    public static double getPitchDifference(float client, float pitch) {
+        return ((client - pitch) % 180.0 + 270.0) % 180.0 - 90.0;
+    }
+
+    public static Vec3d getRotationVector(float pitch, float yaw) {
+        float f = pitch * ((float) Math.PI / 180.0f);
+        float g = -yaw * ((float) Math.PI / 180.0f);
+        float h = MathHelper.cos(g);
+        float i = MathHelper.sin(g);
+        float j = MathHelper.cos(f);
+        float k = MathHelper.sin(f);
+        return new Vec3d(i * j, -k, h * j);
     }
 }
