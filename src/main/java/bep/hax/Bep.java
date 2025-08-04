@@ -32,6 +32,8 @@ public class Bep extends MeteorAddon {
         // HUD
         Hud.get().register(BlockCounterHud.INFO);
         Hud.get().register(EntityList.INFO);
+        Hud.get().register(DimensionCoords.INFO);
+        Hud.get().register(SpeedKMH.INFO);
 
         Modules.get().add(new AutoSmithing());
         Modules.get().add(new BepMine());
@@ -39,6 +41,7 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
         Modules.get().add(new ShulkerOverviewModule());
+        Modules.get().add(new ItemSearchBar());
         //Modules.get().add(new Miner());
         //Modules.get().add(new Autoduper());
 

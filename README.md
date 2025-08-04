@@ -38,8 +38,9 @@ These modules were created or enhanced specifically for this addon:
 - **Automine**: Automatically mines enemies surroundings to attack effectively.
 - **BlockCounterHud**: Shows the amount of any desired item into the HUD.
 - **EntityList**: Shows a configurable list of any entity in render distance.
-
-
+- **SpeedKM/h**: Shows your current speed on KM/H.
+- **DimensionCoords**: Shows your current coordinates in both dimensions in a easy configurable way.
+- **ItemSearchBar**: Easy way to look through inventories for specific items.
 
 ### Modules from JEFF Stash Hunting (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon))
 - **ElytraFlyPlusPlus**: Enhanced elytra flying controls.

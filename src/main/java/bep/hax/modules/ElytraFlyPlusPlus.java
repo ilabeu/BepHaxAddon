@@ -64,7 +64,14 @@ public class ElytraFlyPlusPlus extends Module {
         .name("Speed")
         .description("The speed in blocks per second to keep you at.")
         .defaultValue(100.0)
-        .range(20, 250)
+        .sliderRange(20, 250)
+        .visible(() -> bounce.get() && motionYBoost.get())
+        .build()
+    );
+    private final Setting<Boolean> tunnelBounce = sgGeneral.add(new BoolSetting.Builder()
+        .name("Tunnel Bounce")
+        .description("Allows you to bounce in 1x2 tunnels.")
+        .defaultValue(false)
         .visible(() -> bounce.get() && motionYBoost.get())
         .build()
     );
@@ -81,6 +88,7 @@ public class ElytraFlyPlusPlus extends Module {
         .name("Pitch")
         .description("The pitch to set when bounce is enabled.")
         .defaultValue(90.0)
+        .sliderRange(-90, 90)
         .visible(() -> bounce.get() && lockPitch.get())
         .build()
     );
@@ -105,6 +113,7 @@ public class ElytraFlyPlusPlus extends Module {
         .name("Yaw")
         .description("The yaw to set when bounce is enabled. This is auto set to the closest 45 deg angle to you unless Use Custom Yaw is enabled.")
         .defaultValue(0.0)
+        .sliderRange(0, 359)
         .visible(() -> bounce.get() && useCustomYaw.get())
         .build()
     );
@@ -151,7 +160,7 @@ public class ElytraFlyPlusPlus extends Module {
 
     private final Setting<Integer> targetY = sgObstaclePasser.add(new IntSetting.Builder()
         .name("Y Level")
-        .description("The Y level to bounce at.")
+        .description("The Y level to bounce at. This must be correct or bounce will not start properly.")
         .defaultValue(120)
         .visible(() -> bounce.get() && highwayObstaclePasser.get())
         .build()
@@ -300,7 +309,7 @@ public class ElytraFlyPlusPlus extends Module {
 
             if (mc.player.isOnGround() && mc.player.isSprinting() && speedBps < speed.get())
             {
-                if (speedBps > 20)
+                if (speedBps > 20 || tunnelBounce.get())
                 {
                     ((IVec3d) event.movement).meteor$setY(0.0);
                 }
@@ -381,7 +390,7 @@ public class ElytraFlyPlusPlus extends Module {
                 return;
             }
 
-            if (mc.player.squaredDistanceTo(lastUnstuckPos) < 5)
+            if (mc.player.squaredDistanceTo(lastUnstuckPos) < 25)
             {
                 stuckTimer++;
             }
@@ -392,10 +401,10 @@ public class ElytraFlyPlusPlus extends Module {
             }
 
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && // > 100 check needed bc server sends queue coordinates when joining in first tick causing goal coordinates to be set to (0, 0)
-                (mc.player.getY() < targetY.get() || mc.player.getY() > targetY.get() + 2 || mc.player.horizontalCollision) // collisions / out of highway
+                (mc.player.getY() < targetY.get() || mc.player.getY() > targetY.get() + 2 || mc.player.horizontalCollision // collisions / out of highway
                 || (portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()) // portal trap detection
-                || waitingForChunksToLoad
-                || stuckTimer > 100) // waiting for chunks to load
+                || waitingForChunksToLoad // waiting for chunks to load
+                    || stuckTimer > 50))
             {
                 waitingForChunksToLoad = false;
                 paused = true;
@@ -449,7 +458,7 @@ public class ElytraFlyPlusPlus extends Module {
 
                 if (!fakeFly.get())
                 {
-                    if (mc.player.isOnGround())
+                    if (mc.player.isOnGround() && (!motionYBoost.get() || Utils.getPlayerSpeed().multiply(1, 0, 1).length() < speed.get()))
                     {
                         mc.player.jump();
                     }
@@ -494,7 +503,7 @@ public class ElytraFlyPlusPlus extends Module {
 
         sendStartFlyingPacket();
 
-        if (bounce.get() && mc.player.isOnGround())
+        if (bounce.get() && mc.player.isOnGround() && (!motionYBoost.get() || Utils.getPlayerSpeed().multiply(1, 0, 1).length() < speed.get()))
         {
             mc.player.jump();
         }

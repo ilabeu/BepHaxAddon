@@ -3,6 +3,7 @@ package bep.hax.mixin;
 import net.minecraft.world.World;
 import net.minecraft.item.ItemStack;
 import bep.hax.modules.LoreLocator;
+import bep.hax.modules.ItemSearchBar;
 import net.minecraft.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -25,17 +26,37 @@ public abstract class DrawContextMixin {
     private void highlightNamedItems(LivingEntity entity, World world, ItemStack stack, int x, int y, int seed, int z, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
+        
+        // LoreLocator highlighting
         LoreLocator ll = modules.get(LoreLocator.class);
-        if (!ll.isActive() || !ll.shouldHighlightSlot(stack)) return;
-        this.fill(x, y, x + 16, y + 16, ll.color.get().getPacked());
+        if (ll.isActive() && ll.shouldHighlightSlot(stack)) {
+            this.fill(x - 1, y - 1, x + 17, y + 17, ll.color.get().getPacked());
+            return;
+        }
+        
+        // ItemSearchBar highlighting
+        ItemSearchBar isb = modules.get(ItemSearchBar.class);
+        if (isb.isActive() && isb.shouldHighlightSlot(stack)) {
+            this.fill(x - 1, y - 1, x + 17, y + 17, isb.highlightColor.get().getPacked());
+        }
     }
 
     @Inject(method = "drawItemWithoutEntity(Lnet/minecraft/item/ItemStack;III)V", at = @At("HEAD"))
     private void highlightNamedItemsNoEntity(ItemStack stack, int x, int y, int seed, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
+        
+        // LoreLocator highlighting
         LoreLocator ll = modules.get(LoreLocator.class);
-        if (!ll.isActive() || !ll.shouldHighlightSlot(stack)) return;
-        this.fill(x, y, x + 16, y + 16, ll.color.get().getPacked());
+        if (ll.isActive() && ll.shouldHighlightSlot(stack)) {
+            this.fill(x - 1, y - 1, x + 17, y + 17, ll.color.get().getPacked());
+            return;
+        }
+        
+        // ItemSearchBar highlighting
+        ItemSearchBar isb = modules.get(ItemSearchBar.class);
+        if (isb.isActive() && isb.shouldHighlightSlot(stack)) {
+            this.fill(x - 1, y - 1, x + 17, y + 17, isb.highlightColor.get().getPacked());
+        }
     }
 }

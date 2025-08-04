@@ -129,8 +129,11 @@ public class EntityList extends HudElement {
         for (Entity entity : MeteorClient.mc.world.getEntities()) {
             if (entity == MeteorClient.mc.player) continue;
 
-            double dist = entity.distanceTo(MeteorClient.mc.player);
-            if (dist > maxDistance.get()) continue;
+            // Calculate horizontal distance only (ignore Y level differences)
+            double dx = entity.getX() - MeteorClient.mc.player.getX();
+            double dz = entity.getZ() - MeteorClient.mc.player.getZ();
+            double horizontalDist = Math.sqrt(dx * dx + dz * dz);
+            if (horizontalDist > maxDistance.get()) continue;
 
             boolean isItem = entity instanceof ItemEntity && showItems.get();
             boolean isMob = entity instanceof MobEntity && showMobs.get();
@@ -146,7 +149,7 @@ public class EntityList extends HudElement {
                 agg = new Aggregated();
                 agg.name = name;
                 agg.color = color;
-                agg.minDist = dist;
+                agg.minDist = horizontalDist;
                 if (isItem) {
                     agg.count = ((ItemEntity) entity).getStack().getCount();
                 } else {
@@ -154,7 +157,7 @@ public class EntityList extends HudElement {
                 }
                 map.put(name, agg);
             } else {
-                agg.minDist = Math.min(agg.minDist, dist);
+                agg.minDist = Math.min(agg.minDist, horizontalDist);
                 if (isItem) {
                     agg.count += ((ItemEntity) entity).getStack().getCount();
                 } else {
