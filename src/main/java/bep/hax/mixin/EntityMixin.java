@@ -1,7 +1,9 @@
 package bep.hax.mixin;
 
 import bep.hax.modules.ElytraFlyPlusPlus;
+import bep.hax.util.PushEntityEvent;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPose;
 import org.spongepowered.asm.mixin.Mixin;
@@ -46,9 +48,19 @@ public class EntityMixin
     @Inject(at = @At("HEAD"), method = "pushAwayFrom", cancellable = true)
     private void pushAwayFrom(Entity entity, CallbackInfo ci)
     {
-        if (mc.player != null && this.uuid == mc.player.getUuid() && efly != null && efly.enabled() && !entity.getUuid().equals(this.uuid))
-        {
-            ci.cancel();
+        if (mc.player != null && this.uuid == mc.player.getUuid()) {
+            // Fire PushEntityEvent for Velo module
+            PushEntityEvent event = new PushEntityEvent((Entity)(Object)this, entity);
+            MeteorClient.EVENT_BUS.post(event);
+            if (event.isCanceled()) {
+                ci.cancel();
+                return;
+            }
+            
+            // Original ElytraFly check
+            if (efly != null && efly.enabled() && !entity.getUuid().equals(this.uuid)) {
+                ci.cancel();
+            }
         }
     }
 }

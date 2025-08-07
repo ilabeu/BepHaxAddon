@@ -1,7 +1,6 @@
 package bep.hax.modules;
 
 import bep.hax.Bep;
-import bep.hax.util.OLEPOSSUtils;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
@@ -15,10 +14,6 @@ import net.minecraft.util.math.Box;
 
 import java.util.ArrayList;
 import java.util.List;
-
-/**
- * @author OLEPOSSU
- */
 
 public class MineESP extends meteordevelopment.meteorclient.systems.modules.Module {
     public MineESP() {
@@ -73,8 +68,6 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
         if (mc.player == null || mc.world == null) return;
 
         if (render != null && contains()) render = null;
-
-        renders.removeIf(r -> System.currentTimeMillis() > r.time + Math.round(maxTime.get() * 1000) || (render != null && r.id == render.id) || !OLEPOSSUtils.solid2(r.pos));
 
         if (render != null) {
             renders.add(render);

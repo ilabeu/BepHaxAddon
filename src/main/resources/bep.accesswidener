@@ -11,3 +11,16 @@ accessible method net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SP
 
 # Access widener for ItemSearchBar GUI functionality
 accessible method net/minecraft/client/gui/screen/Screen addDrawableChild (Lnet/minecraft/client/gui/Element;)Lnet/minecraft/client/gui/Element;
+accessible class net/minecraft/network/packet/c2s/play/PlayerInteractEntityC2SPacket$InteractType
+accessible field net/minecraft/entity/TrackedPosition pos Lnet/minecraft/util/math/Vec3d;
+accessible field net/minecraft/client/render/item/HeldItemRenderer prevEquipProgressMainHand F
+accessible field net/minecraft/client/render/item/HeldItemRenderer equipProgressMainHand F
+accessible field net/minecraft/client/render/item/HeldItemRenderer prevEquipProgressOffHand F
+accessible field net/minecraft/client/render/item/HeldItemRenderer equipProgressOffHand F
+accessible field net/minecraft/entity/LimbAnimator pos F
+accessible field net/minecraft/entity/LivingEntity leaningPitch F
+accessible field net/minecraft/entity/LivingEntity lastLeaningPitch F
+accessible method net/minecraft/client/MinecraftClient doAttack ()Z
+accessible field net/minecraft/client/network/ClientPlayerEntity lastX D
+accessible field net/minecraft/client/network/ClientPlayerEntity lastBaseY D
+accessible field net/minecraft/client/network/ClientPlayerEntity lastZ D

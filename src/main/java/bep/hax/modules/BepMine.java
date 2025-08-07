@@ -185,7 +185,7 @@ public class BepMine extends Module {
         .defaultValue(250)
         .min(0)
         .sliderRange(0, 1000)
-        .visible(() -> false) // Hidden like in Shoreline
+        .visible(() -> false) // Hidden like in PVP
         .build()
     );
 

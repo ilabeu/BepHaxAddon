@@ -20,9 +20,12 @@ BepHax is created to simplify 2b2t.org players' lives by combining the best util
 - [Fabric Loader 0.16.10 or compatible](https://fabricmc.net/)
 - [Meteor Client (latest snapshot for 1.21.4)](https://github.com/MeteorDevelopment/meteor-client/tree/a96efdcdd60ed226650f6fc7f952ba65371bfc4d)
 - [Baritone API](https://github.com/cabaletta/baritone/tree/1.21.4)
+- [ViaFabricPlus](https://modrinth.com/mod/viafabricplus) - **Required for silent rotation modules**
 - [XaeroMinimap](https://modrinth.com/mod/xaeros-minimap)
 - [XaeroWorldMap](https://modrinth.com/mod/xaeros-world-map)
 - [XaeroPlus](https://github.com/rfresh2/XaeroPlus)
+
+**Important Note for 2b2t:** For modules with silent rotations (Aura, Velo, Phase, Criticals) to work properly, you must connect to 2b2t.org using **Minecraft protocol 1.20.4 - 1.20.6** through ViaFabricPlus. This ensures proper compatibility with the server's anti-cheat systems.
 
 ## Features
 
@@ -35,17 +38,20 @@ These modules were created or enhanced specifically for this addon:
 - **UnfocusedFpsLimiter**: Limits FPS when the game window is unfocused
 - **ShulkerOverviewModule**: Shows the most abundant item as a mini icon on shulkers in inventory
 - **BepMine**: Speedmine optimized for 2b2t with queue system
-- **AutoMine**: Automatically mines enemies' surroundings for effective attacks
-- **Miner**: Advanced mining automation
+- **Miner**: Advanced mining automation with pattern support
 - **MineESP**: ESP for blocks being mined by other players
-- **SwingModifier**: Modifies swing rendering animations
 - **ItemSearchBar**: Search through inventories for specific items
+- **Aura**: Kill aura module for combat (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
+- **Velo**: Velocity/knockback control (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
+- **Phase**: Phase through blocks (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
+- **Criticals**: Forces critical hits (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 
 ### HUD Elements
-- **BlockCounterHud**: Displays item counts in HUD
-- **EntityList**: Shows configurable list of entities in render distance
-- **SpeedKMH**: Shows current speed in KM/H
-- **DimensionCoords**: Shows coordinates in both dimensions
+- **BlockCounterHud**: Displays selected blocks and their inventory counts with customizable layout
+- **EntityList**: Advanced entity tracker.
+- **SpeedKMH**: Shows current speed in kilometers per hour
+- **DimensionCoords**: Shows coordinates in both Overworld and Nether simultaneously
+- **DubCounterHud**: Comprehensive container counter for 2b2t looting, Counts all container types in render distance.
 
 ### Stash Hunting Modules (STASH Category)
 From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon)):
@@ -60,7 +66,6 @@ From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunt
 - **HighlightOldLava**: Highlights ancient lava sources
 - **Pitch40Util**: Utility for 40-degree pitch mining
 - **GrimAirPlace**: Grim-compatible air placement
-- **GrimSilentRotations**: Silent rotations compatible with Grim
 - **TrailFollower**: Follows player trails
 - **VanityESP**: Custom entity ESP for vanity items
 - **BetterStashFinder**: Improved stash location finder

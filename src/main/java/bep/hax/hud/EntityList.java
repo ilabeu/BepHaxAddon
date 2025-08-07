@@ -11,6 +11,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,6 +53,13 @@ public class EntityList extends HudElement {
         .build()
     );
 
+    private final Setting<Boolean> showProjectiles = sgGeneral.add(new BoolSetting.Builder()
+        .name("show-projectiles")
+        .description("Show projectiles (ender pearls, etc).")
+        .defaultValue(true)
+        .build()
+    );
+
     private final Setting<Double> maxDistance = sgGeneral.add(new DoubleSetting.Builder()
         .name("max-distance")
         .description("Maximum distance to show entities.")
@@ -71,6 +80,13 @@ public class EntityList extends HudElement {
         .name("show-distance")
         .description("Show distance to entities.")
         .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Boolean> includeYLevel = sgGeneral.add(new BoolSetting.Builder()
+        .name("include-y-level")
+        .description("Include Y level in distance calculation (3D distance).")
+        .defaultValue(false)
         .build()
     );
 
@@ -111,6 +127,13 @@ public class EntityList extends HudElement {
         .build()
     );
 
+    private final Setting<SettingColor> projectileColor = sgGeneral.add(new ColorSetting.Builder()
+        .name("projectile-color")
+        .description("Color for projectile entities.")
+        .defaultValue(new SettingColor(150, 100, 255, 255))
+        .build()
+    );
+
     public EntityList() {
         super(INFO);
     }
@@ -129,17 +152,28 @@ public class EntityList extends HudElement {
         for (Entity entity : MeteorClient.mc.world.getEntities()) {
             if (entity == MeteorClient.mc.player) continue;
 
-            // Calculate horizontal distance only (ignore Y level differences)
+            // Calculate distance based on settings
             double dx = entity.getX() - MeteorClient.mc.player.getX();
             double dz = entity.getZ() - MeteorClient.mc.player.getZ();
-            double horizontalDist = Math.sqrt(dx * dx + dz * dz);
-            if (horizontalDist > maxDistance.get()) continue;
+            double distance;
+            
+            if (includeYLevel.get()) {
+                // 3D distance including Y level
+                double dy = entity.getY() - MeteorClient.mc.player.getY();
+                distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            } else {
+                // Horizontal distance only (ignore Y level differences)
+                distance = Math.sqrt(dx * dx + dz * dz);
+            }
+            
+            if (distance > maxDistance.get()) continue;
 
             boolean isItem = entity instanceof ItemEntity && showItems.get();
             boolean isMob = entity instanceof MobEntity && showMobs.get();
             boolean isPlayer = entity instanceof PlayerEntity && showPlayers.get();
+            boolean isProjectile = (entity instanceof ProjectileEntity || entity instanceof EnderPearlEntity) && showProjectiles.get();
 
-            if (!isItem && !isMob && !isPlayer) continue;
+            if (!isItem && !isMob && !isPlayer && !isProjectile) continue;
 
             String name = getEntityName(entity);
             SettingColor color = getEntityColor(entity);
@@ -149,7 +183,7 @@ public class EntityList extends HudElement {
                 agg = new Aggregated();
                 agg.name = name;
                 agg.color = color;
-                agg.minDist = horizontalDist;
+                agg.minDist = distance;
                 if (isItem) {
                     agg.count = ((ItemEntity) entity).getStack().getCount();
                 } else {
@@ -157,7 +191,7 @@ public class EntityList extends HudElement {
                 }
                 map.put(name, agg);
             } else {
-                agg.minDist = Math.min(agg.minDist, horizontalDist);
+                agg.minDist = Math.min(agg.minDist, distance);
                 if (isItem) {
                     agg.count += ((ItemEntity) entity).getStack().getCount();
                 } else {
@@ -212,6 +246,12 @@ public class EntityList extends HudElement {
             return item.getStack().getName().getString();
         } else if (entity instanceof PlayerEntity player) {
             return player.getName().getString();
+        } else if (entity instanceof EnderPearlEntity) {
+            return "Ender Pearl";
+        } else if (entity instanceof ProjectileEntity) {
+            // Get simple name for other projectiles
+            String className = entity.getClass().getSimpleName();
+            return className.replace("Entity", "").replaceAll("([A-Z])", " $1").trim();
         } else {
             return entity.getDisplayName().getString();
         }
@@ -224,6 +264,8 @@ public class EntityList extends HudElement {
             return mobColor.get();
         } else if (entity instanceof PlayerEntity) {
             return playerColor.get();
+        } else if (entity instanceof ProjectileEntity || entity instanceof EnderPearlEntity) {
+            return projectileColor.get();
         }
         return new SettingColor(255, 255, 255, 255);  // Fallback
     }

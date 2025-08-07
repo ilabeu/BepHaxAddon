@@ -47,7 +47,7 @@
     "HandledScreenMixin",
     "IBlockSettings",
     "MixinEntity",
-    "MixinHeldItemRenderer"
+    "PlayerInteractEntityC2SPacketMixin"
   ],
   "injectors": {
     "defaultRequire": 1

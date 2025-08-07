@@ -31,17 +31,19 @@ public class Bep extends MeteorAddon {
         Hud.get().register(EntityList.INFO);
         Hud.get().register(DimensionCoords.INFO);
         Hud.get().register(SpeedKMH.INFO);
+        Hud.get().register(DubCounterHud.INFO);
 
         Modules.get().add(new AutoSmithing());
         Modules.get().add(new BepMine());
-        Modules.get().add(new AutoMine());
-        Modules.get().add(new GrimSilentRotations());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
         Modules.get().add(new ShulkerOverviewModule());
         Modules.get().add(new ItemSearchBar());
         Modules.get().add(new MineESP());
-        Modules.get().add(new SwingModifier());
+        Modules.get().add(new Aura());
+        Modules.get().add(new Velo());
+        Modules.get().add(new Phase());
+        Modules.get().add(new Criticals());
         //Modules.get().add(new Miner());
         //Modules.get().add(new Autoduper());
 

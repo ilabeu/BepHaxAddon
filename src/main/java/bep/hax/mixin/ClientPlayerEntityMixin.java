@@ -1,7 +1,7 @@
 package bep.hax.mixin;
 
 import bep.hax.modules.RocketMan;
-import bep.hax.modules.SwingModifier;
+import bep.hax.util.PushOutOfBlocksEvent;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Hand;
@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import net.minecraft.client.network.ClientPlayerEntity;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.MeteorClient;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -30,12 +31,13 @@ public class ClientPlayerEntityMixin {
         }
     }
     
-    // For SwingModifier
-    @Inject(method = "swingHand", at = @At("HEAD"))
-    private void onSwingHand(Hand hand, CallbackInfo ci) {
-        SwingModifier swingModifier = Modules.get().get(SwingModifier.class);
-        if (swingModifier != null && swingModifier.isActive()) {
-            swingModifier.startSwing(hand);
+    // Push out of blocks event for Velo module
+    @Inject(method = "pushOutOfBlocks", at = @At("HEAD"), cancellable = true)
+    private void onPushOutOfBlocks(double x, double z, CallbackInfo ci) {
+        PushOutOfBlocksEvent event = new PushOutOfBlocksEvent();
+        MeteorClient.EVENT_BUS.post(event);
+        if (event.isCanceled()) {
+            ci.cancel();
         }
     }
 }
