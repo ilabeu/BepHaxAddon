@@ -1,6 +1,7 @@
 package bep.hax.mixin;
 
 import bep.hax.modules.ElytraFlyPlusPlus;
+import bep.hax.modules.SwingModifier;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.entity.LivingEntity;
@@ -44,4 +45,7 @@ public abstract class LivingEntityMixin
             cir.setReturnValue(true);
         }
     }
+    
+    // We'll handle swing progress directly in the renderer instead of here
+    // This prevents conflicts with other mods and vanilla behavior
 }

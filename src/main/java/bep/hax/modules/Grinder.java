@@ -38,7 +38,7 @@ import bep.hax.mixin.accessor.GrindstoneScreenHandlerAccessor;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class Grinder extends Module {
-    public Grinder() { super(Bep.CATEGORY, "Grinder", "Automatically grinds enchantments off of select items in the grindstone."); }
+    public Grinder() { super(Bep.STARDUST, "Grinder", "Automatically grinds enchantments off of select items in the grindstone."); }
 
     public enum ModuleMode {
         Packet, Interact

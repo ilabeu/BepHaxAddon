@@ -1,7 +1,6 @@
 package bep.hax.modules;
 
 import bep.hax.Bep;
-import bep.hax.BlackOutModule;
 import bep.hax.util.OLEPOSSUtils;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -21,9 +20,9 @@ import java.util.List;
  * @author OLEPOSSU
  */
 
-public class MineESP extends BlackOutModule {
+public class MineESP extends meteordevelopment.meteorclient.systems.modules.Module {
     public MineESP() {
-        super(Bep.BLACKOUT, "Mine ESP,", "Renders a box at blocks being mined by other players.");
+        super(Bep.CATEGORY, "Mine ESP", "Renders a box at blocks being mined by other players.");
     }
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();

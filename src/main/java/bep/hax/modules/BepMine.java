@@ -70,7 +70,7 @@ public class BepMine extends Module {
     public final Setting<Boolean> doubleBreakConfig = sgGeneral.add(new BoolSetting.Builder()
         .name("double-break")
         .description("Allows you to mine two blocks at once")
-        .defaultValue(false)
+        .defaultValue(true)
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
         .build()
     );
@@ -78,7 +78,7 @@ public class BepMine extends Module {
     private final Setting<Double> rangeConfig = sgGeneral.add(new DoubleSetting.Builder()
         .name("range")
         .description("The range to mine blocks")
-        .defaultValue(4.0)
+        .defaultValue(4.5)
         .min(0.1)
         .sliderRange(0.1, 6.0)
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
@@ -97,7 +97,7 @@ public class BepMine extends Module {
     private final Setting<Boolean> instantConfig = sgGeneral.add(new BoolSetting.Builder()
         .name("instant")
         .description("Instantly mines already broken blocks")
-        .defaultValue(false)
+        .defaultValue(true)
         .build()
     );
 
@@ -112,7 +112,7 @@ public class BepMine extends Module {
     private final Setting<Boolean> rotateConfig = sgGeneral.add(new BoolSetting.Builder()
         .name("rotate")
         .description("Rotates when mining the block")
-        .defaultValue(true)
+        .defaultValue(false)
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
         .build()
     );
@@ -128,14 +128,14 @@ public class BepMine extends Module {
     private final Setting<Boolean> grimConfig = sgGeneral.add(new BoolSetting.Builder()
         .name("grim")
         .description("Uses grim block breaking speeds")
-        .defaultValue(false)
+        .defaultValue(true)
         .build()
     );
 
     private final Setting<Boolean> grimNewConfig = sgGeneral.add(new BoolSetting.Builder()
         .name("grim-v3")
         .description("Uses new grim block breaking speeds")
-        .defaultValue(false)
+        .defaultValue(true)
         .visible(grimConfig::get)
         .build()
     );
@@ -143,7 +143,7 @@ public class BepMine extends Module {
     private final Setting<Boolean> miningFix = sgGeneral.add(new BoolSetting.Builder()
         .name("mining-fix")
         .description("Mining fix for grim v3")
-        .defaultValue(true)
+        .defaultValue(false)
         .visible(() -> grimConfig.get() && grimNewConfig.get())
         .build()
     );
@@ -163,17 +163,10 @@ public class BepMine extends Module {
         .build()
     );
 
-    private final Setting<Boolean> smoothColorConfig = sgRender.add(new BoolSetting.Builder()
-        .name("color-smooth")
-        .description("Interpolates from start to done color")
-        .defaultValue(false)
-        .build()
-    );
-
     private final Setting<SettingColor> colorConfig = sgRender.add(new ColorSetting.Builder()
         .name("mine-color")
         .description("The mine render color")
-        .defaultValue(new SettingColor(Color.RED))
+        .defaultValue(new SettingColor(Color.BLUE))
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
         .build()
     );
@@ -181,7 +174,7 @@ public class BepMine extends Module {
     private final Setting<SettingColor> colorDoneConfig = sgRender.add(new ColorSetting.Builder()
         .name("done-color")
         .description("The done render color")
-        .defaultValue(new SettingColor(Color.GREEN))
+        .defaultValue(new SettingColor(Color.CYAN))
         .visible(() -> modeConfig.get() == SpeedmineMode.PACKET)
         .build()
     );
@@ -413,17 +406,12 @@ public class BepMine extends Module {
 
             int boxColor;
             int lineColor;
-            if (smoothColorConfig.get()) {
-                boxColor = data.getState().isAir() ? colorDoneConfig.get().getPacked() :
-                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), colorDoneConfig.get(), colorConfig.get()).getPacked();
-                lineColor = data.getState().isAir() ? colorDoneConfig.get().getPacked() :
-                    interpolateColor(Math.min(data.getBlockDamage(), 1.0f), colorDoneConfig.get(), colorConfig.get()).getPacked();
-            } else {
-                boxColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ?
+
+            boxColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ?
                     colorDoneConfig.get().getPacked() : colorConfig.get().getPacked();
-                lineColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ?
+            lineColor = data.getBlockDamage() >= 0.95f || data.getState().isAir() ?
                     colorDoneConfig.get().getPacked() : colorConfig.get().getPacked();
-            }
+
 
             // Apply alpha
             boxColor = (boxColor & 0x00FFFFFF) | (boxAlpha << 24);

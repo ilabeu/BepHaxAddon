@@ -3,12 +3,10 @@
   "package": "bep.hax.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "BepMixin",
     "LivingEntityMixin",
     "EntityMixin",
     "KeyBindingMixin",
     "RotationMixin",
-    "SystemsMixin",
     "AbstractBlockStateMixin",
     "ScreenMixin",
     "ChatHudMixin",
@@ -34,40 +32,25 @@
     "accessor.AnvilScreenAccessor",
     "accessor.GameOptionsAccessor",
     "accessor.MusicTrackerAccessor",
-    "BannerBlockEntityRendererMixin",
     "accessor.SourceManagerAccessor",
     "accessor.BookEditScreenAccessor",
     "accessor.BookScreenContentsAccessor",
     "ClientPlayerInteractionManagerMixin",
     "AbstractSignBlockEntityRendererMixin",
     "accessor.AbstractSignEditScreenAccessor",
+    "accessor.PlayerMoveC2SPacketAccessor",
+    "accessor.DisconnectS2CPacketAccessor",
+    "accessor.AnvilScreenHandlerAccessor",
+    "accessor.GrindstoneScreenHandlerAccessor",
+    "accessor.ClientConnectionAccessor",
     "DisconnectedScreenMixin",
     "HandledScreenMixin",
-    "AccessorMinecraftClient",
     "IBlockSettings",
-    "IEntityS2CPacket",
-    "IEntitySetHeadYawS2CPacket",
-    "IEntityStatusS2CPacket",
-    "IInteractEntityC2SPacket",
-    "IPlayerMoveC2SPacket",
-    "IRaycastContext",
-    "ISetCameraEntityS2CPacket",
-    "ISpectatorTeleportC2SPacket",
-    "MixinBackground",
-    "MixinClientCommonNetworkHandler",
-    "MixinClientPlayerEntity",
-    "MixinClientPlayerInteractionManager",
     "MixinEntity",
-    "MixinHeldItemRenderer",
-    "MixinLivingEntityRenderer",
-    "MixinPlayerEntity",
-    "ClientWorldAccessor"
+    "MixinHeldItemRenderer"
   ],
   "injectors": {
     "defaultRequire": 1
   },
-  "mixins": [
-    "AccessorNbtCompound",
-    "MixinClientConnection"
-  ]
+  "mixins": []
 }

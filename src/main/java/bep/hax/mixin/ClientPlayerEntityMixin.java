@@ -1,8 +1,10 @@
 package bep.hax.mixin;
 
 import bep.hax.modules.RocketMan;
+import bep.hax.modules.SwingModifier;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,6 +27,15 @@ public class ClientPlayerEntityMixin {
         RocketMan rocketMan = modules.get(RocketMan.class);
         if (rocketMan.isActive() && sound == SoundEvents.ITEM_ELYTRA_FLYING) {
             if (rocketMan.shouldMuteElytra()) ci.cancel();
+        }
+    }
+    
+    // For SwingModifier
+    @Inject(method = "swingHand", at = @At("HEAD"))
+    private void onSwingHand(Hand hand, CallbackInfo ci) {
+        SwingModifier swingModifier = Modules.get().get(SwingModifier.class);
+        if (swingModifier != null && swingModifier.isActive()) {
+            swingModifier.startSwing(hand);
         }
     }
 }
