@@ -43,6 +43,42 @@ public class EntityUtil {
     }
 
     /**
+     * Checks if a neutral mob is currently aggressive/attacking.
+     * This helps distinguish between peaceful and aggressive states.
+     */
+    public static boolean isAggressive(Entity entity) {
+        if (entity instanceof EndermanEntity enderman) {
+            return enderman.isAngry();
+        }
+        if (entity instanceof ZombifiedPiglinEntity zombifiedPiglin) {
+            return zombifiedPiglin.isAttacking();
+        }
+        if (entity instanceof WolfEntity wolf) {
+            return wolf.isAttacking();
+        }
+        if (entity instanceof PiglinEntity piglin) {
+            return piglin.isAttacking();
+        }
+        if (entity instanceof BeeEntity bee) {
+            return bee.hasAngerTime();
+        }
+        if (entity instanceof PolarBearEntity polarBear) {
+            return polarBear.isAttacking();
+        }
+        if (entity instanceof LlamaEntity llama) {
+            return llama.isAttacking();
+        }
+        if (entity instanceof IronGolemEntity ironGolem) {
+            return ironGolem.isAttacking();
+        }
+        // Spiders are hostile at night or in darkness
+        if (entity instanceof SpiderEntity || entity instanceof CaveSpiderEntity) {
+            return entity.getWorld().getAmbientDarkness() >= 0.5f;
+        }
+        return false;
+    }
+
+    /**
      * Checks if an entity is a passive animal.
      */
     public static boolean isPassive(Entity entity) {

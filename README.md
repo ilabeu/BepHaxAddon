@@ -48,10 +48,14 @@ These modules were created or enhanced specifically for this addon:
 
 ### HUD Elements
 - **BlockCounterHud**: Displays selected blocks and their inventory counts with customizable layout
-- **EntityList**: Advanced entity tracker.
+- **EntityList**: Advanced entity tracker with projectile support.
 - **SpeedKMH**: Shows current speed in kilometers per hour
 - **DimensionCoords**: Shows coordinates in both Overworld and Nether simultaneously
-- **DubCounterHud**: Comprehensive container counter for 2b2t looting, Counts all container types in render distance.
+- **DubCounterHud**: Comprehensive container counter for 2b2t looting
+  - Counts all container types in render distance (even unloaded chunks).
+- **MobRateHud**: Advanced mob farm performance analyzer
+  - Real-time spawn rate tracking (mobs/hour) and graphs.
+
 
 ### Stash Hunting Modules (STASH Category)
 From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon)):

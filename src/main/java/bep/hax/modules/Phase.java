@@ -42,7 +42,7 @@ public class Phase extends Module {
     private final Setting<PhaseMode> mode = sgGeneral.add(new EnumSetting.Builder<PhaseMode>()
         .name("mode")
         .description("The phase mode for clipping into blocks.")
-        .defaultValue(PhaseMode.Normal)
+        .defaultValue(PhaseMode.Pearl)
         .build()
     );
 

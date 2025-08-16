@@ -222,6 +222,12 @@ public class Aura extends Module {
         .sliderMax(200)
         .build());
 
+    private final Setting<Boolean> ignorePassive = sgTargeting.add(new BoolSetting.Builder()
+        .name("ignore-passive")
+        .description("Ignores passive/neutral mobs when they are not aggressive.")
+        .defaultValue(true)
+        .build());
+
     // Render settings
     private final Setting<Boolean> render = sgRender.add(new BoolSetting.Builder()
         .name("render")
@@ -485,6 +491,14 @@ public class Aura extends Module {
     private boolean isValidTarget(Entity entity) {
         if (!entity.isAlive() || (entity.isInvisible() && !invisibles.get())) {
             return false;
+        }
+
+        // Check for non-aggressive passive/neutral mobs
+        if (ignorePassive.get() && EntityUtil.isNeutral(entity)) {
+            // Skip neutral mobs that are not currently aggressive
+            if (!EntityUtil.isAggressive(entity)) {
+                return false;
+            }
         }
 
         if (entity instanceof PlayerEntity && players.get()) return true;

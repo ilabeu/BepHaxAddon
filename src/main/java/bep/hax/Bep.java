@@ -27,11 +27,12 @@ public class Bep extends MeteorAddon {
         LOG.info("BEPHAX LOADING.");
 
         // HUD
-        Hud.get().register(BlockCounterHud.INFO);
+        Hud.get().register(ItemCounterHud.INFO);
         Hud.get().register(EntityList.INFO);
         Hud.get().register(DimensionCoords.INFO);
         Hud.get().register(SpeedKMH.INFO);
         Hud.get().register(DubCounterHud.INFO);
+        Hud.get().register(MobRateHud.INFO);
 
         Modules.get().add(new AutoSmithing());
         Modules.get().add(new BepMine());
@@ -44,6 +45,8 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Velo());
         Modules.get().add(new Phase());
         Modules.get().add(new Criticals());
+        Modules.get().add(new PearlOwner());
+        Modules.get().add(new SignRender());
         //Modules.get().add(new Miner());
         //Modules.get().add(new Autoduper());
 

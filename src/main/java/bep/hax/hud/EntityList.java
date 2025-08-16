@@ -13,6 +13,8 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
+import net.minecraft.entity.projectile.TridentEntity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -55,8 +57,15 @@ public class EntityList extends HudElement {
 
     private final Setting<Boolean> showProjectiles = sgGeneral.add(new BoolSetting.Builder()
         .name("show-projectiles")
-        .description("Show projectiles (ender pearls, etc).")
+        .description("Show thrown projectiles (ender pearls, arrows, etc).")
         .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Boolean> showRockets = sgGeneral.add(new BoolSetting.Builder()
+        .name("show-rockets")
+        .description("Show firework rockets.")
+        .defaultValue(false)
         .build()
     );
 
@@ -134,6 +143,13 @@ public class EntityList extends HudElement {
         .build()
     );
 
+    private final Setting<SettingColor> rocketColor = sgGeneral.add(new ColorSetting.Builder()
+        .name("rocket-color")
+        .description("Color for firework rockets.")
+        .defaultValue(new SettingColor(255, 165, 0, 255))
+        .build()
+    );
+
     public EntityList() {
         super(INFO);
     }
@@ -168,12 +184,18 @@ public class EntityList extends HudElement {
             
             if (distance > maxDistance.get()) continue;
 
+            // Handle FireworkRocketEntity separately
+            boolean isRocket = entity instanceof FireworkRocketEntity;
+            if (isRocket && !showRockets.get()) continue;
+            
             boolean isItem = entity instanceof ItemEntity && showItems.get();
             boolean isMob = entity instanceof MobEntity && showMobs.get();
             boolean isPlayer = entity instanceof PlayerEntity && showPlayers.get();
-            boolean isProjectile = (entity instanceof ProjectileEntity || entity instanceof EnderPearlEntity) && showProjectiles.get();
+            
+            // Show projectiles but exclude FireworkRocketEntity from normal projectiles
+            boolean isProjectile = !isRocket && (entity instanceof ProjectileEntity || entity instanceof EnderPearlEntity) && showProjectiles.get();
 
-            if (!isItem && !isMob && !isPlayer && !isProjectile) continue;
+            if (!isItem && !isMob && !isPlayer && !isProjectile && !isRocket) continue;
 
             String name = getEntityName(entity);
             SettingColor color = getEntityColor(entity);
@@ -246,10 +268,14 @@ public class EntityList extends HudElement {
             return item.getStack().getName().getString();
         } else if (entity instanceof PlayerEntity player) {
             return player.getName().getString();
+        } else if (entity instanceof FireworkRocketEntity) {
+            return "Firework Rocket";
         } else if (entity instanceof EnderPearlEntity) {
             return "Ender Pearl";
+        } else if (entity instanceof TridentEntity) {
+            return "Trident";
         } else if (entity instanceof ProjectileEntity) {
-            // Get simple name for other projectiles
+            // Get simple name for projectiles
             String className = entity.getClass().getSimpleName();
             return className.replace("Entity", "").replaceAll("([A-Z])", " $1").trim();
         } else {
@@ -264,6 +290,8 @@ public class EntityList extends HudElement {
             return mobColor.get();
         } else if (entity instanceof PlayerEntity) {
             return playerColor.get();
+        } else if (entity instanceof FireworkRocketEntity) {
+            return rocketColor.get();
         } else if (entity instanceof ProjectileEntity || entity instanceof EnderPearlEntity) {
             return projectileColor.get();
         }
