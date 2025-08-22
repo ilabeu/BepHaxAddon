@@ -2,6 +2,7 @@ package bep.hax.mixin;
 
 import net.minecraft.text.Text;
 import bep.hax.modules.AntiToS;
+import bep.hax.modules.NoHurtCam;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.MutableText;
 import org.spongepowered.asm.mixin.Mixin;
@@ -79,6 +80,22 @@ public class InGameHudMixin {
                 offX = center + 94;
             }
             module.renderShulkerOverlay(context, offX, offY, offhandStack);
+        }
+    }
+
+    @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
+    private void onRenderOverlay(DrawContext context, net.minecraft.util.Identifier texture, float opacity, CallbackInfo ci) {
+        // This handles the red hurt overlay
+        Modules modules = Modules.get();
+        if (modules == null) return;
+        
+        NoHurtCam noHurtCam = modules.get(NoHurtCam.class);
+        if (noHurtCam != null && noHurtCam.shouldDisableRedOverlay()) {
+            // Cancel the red overlay rendering when hurt
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.player != null && mc.player.hurtTime > 0) {
+                ci.cancel();
+            }
         }
     }
 }

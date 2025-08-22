@@ -19,6 +19,7 @@
     "MusicTrackerMixin",
     "GameMenuScreenMixin",
     "EntityRendererMixin",
+    "GameRendererMixin",
     "BookEditScreenMixin",
     "MinecraftClientMixin",
     "NarratorManagerMixin",

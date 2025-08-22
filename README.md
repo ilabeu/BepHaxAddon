@@ -45,23 +45,32 @@ These modules were created or enhanced specifically for this addon:
 - **Velo**: Velocity/knockback control (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 - **Phase**: Phase through blocks (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 - **Criticals**: Forces critical hits (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
+- **ElytraSwap**: Automatically swaps elytras when they reach low durability and restores items to original positions
+- **PearlOwner**: Displays the name of the player who threw an ender pearl
+- **SignRender**: Renders sign text through walls with advanced clustering
+- **NoHurtCam**: Removes the hurt camera tilt and shake effect when taking damage
+- **IgnoreSync**: Advanced 2b2t ignore list manager with offline player queuing
+
+- **AutoCraft**: Automates crafting recipes (from Meteor Rejects)
+- **DisconnectSound**: Plays sound on disconnect (from Meteorist)
 
 ### HUD Elements
 - **BlockCounterHud**: Displays selected blocks and their inventory counts with customizable layout
-- **EntityList**: Advanced entity tracker with projectile support.
+- **EntityList**: Advanced entity tracker with projectile support
+    - Tracks players, mobs, items, and projectiles (including ender pearls)
+    - Configurable distance calculation (2D horizontal or 3D with Y-level)
+    - Aggregates entities by type with count display
+    - Sort by distance with customizable colors for each entity type
 - **SpeedKMH**: Shows current speed in kilometers per hour
 - **DimensionCoords**: Shows coordinates in both Overworld and Nether simultaneously
-- **DubCounterHud**: Comprehensive container counter for 2b2t looting
-  - Counts all container types in render distance (even unloaded chunks).
-- **MobRateHud**: Advanced mob farm performance analyzer
-  - Real-time spawn rate tracking (mobs/hour) and graphs.
-
+- **DubCounterHud**: Comprehensive container counter for 2b2t looting.
+- **MobRateHud**: Advanced mob farm performance analyzer.
 
 ### Stash Hunting Modules (STASH Category)
 From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon)):
 - **ElytraFlyPlusPlus**: Enhanced elytra flying controls
+- - **NoJumpDelay**: Removes the delay between jumps
 - **AFKVanillaFly**: AFK flying without mods
-- **NoJumpDelay**: Removes jump cooldown
 - **AutoEXPPlus**: Automates experience mending
 - **AutoLogPlus**: Auto-logout on low health or threats
 - **AutoPortal**: Automatic portal creation
@@ -70,6 +79,7 @@ From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunt
 - **HighlightOldLava**: Highlights ancient lava sources
 - **Pitch40Util**: Utility for 40-degree pitch mining
 - **GrimAirPlace**: Grim-compatible air placement
+- **GrimSilentRotations**: Silent rotations compatible with Grim
 - **TrailFollower**: Follows player trails
 - **VanityESP**: Custom entity ESP for vanity items
 - **BetterStashFinder**: Improved stash location finder
@@ -77,9 +87,6 @@ From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunt
 - **SearchArea**: Defines search areas for resources
 
 
-### Other Integrated Modules
-From Meteor Rejects (Credit: [AntiCope](https://github.com/AntiCope)):
-- **AutoCraft**: Automates crafting recipes
 
 ### Utility Modules (STARDUST Category)
 From Stardust addon (Credit: [0xTas](https://github.com/0xTas/stardust)):
@@ -120,9 +127,6 @@ From Stardust addon (Credit: [0xTas](https://github.com/0xTas/stardust)):
 - **Updraft**: Updraft flying
 - **Grinder**: Automated grinding utilities
 
-### Other Features
-From Meteorist (Credit: [Zgoly](https://github.com/Zgoly/Meteorist/)):
-- **DisconnectSound**: Plays sound on disconnect
 
 ## Credits
 This addon aggregates modules from the following projects—huge thanks to their creators for open-sourcing their work:

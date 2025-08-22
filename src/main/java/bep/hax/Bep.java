@@ -3,7 +3,6 @@ package bep.hax;
 import bep.hax.hud.*;
 import bep.hax.modules.*;
 import bep.hax.modules.searcharea.SearchArea;
-import com.mojang.logging.LogUtils;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.commands.Commands;
@@ -11,16 +10,15 @@ import meteordevelopment.meteorclient.systems.hud.Hud;
 import meteordevelopment.meteorclient.systems.hud.HudGroup;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
-import net.minecraft.item.Items;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Bep extends MeteorAddon {
-    public static final Logger LOG = LogUtils.getLogger();
+    public static final Logger LOG = LoggerFactory.getLogger("BepHax");
     public static final Category CATEGORY = new Category("Bephax");
     public static final Category STASH = new Category("Stash Hunt");
     public static final Category STARDUST= new Category("Stardust");
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
-    public static final String COLOR = "Color is the visual perception of different wavelengths of light as hue, saturation, and brightness";
 
     @Override
     public void onInitialize() {
@@ -33,6 +31,9 @@ public class Bep extends MeteorAddon {
         Hud.get().register(SpeedKMH.INFO);
         Hud.get().register(DubCounterHud.INFO);
         Hud.get().register(MobRateHud.INFO);
+        Hud.get().register(BlockCounterHud.INFO);
+
+        Commands.add(new bep.hax.commands.IgnoreSyncCommand());
 
         Modules.get().add(new AutoSmithing());
         Modules.get().add(new BepMine());
@@ -48,11 +49,14 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new PearlOwner());
         Modules.get().add(new SignRender());
         //Modules.get().add(new Miner());
-        //Modules.get().add(new Autoduper());
+        Modules.get().add(new NoHurtCam());
+        Modules.get().add(new ElytraSwap());
+        Modules.get().add(new IgnoreSync());
 
 
         // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon
         Modules.get().add(new ElytraFlyPlusPlus());
+
         Modules.get().add(new AFKVanillaFly());
         Modules.get().add(new NoJumpDelay());
         Modules.get().add(new AutoEXPPlus());
@@ -71,6 +75,8 @@ public class Bep extends MeteorAddon {
 
         // HIGTools https://github.com/RedCarlos26/HIGTools
         Commands.add(new bep.hax.commands.Coordinates());
+        Commands.add(new bep.hax.commands.Center());
+
 
 
         // Meteor Rejects https://github.com/AntiCope
