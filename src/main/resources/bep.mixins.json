@@ -10,6 +10,8 @@
     "AbstractBlockStateMixin",
     "ScreenMixin",
     "ChatHudMixin",
+    "ChatScreenMixin",
+    "WebChatMixin",
     "InGameHudMixin",
     "BossBarHudMixin",
     "BookScreenMixin",
@@ -48,7 +50,11 @@
     "HandledScreenMixin",
     "IBlockSettings",
     "MixinEntity",
-    "PlayerInteractEntityC2SPacketMixin"
+    "PlayerInteractEntityC2SPacketMixin",
+    "RespawnPointBlockerMixin",
+    "RespawnPointBlockerSpamMixin",
+    "BundleIssue2b2tHotfixMixin",
+    "NoUnstackableDragMixin"
   ],
   "injectors": {
     "defaultRequire": 1

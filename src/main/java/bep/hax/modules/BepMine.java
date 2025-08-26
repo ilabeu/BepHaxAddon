@@ -1,6 +1,7 @@
 package bep.hax.modules;
 
 import bep.hax.Bep;
+import org.lwjgl.glfw.GLFW;
 import meteordevelopment.meteorclient.mixininterface.IClientPlayerInteractionManager;
 import meteordevelopment.meteorclient.events.entity.player.StartBreakingBlockEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
@@ -14,6 +15,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.BreakIndicators;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.misc.Pool;
+import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
@@ -32,6 +34,7 @@ import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.BundleS2CPacket;
 import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -98,6 +101,13 @@ public class BepMine extends Module {
         .name("instant")
         .description("Instantly mines already broken blocks")
         .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Keybind> instantToggleKey = sgGeneral.add(new KeybindSetting.Builder()
+        .name("instant-toggle-key")
+        .description("Key to toggle the instant mining option")
+        .defaultValue(Keybind.none())
         .build()
     );
 
@@ -193,6 +203,7 @@ public class BepMine extends Module {
     private final Map<MiningData, Animation> fadeList = new HashMap<>();
     private FirstOutQueue<MiningData> miningQueue;
     private long lastBreak;
+    private boolean instantTogglePressed = false;
 
     public BepMine() {
         super(Bep.CATEGORY, "bep-mine", "Mines blocks faster");
@@ -228,6 +239,21 @@ public class BepMine extends Module {
     public void onPlayerTick(final TickEvent.Pre event) {
         if (mc.player.isCreative() || mc.player.isSpectator()) {
             return;
+        }
+
+        // Check for instant toggle keybind
+        if (instantToggleKey.get().isPressed()) {
+            if (!instantTogglePressed) {
+                instantTogglePressed = true;
+                instantConfig.set(!instantConfig.get());
+                // Send chat message to confirm toggle
+                if (mc.player != null) {
+                    String status = instantConfig.get() ? "§aenabled" : "§cdisabled";
+                    mc.player.sendMessage(Text.literal("§7[§bBepMine§7] §fInstant mining " + status), false);
+                }
+            }
+        } else {
+            instantTogglePressed = false;
         }
 
         if (modeConfig.get() == SpeedmineMode.DAMAGE) {

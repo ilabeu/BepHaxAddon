@@ -31,7 +31,7 @@ public class Bep extends MeteorAddon {
         Hud.get().register(SpeedKMH.INFO);
         Hud.get().register(DubCounterHud.INFO);
         Hud.get().register(MobRateHud.INFO);
-        Hud.get().register(BlockCounterHud.INFO);
+        //Hud.get().register(BlockCounterHud.INFO);
 
         Commands.add(new bep.hax.commands.IgnoreSyncCommand());
 
@@ -52,6 +52,16 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new NoHurtCam());
         Modules.get().add(new ElytraSwap());
         Modules.get().add(new IgnoreSync());
+        Modules.get().add(new InvFix());
+        Modules.get().add(new WebChat());
+
+        // INDICA MOD https://github.com/Faye-one/INDICA
+        Modules.get().add(new OminousVaultESP());
+        Modules.get().add(new ShulkerFrameESP());
+        Modules.get().add(new KillEffects());
+        Modules.get().add(new RespawnPointBlocker());
+        Modules.get().add(new MapDuplicator());
+        Modules.get().add(new InventoryNotif());
 
 
         // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon

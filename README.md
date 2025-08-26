@@ -38,38 +38,35 @@ These modules were created or enhanced specifically for this addon:
 - **UnfocusedFpsLimiter**: Limits FPS when the game window is unfocused
 - **ShulkerOverviewModule**: Shows the most abundant item as a mini icon on shulkers in inventory
 - **BepMine**: Speedmine optimized for 2b2t with queue system
-- **Miner**: Advanced mining automation with pattern support
 - **MineESP**: ESP for blocks being mined by other players
 - **ItemSearchBar**: Search through inventories for specific items
 - **Aura**: Kill aura module for combat (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 - **Velo**: Velocity/knockback control (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 - **Phase**: Phase through blocks (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
 - **Criticals**: Forces critical hits (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
+- **PVPModule**: Base class for PVP modules with rotation management
 - **ElytraSwap**: Automatically swaps elytras when they reach low durability and restores items to original positions
 - **PearlOwner**: Displays the name of the player who threw an ender pearl
 - **SignRender**: Renders sign text through walls with advanced clustering
 - **NoHurtCam**: Removes the hurt camera tilt and shake effect when taking damage
 - **IgnoreSync**: Advanced 2b2t ignore list manager with offline player queuing
-
+- **InvFix**: Fixes inventory issues specific to 2b2t server(Thanks to [EnderKill98](https://github.com/EnderKill98/Fix2b2tGhostItems))
+- **WebChat**: Displays Minecraft chat in web browser interface
 - **AutoCraft**: Automates crafting recipes (from Meteor Rejects)
 - **DisconnectSound**: Plays sound on disconnect (from Meteorist)
 
 ### HUD Elements
 - **BlockCounterHud**: Displays selected blocks and their inventory counts with customizable layout
 - **EntityList**: Advanced entity tracker with projectile support
-    - Tracks players, mobs, items, and projectiles (including ender pearls)
-    - Configurable distance calculation (2D horizontal or 3D with Y-level)
-    - Aggregates entities by type with count display
-    - Sort by distance with customizable colors for each entity type
 - **SpeedKMH**: Shows current speed in kilometers per hour
 - **DimensionCoords**: Shows coordinates in both Overworld and Nether simultaneously
-- **DubCounterHud**: Comprehensive container counter for 2b2t looting.
-- **MobRateHud**: Advanced mob farm performance analyzer.
+- **DubCounterHud**: Comprehensive container counter for 2b2t looting
+- **MobRateHud**: Advanced mob farm performance analyzer
 
 ### Stash Hunting Modules (STASH Category)
 From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon)):
 - **ElytraFlyPlusPlus**: Enhanced elytra flying controls
-- - **NoJumpDelay**: Removes the delay between jumps
+- **NoJumpDelay**: Removes the delay between jumps
 - **AFKVanillaFly**: AFK flying without mods
 - **AutoEXPPlus**: Automates experience mending
 - **AutoLogPlus**: Auto-logout on low health or threats
@@ -126,7 +123,15 @@ From Stardust addon (Credit: [0xTas](https://github.com/0xTas/stardust)):
 - **TreasureESP**: ESP for treasures
 - **Updraft**: Updraft flying
 - **Grinder**: Automated grinding utilities
-
+- 
+### INDICA Modules (BepHax Category)
+From INDICA addon (Credit: [Faye-One](https://github.com/Faye-one/INDICA)):
+- **InventoryNotif**: Plays sound when inventory becomes full
+- **KillEffects**: Visual and audio effects when entities die
+- **MapDuplicator**: Automatically duplicates filled maps
+- **OminousVaultESP**: Highlights Ominous Vaults with rendering
+- **RespawnPointBlocker**: Prevents setting respawn points at beds/anchors
+- **ShulkerFrameESP**: Highlights item frames containing shulker boxes
 
 ## Credits
 This addon aggregates modules from the following projects—huge thanks to their creators for open-sourcing their work:
@@ -134,6 +139,7 @@ This addon aggregates modules from the following projects—huge thanks to their
 - [Meteor Rejects](https://github.com/AntiCope) by AntiCope
 - [Stardust](https://github.com/0xTas/stardust) by 0xTas
 - [Meteorist](https://github.com/Zgoly/Meteorist/) by Zgoly
+- [INDICA](https://github.com/Faye-one/INDICA) by Faye-One
 
 Original BepHax modules were developed specifically for 2b2t optimization.
 
