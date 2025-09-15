@@ -84,7 +84,7 @@ BepHax organizes modules into custom categories optimized for 2b2t gameplay:
 - **AutoEXPPlus**: Automates experience mending
 - **BetterAutoEat**: Enhanced auto-eat with smart food selection
 - **PearlLoader**: Manages ender pearl loading/unloading
-- **WheelPicker**: Random selection wheel for various actions
+- **WheelPicker**: selection wheel for various configurable actions
 
 #### Visual & ESP
 - **SignRender**: Renders sign text through walls with clustering
