@@ -62,7 +62,7 @@ BepHax organizes modules into custom categories optimized for 2b2t gameplay:
 
 #### Movement & Travel
 - **YawLock**: Locks player yaw for precise movement with jitter option
-- **ElytraSwap**: Auto-swaps elytras at low durability
+- **ElytraSwap**: Auto-swaps elytras at low durability 
     - Remembers original item positions
     - Configurable durability threshold
 - **ElytraFlyPlusPlus**: Enhanced elytra flight controls
@@ -79,8 +79,6 @@ BepHax organizes modules into custom categories optimized for 2b2t gameplay:
     - Pearl loading between areas
     - Multi-axis pearl throwing support
     - Automatic container detection
-- **AutoStashHunt**: Automated stash hunting system
-- **AutoRegear**: Automatically re-equips gear
 - **AutoLogPlus**: Auto-logout on low health or threats
 - **AutoPortal**: Automatic portal creation
 - **AutoEXPPlus**: Automates experience mending
