@@ -24,6 +24,9 @@ public class Bep extends MeteorAddon {
     public void onInitialize() {
         LOG.info("BEPHAX LOADING.");
 
+        // Initialize StashMover selection handler
+        bep.hax.modules.StashMoverSelectionHandler.init();
+
         // HUD
         Hud.get().register(ItemCounterHud.INFO);
         Hud.get().register(EntityList.INFO);
@@ -47,13 +50,17 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Phase());
         Modules.get().add(new Criticals());
         Modules.get().add(new PearlOwner());
+        Modules.get().add(new PearlLoader());
         Modules.get().add(new SignRender());
-        //Modules.get().add(new Miner());
+        Modules.get().add(new WheelPicker());
         Modules.get().add(new NoHurtCam());
         Modules.get().add(new ElytraSwap());
         Modules.get().add(new IgnoreSync());
         Modules.get().add(new InvFix());
         Modules.get().add(new WebChat());
+        Modules.get().add(new Replenish());
+        Modules.get().add(new GhostMode());
+
 
         // INDICA MOD https://github.com/Faye-one/INDICA
         Modules.get().add(new OminousVaultESP());
@@ -78,10 +85,17 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Pitch40Util());
         Modules.get().add(new GrimAirPlace());
         Modules.get().add(new TrailFollower());
+        Modules.get().add(new Stripper());
         Modules.get().add(new VanityESP());
         Modules.get().add(new BetterStashFinder());
         Modules.get().add(new OldChunkNotifier());
         Modules.get().add(new SearchArea());
+
+        // StashMover - Automated shulker transfer system
+        Modules.get().add(new StashMover());
+        Commands.add(new bep.hax.commands.SetInput());
+        Commands.add(new bep.hax.commands.SetOutput());
+        Commands.add(new bep.hax.commands.SetClear());
 
         // HIGTools https://github.com/RedCarlos26/HIGTools
         Commands.add(new bep.hax.commands.Coordinates());

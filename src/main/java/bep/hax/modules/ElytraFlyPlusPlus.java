@@ -11,7 +11,6 @@ import meteordevelopment.meteorclient.events.world.PlaySoundEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.mixininterface.IVec3d;
 import meteordevelopment.meteorclient.settings.*;
-import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.ChestSwap;
@@ -60,18 +59,19 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+    private final Setting<Boolean> tunnelBounce = sgGeneral.add(new BoolSetting.Builder()
+        .name("Tunnel Bounce")
+        .description("Allows you to bounce in 1x2 tunnels. This should not be on if you are not in a tunnel.")
+        .defaultValue(false)
+        .visible(() -> bounce.get() && motionYBoost.get())
+        .build()
+    );
+
     private final Setting<Double> speed = sgGeneral.add(new DoubleSetting.Builder()
         .name("Speed")
         .description("The speed in blocks per second to keep you at.")
         .defaultValue(100.0)
         .sliderRange(20, 250)
-        .visible(() -> bounce.get() && motionYBoost.get())
-        .build()
-    );
-    private final Setting<Boolean> tunnelBounce = sgGeneral.add(new BoolSetting.Builder()
-        .name("Tunnel Bounce")
-        .description("Allows you to bounce in 1x2 tunnels.")
-        .defaultValue(false)
         .visible(() -> bounce.get() && motionYBoost.get())
         .build()
     );
@@ -211,7 +211,7 @@ public class ElytraFlyPlusPlus extends Module {
 
     public ElytraFlyPlusPlus() {
         super(
-            Bep.STASH,
+            Bep.CATEGORY,
             "ElytraFlyPlusPlus",
             "Elytra fly with some more features."
         );
@@ -231,7 +231,7 @@ public class ElytraFlyPlusPlus extends Module {
     {
         if (event.packet instanceof PlayerPositionLookS2CPacket packet)
         {
-            onActivate();
+//            onActivate();
         }
         else if (event.packet instanceof CloseScreenS2CPacket)
         {
@@ -402,8 +402,8 @@ public class ElytraFlyPlusPlus extends Module {
 
             if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && // > 100 check needed bc server sends queue coordinates when joining in first tick causing goal coordinates to be set to (0, 0)
                 (mc.player.getY() < targetY.get() || mc.player.getY() > targetY.get() + 2 || mc.player.horizontalCollision // collisions / out of highway
-                || (portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()) // portal trap detection
-                || waitingForChunksToLoad // waiting for chunks to load
+                    || (portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()) // portal trap detection
+                    || waitingForChunksToLoad // waiting for chunks to load
                     || stuckTimer > 50))
             {
                 waitingForChunksToLoad = false;

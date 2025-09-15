@@ -241,8 +241,8 @@ public class BepMine extends Module {
             return;
         }
 
-        // Check for instant toggle keybind
-        if (instantToggleKey.get().isPressed()) {
+        // Check for instant toggle keybind - only when not in GUI
+        if (instantToggleKey.get().isPressed() && mc.currentScreen == null) {
             if (!instantTogglePressed) {
                 instantTogglePressed = true;
                 instantConfig.set(!instantConfig.get());
@@ -322,12 +322,13 @@ public class BepMine extends Module {
 
             stopMining(miningData2);
 
-            if (!instantConfig.get()) {
-                miningQueue.remove(miningData2);
-            }
-
             if (!miningData2.hasAttemptedBreak()) {
                 miningData2.setAttemptedBreak(true);
+            }
+            
+            // Remove from queue after setting attempted break to avoid double processing
+            if (!instantConfig.get()) {
+                miningQueue.remove(miningData2);
             }
         }
     }

@@ -72,14 +72,24 @@ public class InGameHudMixin {
         // Offhand slot
         ItemStack offhandStack = player.getOffHandStack();
         if (!offhandStack.isEmpty() && offhandStack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof ShulkerBoxBlock) {
-            int offY = scaledHeight - 20;
+            // Offhand slot position calculation
+            // The offhand slot appears at y = scaledHeight - 23 (3 pixels above hotbar)
+            int offY = scaledHeight - 23;
             int offX;
+
+            // The offhand slot is positioned differently based on main hand
+            // Left-handed: offhand appears on the right side
+            // Right-handed: offhand appears on the left side
             if (player.getMainArm() == Arm.LEFT) {
-                offX = center - 91 - 26;
+                // When left-handed, offhand slot is on the right side
+                offX = center + 91 + 9; // Right side of hotbar + 9 pixel gap
             } else {
-                offX = center + 94;
+                // When right-handed, offhand slot is on the left side
+                offX = center - 91 - 29; // Left side of hotbar - 29 pixels (slot width + gap)
             }
-            module.renderShulkerOverlay(context, offX, offY, offhandStack);
+
+            // Add 3 pixels to x and y to account for the item position within the slot
+            module.renderShulkerOverlay(context, offX + 3, offY + 3, offhandStack);
         }
     }
 

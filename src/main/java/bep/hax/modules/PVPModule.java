@@ -5,7 +5,6 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import bep.hax.util.PVPRotationManager;
 
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Base class for all modules
@@ -13,8 +12,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public abstract class PVPModule extends Module {
 
-    // ThreadLocalRandom instance for modules - exact implementation
-    protected static final Random RANDOM = ThreadLocalRandom.current();
+    // Random instance for modules - thread-safe implementation
+    protected static final Random RANDOM = new Random();
 
     protected PVPModule(Category category, String name, String description) {
         super(category, name, description);

@@ -148,21 +148,56 @@ public class KillEffects extends Module {
 
         switch (entityEffect.get()) {
             case LIGHTNING_BOLT -> {
+                // Just use visual and sound effects instead of spawning actual entities
+                // This avoids the entity tracking issues that cause crashes
                 for (int i = 0; i < entityAmount.get(); i++) {
-                    try {
-                        net.minecraft.entity.LightningEntity lightning = new net.minecraft.entity.LightningEntity(
-                            net.minecraft.entity.EntityType.LIGHTNING_BOLT, mc.world
-                        );
-                        lightning.setPosition(pos);
-                        lightning.setCosmetic(true);
-                        mc.world.addEntity(lightning);
-                    } catch (Exception e) {
-                        // Fallback to particles if entity creation fails
-                        spawnFallbackParticles(pos);
-                    }
+                    spawnLightningEffects(pos);
                 }
             }
         }
+    }
+    
+    private void spawnLightningEffects(Vec3d pos) {
+        if (mc.world == null) return;
+        
+        // Visual lightning effect using particles
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
+        
+        // Create vertical lightning bolt effect with particles
+        for (int y = 0; y < 10; y++) {
+            double offsetX = (random.nextDouble() - 0.5) * 0.5;
+            double offsetZ = (random.nextDouble() - 0.5) * 0.5;
+            
+            mc.world.addParticle(
+                net.minecraft.particle.ParticleTypes.ELECTRIC_SPARK,
+                pos.x + offsetX, pos.y + y * 2, pos.z + offsetZ,
+                0, 0, 0
+            );
+            
+            mc.world.addParticle(
+                net.minecraft.particle.ParticleTypes.END_ROD,
+                pos.x + offsetX, pos.y + y * 2, pos.z + offsetZ,
+                0, 0, 0
+            );
+        }
+        
+        // Additional spark particles around the strike point
+        for (int j = 0; j < 20; j++) {
+            double offsetX = (random.nextDouble() - 0.5) * 2.0;
+            double offsetY = random.nextDouble() * 1.0;
+            double offsetZ = (random.nextDouble() - 0.5) * 2.0;
+            
+            mc.world.addParticle(
+                net.minecraft.particle.ParticleTypes.ELECTRIC_SPARK,
+                pos.x + offsetX, pos.y + offsetY, pos.z + offsetZ,
+                offsetX * 0.1, 0.1, offsetZ * 0.1
+            );
+        }
+        
+        // Play thunder sound
+        mc.world.playSound(pos.x, pos.y, pos.z,
+            net.minecraft.sound.SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER,
+            net.minecraft.sound.SoundCategory.AMBIENT, 1.0f, 1.0f, false);
     }
 
     private void spawnParticleEffect(Vec3d pos) {

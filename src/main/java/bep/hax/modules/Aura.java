@@ -299,7 +299,7 @@ public class Aura extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         // Skip if paused or using items
-        if (pauseOnEat.get() && (mc.player.isUsingItem() || PlayerUtils.shouldPause(true, true, true))) {
+        if (pauseOnEat.get() && shouldPauseForEating()) {
             return;
         }
 
@@ -722,6 +722,19 @@ public class Aura extends Module {
 
     public Entity getTarget() {
         return entityTarget;
+    }
+
+    private boolean shouldPauseForEating() {
+        // Check if player is using food items
+        if (mc.player.isUsingItem()) {
+            ItemStack activeItem = mc.player.getActiveItem();
+            if (activeItem.get(DataComponentTypes.FOOD) != null) {
+                return true;
+            }
+        }
+        
+        // Use standard PlayerUtils pause conditions for other items
+        return PlayerUtils.shouldPause(true, true, true);
     }
 
     public enum AutoSwap {
