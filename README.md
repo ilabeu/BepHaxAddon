@@ -84,7 +84,7 @@ BepHax organizes modules into custom categories optimized for 2b2t gameplay:
 - **AutoEXPPlus**: Automates experience mending
 - **BetterAutoEat**: Enhanced auto-eat with smart food selection
 - **PearlLoader**: Manages ender pearl loading/unloading
-- **WheelPicker**: Random selection wheel for various actions
+- **WheelPicker**: selection wheel for various configurable actions
 
 #### Visual & ESP
 - **SignRender**: Renders sign text through walls with clustering
@@ -182,18 +182,6 @@ BepHax organizes modules into custom categories optimized for 2b2t gameplay:
 4. Enable "Only Shulkers" to filter items
 5. Enable "Fill Enderchest" for efficient transfer
 6. Start the module to begin automated transfer
-
-### Ghost Mode
-1. Enable before dying or when death screen appears
-2. Adjust "health-value" to maintain specific health
-3. Enable "block-death-packets" if having issues
-4. Toggle off to respawn normally
-
-### BepMine (Speedmine)
-1. Set keybind for instant mine toggle
-2. Look at block and start mining
-3. Toggle instant mine when needed
-4. Visual indicators show mining progress
 
 ## Credits
 
