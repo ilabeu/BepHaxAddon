@@ -31,120 +31,197 @@ BepHax is created to simplify 2b2t.org players' lives by combining the best util
 
 BepHax organizes modules into custom categories optimized for 2b2t gameplay:
 
-### Original/Enhanced Modules (BEPHAX Category)
-These modules were created or enhanced specifically for this addon:
-- **AutoSmithing**: Automates smithing table upgrades
-- **YawLock**: Locks player yaw for precise movement
-- **UnfocusedFpsLimiter**: Limits FPS when the game window is unfocused
-- **ShulkerOverviewModule**: Shows the most abundant item as a mini icon on shulkers in inventory
-- **BepMine**: Speedmine optimized for 2b2t with queue system
-- **MineESP**: ESP for blocks being mined by other players
+### Core Modules (BEPHAX Category)
+
+#### Combat & PVP
+- **Aura**: Advanced kill aura with smart targeting and rotation management (requires ViaFabricPlus)
+- **Criticals**: Forces critical hits with multiple bypass modes (requires ViaFabricPlus)
+- **Velo**: Velocity/knockback control for better combat (requires ViaFabricPlus)
+- **Phase**: Phase through blocks with anti-cheat bypass (requires ViaFabricPlus)
+- **PVPModule**: Base framework for PVP modules with rotation management
+
+#### Mining & Resources
+- **BepMine**: Advanced speedmine optimized for 2b2t with queue system
+    - Toggleable instant mining keybind
+    - Visual and chat notifications
+    - Anti-cheat compatible timing
+- **MineESP**: Highlights blocks being mined by other players
+- **Stripper**: Strips logs automatically
+
+#### Inventory & Items
+- **ShulkerOverviewModule**: Shows most common item as mini icon on shulkers
+    - Works in inventory, containers, and hotbar
+    - Configurable icon size and position
+    - Multiple item indicator
 - **ItemSearchBar**: Search through inventories for specific items
-- **Aura**: Kill aura module for combat (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
-- **Velo**: Velocity/knockback control (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
-- **Phase**: Phase through blocks (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
-- **Criticals**: Forces critical hits (requires ViaFabricPlus + 1.20.4-1.20.6 protocol)
-- **PVPModule**: Base class for PVP modules with rotation management
-- **ElytraSwap**: Automatically swaps elytras when they reach low durability and restores items to original positions
-- **PearlOwner**: Displays the name of the player who threw an ender pearl
-- **SignRender**: Renders sign text through walls with advanced clustering
-- **NoHurtCam**: Removes the hurt camera tilt and shake effect when taking damage
-- **IgnoreSync**: Advanced 2b2t ignore list manager with offline player queuing
-- **InvFix**: Fixes inventory issues specific to 2b2t server(Thanks to [EnderKill98](https://github.com/EnderKill98/Fix2b2tGhostItems))
-- **WebChat**: Displays Minecraft chat in web browser interface
+- **AutoSmithing**: Automates smithing table upgrades
 - **AutoCraft**: Automates crafting recipes (from Meteor Rejects)
-- **DisconnectSound**: Plays sound on disconnect (from Meteorist)
+- **InvFix**: Fixes inventory issues specific to 2b2t server
+- **InventoryNotif**: Plays sound when inventory becomes full
+- **Replenish**: Auto-refills items from inventory
 
-### HUD Elements
-- **BlockCounterHud**: Displays selected blocks and their inventory counts with customizable layout
-- **EntityList**: Advanced entity tracker with projectile support
-- **SpeedKMH**: Shows current speed in kilometers per hour
-- **DimensionCoords**: Shows coordinates in both Overworld and Nether simultaneously
-- **DubCounterHud**: Comprehensive container counter for 2b2t looting
-- **MobRateHud**: Advanced mob farm performance analyzer
-
-### Stash Hunting Modules (STASH Category)
-From JEFF addon (Credit: [miles352](https://github.com/miles352/meteor-stashhunting-addon)):
-- **ElytraFlyPlusPlus**: Enhanced elytra flying controls
-- **NoJumpDelay**: Removes the delay between jumps
+#### Movement & Travel
+- **YawLock**: Locks player yaw for precise movement with jitter option
+- **ElytraSwap**: Auto-swaps elytras at low durability
+    - Remembers original item positions
+    - Configurable durability threshold
+- **ElytraFlyPlusPlus**: Enhanced elytra flight controls
+- **NoJumpDelay**: Removes delay between jumps
 - **AFKVanillaFly**: AFK flying without mods
-- **AutoEXPPlus**: Automates experience mending
+- **TrailFollower**: Follows player trails
+
+#### Automation
+- **StashMover**: Advanced item transfer system with pearl loading
+    - Input/Output area selection
+    - Only Shulkers mode - filters non-shulker items
+    - Break Empty - breaks empty containers
+    - Fill Enderchest - efficient enderchest usage
+    - Pearl loading between areas
+    - Multi-axis pearl throwing support
+    - Automatic container detection
+- **AutoStashHunt**: Automated stash hunting system
+- **AutoRegear**: Automatically re-equips gear
 - **AutoLogPlus**: Auto-logout on low health or threats
 - **AutoPortal**: Automatic portal creation
-- **ChestIndex**: Indexes and searches chest contents
-- **GotoPosition**: Navigate to specified coordinates
+- **AutoEXPPlus**: Automates experience mending
+- **BetterAutoEat**: Enhanced auto-eat with smart food selection
+- **PearlLoader**: Manages ender pearl loading/unloading
+- **WheelPicker**: Random selection wheel for various actions
+
+#### Visual & ESP
+- **SignRender**: Renders sign text through walls with clustering
+- **PearlOwner**: Shows who threw ender pearls
+- **OminousVaultESP**: Highlights Ominous Vaults
+- **ShulkerFrameESP**: Highlights item frames with shulkers
+- **VanityESP**: Custom entity ESP for vanity items
+- **TreasureESP**: ESP for treasure items
+- **KillEffects**: Visual and audio effects on entity death
 - **HighlightOldLava**: Highlights ancient lava sources
+
+#### Utilities
+- **GhostMode**: Continue playing after death
+    - Maintains configurable health value
+    - Blocks death packets option
+    - Prevents phasing through world
+- **NoHurtCam**: Removes hurt camera shake
+- **UnfocusedFpsLimiter**: Limits FPS when window unfocused
+- **DisconnectSound**: Plays sound on disconnect
+- **MapDuplicator**: Automatically duplicates filled maps
+- **RespawnPointBlocker**: Prevents setting respawn points
+- **WebChat**: Displays chat in web browser
+- **IgnoreSync**: Advanced ignore list manager
+
+### Stash Hunting Modules (STASH Category)
+
+#### Search & Detection
+- **BetterStashFinder**: Improved stash location finder
+- **OldChunkNotifier**: Notifies when entering old chunks
+- **ChestIndex**: Indexes and searches chest contents
+- **LoreLocator**: Locates items with specific lore
+
+#### Movement & Navigation
+- **GotoPosition**: Navigate to specified coordinates
 - **Pitch40Util**: Utility for 40-degree pitch mining
 - **GrimAirPlace**: Grim-compatible air placement
-- **GrimSilentRotations**: Silent rotations compatible with Grim
-- **TrailFollower**: Follows player trails
-- **VanityESP**: Custom entity ESP for vanity items
-- **BetterStashFinder**: Improved stash location finder
-- **OldChunkNotifier**: Notifies of old chunks
-- **SearchArea**: Defines search areas for resources
-
-
 
 ### Utility Modules (STARDUST Category)
-From Stardust addon (Credit: [0xTas](https://github.com/0xTas/stardust)):
 
-**Commands**:
+#### Commands
 - **Center**: Center positioning command
 - **Coordinates**: Coordinate utilities
-- **FirstSeen2b2t**: Checks first seen date on 2b2t
-- **LastSeen2b2t**: Checks last seen date on 2b2t
-- **Playtime2b2t**: Checks playtime on 2b2t
-- **Stats2b2t**: Displays player stats on 2b2t
+- **FirstSeen2b2t**: Check first seen date on 2b2t
+- **LastSeen2b2t**: Check last seen date on 2b2t
+- **Playtime2b2t**: Check playtime on 2b2t
+- **Stats2b2t**: Display player stats on 2b2t
 - **Panorama**: Custom panorama utilities
-- **Loadout**: Manages equipment loadouts
+- **Loadout**: Manage equipment loadouts
 
-**Modules**:
-- **Loadouts**: Saves and loads player loadouts
-- **AntiToS**: Bypasses certain restrictions
-- **ChatSigns**: Signs in chat
-- **Archaeology**: Archaeology utilities
-- **AutoDrawDistance**: Adjusts draw distance automatically
-- **AutoDyeShulkers**: Dyes shulkers automatically
-- **AxolotlTools**: Axolotl-related tools
-- **BannerData**: Displays banner data
-- **BookTools**: Book editing tools
-- **Honker**: Custom honking sounds
-- **LoreLocator**: Locates lore items
+#### Creative Tools
+- **BookTools**: Advanced book editing tools
+- **ChatSigns**: Create signs in chat
+- **SignHistorian**: Track sign history
+- **SignatureSign**: Sign signatures
+- **BannerData**: Display banner data
+- **PagePirate**: Page copying utilities
+
+#### Fun & Misc
+- **Honker**: Custom honking sounds with goat horns
 - **MusicTweaks**: Music system tweaks
-- **PagePirate**: Page utilities
-- **RapidFire**: Fast firing mechanics
-- **RoadTrip**: Travel utilities
-- **RocketJump**: Rocket jumping
+- **RocketJump**: Rocket jumping mechanics
 - **RocketMan**: Rocket enhancements
-- **SignHistorian**: Sign history tracking
-- **SignatureSign**: Signs signatures
-- **StashBrander**: Brands stashes
-- **WaxAura**: Waxing utilities
-- **TreasureESP**: ESP for treasures
-- **Updraft**: Updraft flying
+- **RapidFire**: Fast firing mechanics
+- **Updraft**: Updraft flying mechanics
 - **Grinder**: Automated grinding utilities
-- 
-### INDICA Modules (BepHax Category)
-From INDICA addon (Credit: [Faye-One](https://github.com/Faye-one/INDICA)):
-- **InventoryNotif**: Plays sound when inventory becomes full
-- **KillEffects**: Visual and audio effects when entities die
-- **MapDuplicator**: Automatically duplicates filled maps
-- **OminousVaultESP**: Highlights Ominous Vaults with rendering
-- **RespawnPointBlocker**: Prevents setting respawn points at beds/anchors
-- **ShulkerFrameESP**: Highlights item frames containing shulker boxes
+
+#### Specialized Tools
+- **Archaeology**: Archaeology automation
+- **AutoDrawDistance**: Adjusts render distance automatically
+- **AutoDyeShulkers**: Automatically dyes shulkers
+- **AxolotlTools**: Axolotl-related tools
+- **StashBrander**: Brand stashes with custom messages
+- **WaxAura**: Automatic waxing of copper blocks
+- **RoadTrip**: Travel utilities
+- **AntiToS**: Bypasses certain restrictions
+
+### HUD Elements
+
+- **BlockCounterHud**: Displays selected blocks and inventory counts
+- **EntityList**: Advanced entity tracker with projectile support
+    - Tracks players, mobs, items, projectiles
+    - Configurable distance calculation (2D/3D)
+    - Sort by distance with custom colors
+- **SpeedKMH**: Shows current speed in km/h
+- **DimensionCoords**: Shows coordinates in both dimensions
+- **DubCounterHud**: Container counter for looting
+- **MobRateHud**: Mob farm performance analyzer
+
+## Usage Examples
+
+### StashMover Setup
+1. Select input area: `.stashmover input`
+2. Select output area: `.stashmover output`
+3. Configure pearl positions in module settings
+4. Enable "Only Shulkers" to filter items
+5. Enable "Fill Enderchest" for efficient transfer
+6. Start the module to begin automated transfer
+
+### Ghost Mode
+1. Enable before dying or when death screen appears
+2. Adjust "health-value" to maintain specific health
+3. Enable "block-death-packets" if having issues
+4. Toggle off to respawn normally
+
+### BepMine (Speedmine)
+1. Set keybind for instant mine toggle
+2. Look at block and start mining
+3. Toggle instant mine when needed
+4. Visual indicators show mining progress
 
 ## Credits
-This addon aggregates modules from the following projects—huge thanks to their creators for open-sourcing their work:
+
+This addon aggregates modules from the following projects—huge thanks to their creators:
 - [JEFF Stash Hunting](https://github.com/miles352/meteor-stashhunting-addon) by miles352
 - [Meteor Rejects](https://github.com/AntiCope) by AntiCope
 - [Stardust](https://github.com/0xTas/stardust) by 0xTas
 - [Meteorist](https://github.com/Zgoly/Meteorist/) by Zgoly
-- [INDICA](https://github.com/Faye-one/INDICA) by Faye-One
 
 Original BepHax modules were developed specifically for 2b2t optimization.
 
 ## Contributing
-BepHax is community-driven! If you'd like to suggest features, report bugs, or contribute code, open an issue or pull request. Everyone can request changes to make this addon better for the 2b2t community.
+
+BepHax is community-driven! If you'd like to suggest features, report bugs, or contribute code:
+1. Open an issue on GitHub
+2. Submit a pull request
+3. Join discussions in issues
+
+Everyone can request changes to make this addon better for the 2b2t community.
 
 ## License
+
 Licensed under [GNU GPLv3](LICENSE). Feel free to fork and modify!
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/dekrom/BepHaxAddon/issues)
+- **Discord**: Join the 2b2t community servers
+- **Wiki**: Check the [GitHub Wiki](https://github.com/dekrom/BepHaxAddon/wiki) for detailed guides
