@@ -1,8 +1,12 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
+import baritone.api.pathing.goals.GoalNear;
+import baritone.api.pathing.goals.GoalGetToBlock;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
+import net.minecraft.util.ActionResult;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -27,6 +31,7 @@ import net.minecraft.block.entity.BarrelBlockEntity;
 import net.minecraft.block.entity.TrappedChestBlockEntity;
 import net.minecraft.block.enums.ChestType;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -44,11 +49,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 public class StashMover extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgInput = settings.createGroup("Input");
@@ -56,16 +59,22 @@ public class StashMover extends Module {
     private final SettingGroup sgGoBack = settings.createGroup("Go Back");
     private final SettingGroup sgResetPearl = settings.createGroup("Reset Pearl");
     private final SettingGroup sgDelays = settings.createGroup("Delays");
+    private final Setting<Double> containerReach = sgGeneral.add(new DoubleSetting.Builder()
+        .name("container-reach")
+        .description("Maximum reach distance for opening containers")
+        .defaultValue(4.0)
+        .min(2.5)
+        .max(5.0)
+        .sliderRange(2.5, 5.0)
+        .build()
+    );
     private final SettingGroup sgRendering = settings.createGroup("Rendering");
-
-    // General Settings
     private final Setting<Boolean> pauseOnLag = sgGeneral.add(new BoolSetting.Builder()
         .name("pause-on-lag")
         .description("Pause when server is lagging")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Integer> maxRetries = sgGeneral.add(new IntSetting.Builder()
         .name("max-retries")
         .description("Maximum retries for failed actions")
@@ -74,44 +83,42 @@ public class StashMover extends Module {
         .max(10)
         .build()
     );
-
-    // Input Settings
+    private final Setting<Boolean> debugMode = sgGeneral.add(new BoolSetting.Builder()
+        .name("debug-mode")
+        .description("Show debug messages and state transitions")
+        .defaultValue(false)
+        .build()
+    );
     private final Setting<Boolean> onlyShulkers = sgInput.add(new BoolSetting.Builder()
         .name("only-shulkers")
         .description("Only take shulker boxes from input chests")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> breakEmptyContainers = sgInput.add(new BoolSetting.Builder()
         .name("break-empty")
         .description("Break empty containers after emptying them")
-        .defaultValue(true)
+        .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> fillEnderChest = sgInput.add(new BoolSetting.Builder()
         .name("fill-enderchest")
         .description("Fill ender chest to maximize movement")
         .defaultValue(true)
         .build()
     );
-
-    // Pearl Loading Settings (Input to Output)
     private final Setting<String> pearlPlayerName = sgPearl.add(new StringSetting.Builder()
         .name("pearl-player")
         .description("Player name to message for pearl loading (Input→Output)")
-        .defaultValue("Player")
+        .defaultValue("PlayerName")
         .build()
     );
-
     private final Setting<String> pearlCommand = sgPearl.add(new StringSetting.Builder()
         .name("pearl-command")
         .description("Command to send for pearl loading (Input→Output)")
-        .defaultValue("!tp")
+        .defaultValue("pearl")
         .build()
     );
-
     private final Setting<Integer> pearlTimeout = sgPearl.add(new IntSetting.Builder()
         .name("pearl-timeout")
         .description("Timeout for pearl loading in seconds")
@@ -120,7 +127,6 @@ public class StashMover extends Module {
         .max(30)
         .build()
     );
-
     private final Setting<Integer> pearlRetryDelay = sgPearl.add(new IntSetting.Builder()
         .name("pearl-retry-delay")
         .description("Delay between pearl command retries in ticks")
@@ -129,15 +135,12 @@ public class StashMover extends Module {
         .max(200)
         .build()
     );
-
-    // Go Back Settings
     private final Setting<GoBackMethod> goBackMethod = sgGoBack.add(new EnumSetting.Builder<GoBackMethod>()
         .name("go-back-method")
         .description("Method to go back to input area")
-        .defaultValue(GoBackMethod.KILL)
+        .defaultValue(GoBackMethod.PEARL)
         .build()
     );
-
     private final Setting<String> goBackPlayerName = sgGoBack.add(new StringSetting.Builder()
         .name("go-back-player")
         .description("Player name for go back pearl loading (Output→Input)")
@@ -145,7 +148,6 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
     private final Setting<String> goBackCommand = sgGoBack.add(new StringSetting.Builder()
         .name("go-back-command")
         .description("Command for go back pearl loading (Output→Input)")
@@ -153,28 +155,18 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
-    // Pearl Settings - Output
-    // Pickup position
     private final Setting<BlockPos> outputPearlPickupPos = sgResetPearl.add(new BlockPosSetting.Builder()
         .name("output-pickup-pos")
         .description("Position for pearl pickup at output")
         .defaultValue(new BlockPos(0, 64, 0))
         .build()
     );
-
-    // Note: setOutputPickupHere button will be handled by getWidget() override
-
-    // Throw position
     private final Setting<BlockPos> outputPearlThrowPos = sgResetPearl.add(new BlockPosSetting.Builder()
         .name("output-throw-pos")
         .description("Position for pearl throw at output")
         .defaultValue(new BlockPos(0, 64, 0))
         .build()
     );
-
-    // Note: setOutputThrowHere button will be handled by getWidget() override
-
     private final Setting<Double> outputPearlThrowPitch = sgResetPearl.add(new DoubleSetting.Builder()
         .name("output-throw-pitch")
         .description("Pitch for throwing pearl at output (90 = straight down)")
@@ -182,7 +174,6 @@ public class StashMover extends Module {
         .sliderRange(-90, 90)
         .build()
     );
-
     private final Setting<Double> outputPearlThrowYaw = sgResetPearl.add(new DoubleSetting.Builder()
         .name("output-throw-yaw")
         .description("Yaw for throwing pearl at output")
@@ -190,9 +181,6 @@ public class StashMover extends Module {
         .sliderRange(-180, 180)
         .build()
     );
-
-    // Pearl Settings - Input
-    // Pickup position
     private final Setting<BlockPos> inputPearlPickupPos = sgResetPearl.add(new BlockPosSetting.Builder()
         .name("input-pickup-pos")
         .description("Position for pearl pickup at input")
@@ -200,10 +188,6 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
-    // Note: setInputPickupHere button will be handled by getWidget() override and visible when PEARL method
-
-    // Throw position
     private final Setting<BlockPos> inputPearlThrowPos = sgResetPearl.add(new BlockPosSetting.Builder()
         .name("input-throw-pos")
         .description("Position for pearl throw at input")
@@ -211,9 +195,6 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
-    // Note: setInputThrowHere button will be handled by getWidget() override and visible when PEARL method
-
     private final Setting<Double> inputPearlThrowPitch = sgResetPearl.add(new DoubleSetting.Builder()
         .name("input-throw-pitch")
         .description("Pitch for throwing pearl at input (90 = straight down)")
@@ -222,7 +203,6 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
     private final Setting<Double> inputPearlThrowYaw = sgResetPearl.add(new DoubleSetting.Builder()
         .name("input-throw-yaw")
         .description("Yaw for throwing pearl at input")
@@ -231,7 +211,6 @@ public class StashMover extends Module {
         .visible(() -> goBackMethod.get() == GoBackMethod.PEARL)
         .build()
     );
-
     private final Setting<Integer> pearlWaitTime = sgResetPearl.add(new IntSetting.Builder()
         .name("pearl-wait-time")
         .description("Time to wait after throwing pearl (seconds)")
@@ -240,7 +219,6 @@ public class StashMover extends Module {
         .max(10)
         .build()
     );
-
     private final Setting<Double> positionTolerance = sgResetPearl.add(new DoubleSetting.Builder()
         .name("position-tolerance")
         .description("How close to target position before throwing pearl (blocks)")
@@ -250,7 +228,6 @@ public class StashMover extends Module {
         .sliderRange(0.1, 2.0)
         .build()
     );
-
     private final Setting<Double> trapdoorEdgeDistance = sgResetPearl.add(new DoubleSetting.Builder()
         .name("trapdoor-edge-distance")
         .description("Distance from trapdoor edge when positioning (blocks)")
@@ -260,8 +237,6 @@ public class StashMover extends Module {
         .sliderRange(0.2, 1.0)
         .build()
     );
-
-    // Delay Settings
     private final Setting<Integer> openDelay = sgDelays.add(new IntSetting.Builder()
         .name("open-delay")
         .description("Delay after opening container in ticks")
@@ -270,7 +245,6 @@ public class StashMover extends Module {
         .max(30)
         .build()
     );
-
     private final Setting<Integer> transferDelay = sgDelays.add(new IntSetting.Builder()
         .name("transfer-delay")
         .description("Delay between item transfers in ticks")
@@ -279,7 +253,6 @@ public class StashMover extends Module {
         .max(10)
         .build()
     );
-
     private final Setting<Integer> closeDelay = sgDelays.add(new IntSetting.Builder()
         .name("close-delay")
         .description("Delay after closing container in ticks")
@@ -288,7 +261,6 @@ public class StashMover extends Module {
         .max(20)
         .build()
     );
-
     private final Setting<Integer> moveDelay = sgDelays.add(new IntSetting.Builder()
         .name("move-delay")
         .description("Delay between movements in ticks")
@@ -297,15 +269,12 @@ public class StashMover extends Module {
         .max(50)
         .build()
     );
-
-    // Rendering Settings
     private final Setting<Boolean> renderSelection = sgRendering.add(new BoolSetting.Builder()
         .name("render-selection")
         .description("Render selection areas")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Integer> outlineWidth = sgRendering.add(new IntSetting.Builder()
         .name("outline-width")
         .description("Width of area outlines")
@@ -315,73 +284,60 @@ public class StashMover extends Module {
         .sliderRange(1, 5)
         .build()
     );
-
     private final Setting<SettingColor> inputAreaColor = sgRendering.add(new ColorSetting.Builder()
         .name("input-area-outline")
         .description("Outline color for input area")
         .defaultValue(new SettingColor(0, 255, 0, 255))
         .build()
     );
-
     private final Setting<SettingColor> outputAreaColor = sgRendering.add(new ColorSetting.Builder()
         .name("output-area-outline")
         .description("Outline color for output area")
         .defaultValue(new SettingColor(0, 100, 255, 255))
         .build()
     );
-
     private final Setting<SettingColor> inputContainerColor = sgRendering.add(new ColorSetting.Builder()
         .name("input-container-color")
         .description("Color for input containers (not empty)")
         .defaultValue(new SettingColor(0, 255, 0, 100))
         .build()
     );
-
     private final Setting<SettingColor> outputContainerColor = sgRendering.add(new ColorSetting.Builder()
         .name("output-container-color")
         .description("Color for output containers (not full)")
         .defaultValue(new SettingColor(0, 100, 255, 100))
         .build()
     );
-
     private final Setting<SettingColor> activeContainerColor = sgRendering.add(new ColorSetting.Builder()
         .name("active-container-color")
         .description("Color for currently active container")
         .defaultValue(new SettingColor(255, 255, 0, 150))
         .build()
     );
-
     private final Setting<SettingColor> emptyContainerColor = sgRendering.add(new ColorSetting.Builder()
         .name("empty-container-color")
         .description("Color for empty containers")
         .defaultValue(new SettingColor(128, 128, 128, 50))
         .build()
     );
-
     private final Setting<SettingColor> fullContainerColor = sgRendering.add(new ColorSetting.Builder()
         .name("full-container-color")
         .description("Color for full containers")
         .defaultValue(new SettingColor(255, 0, 0, 50))
         .build()
     );
-
-    // Enums
     public enum GoBackMethod {
         KILL("Kill"),
         PEARL("Pearl Loading");
-
         private final String name;
-
         GoBackMethod(String name) {
             this.name = name;
         }
-
         @Override
         public String toString() {
             return name;
         }
     }
-
     public static enum SelectionMode {
         NONE,
         INPUT_FIRST,
@@ -389,7 +345,6 @@ public class StashMover extends Module {
         OUTPUT_FIRST,
         OUTPUT_SECOND
     }
-
     public enum ProcessState {
         IDLE,
         CHECKING_LOCATION,
@@ -408,28 +363,25 @@ public class StashMover extends Module {
         CLOSING_CONTAINER,
         BREAKING_CONTAINER,
         MOVING_TO_CONTAINER,
+        MANUAL_MOVING,
         OPENING_ENDERCHEST,
         FILLING_ENDERCHEST,
         EMPTYING_ENDERCHEST,
-        WAITING
+        WAITING,
+        MOVING_FORWARD_RETRY
     }
-
-    // State Management
     private ProcessState currentState = ProcessState.IDLE;
+    private ProcessState lastDebugState = ProcessState.IDLE;
     private int stateTimer = 0;
     private int retryCount = 0;
     private long lastActionTime = 0;
     private boolean isSelecting = false;
-
-    // Area Selection - Static so they persist when module is toggled
     private static BlockPos inputAreaPos1 = null;
     private static BlockPos inputAreaPos2 = null;
     private static BlockPos outputAreaPos1 = null;
     private static BlockPos outputAreaPos2 = null;
     private static BlockPos selectionPos1 = null;
     private static SelectionMode selectionMode = SelectionMode.NONE;
-
-    // Container Management
     private static final Set<ContainerInfo> inputContainers = ConcurrentHashMap.newKeySet();
     private static final Set<ContainerInfo> outputContainers = ConcurrentHashMap.newKeySet();
     private ContainerInfo currentContainer = null;
@@ -437,40 +389,35 @@ public class StashMover extends Module {
     private Direction approachDirection = null;
     private BlockPos lastBaritoneGoal = null;
     private int containerOpenFailures = 0;
-
-    // Pearl Loading
+    private int pathfindingFailures = 0;
+    private Vec3d lastPlayerPos = null;
+    private int stuckCounter = 0;
+    private int stuckRecoveryAttempts = 0;
+    private int jumpTimer = 0;
     private long lastPearlMessageTime = 0;
     private String lastRandomString = "";
     private boolean waitingForPearl = false;
     private int pearlRetryCount = 0;
-    private Vec3d initialPlayerPos = null; // For teleport detection
-
-    // Pearl tracking
+    private Vec3d initialPlayerPos = null;
     private boolean hasThrownPearl = false;
     private long pearlThrowTime = 0;
     private boolean hasPlacedShulker = false;
-    private boolean isGoingToInput = false; // Track if we're resetting pearl for input or output
+    private boolean isGoingToInput = false;
     private ItemStack offhandBackup = ItemStack.EMPTY;
-    private int pearlFailRetries = 0; // Track pearl throw retry attempts
+    private int pearlFailRetries = 0;
     private int previousSlot = -1;
-    private int rotationStabilizationTimer = 0; // Timer to ensure rotation is recognized by server
-    private boolean rotationSet = false; // Track if rotation has been set for throwing
-    private BlockPos safeRetreatPos = null; // Safe air block position to retreat to after throwing
-
-    // Kill command tracking
+    private int rotationStabilizationTimer = 0;
+    private boolean rotationSet = false;
+    private BlockPos safeRetreatPos = null;
     private boolean waitingForRespawn = false;
     private long lastKillTime = 0;
     private int killRetryCount = 0;
-
-    // Transfer tracking
     private int itemsTransferred = 0;
     private int containersProcessed = 0;
     private boolean inventoryFull = false;
     private boolean enderChestFull = false;
     private boolean enderChestHasItems = false;
     private boolean enderChestEmptied = false;
-
-    // Container Info Class
     private static class ContainerInfo {
         public final BlockPos pos;
         public final ContainerType type;
@@ -478,7 +425,6 @@ public class StashMover extends Module {
         public boolean isFull = false;
         public int slotsFilled = 0;
         public int totalSlots = 27;
-
         public ContainerInfo(BlockPos pos, ContainerType type) {
             this.pos = pos;
             this.type = type;
@@ -488,7 +434,6 @@ public class StashMover extends Module {
                 this.totalSlots = 54;
             }
         }
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -496,27 +441,21 @@ public class StashMover extends Module {
             ContainerInfo that = (ContainerInfo) o;
             return pos.equals(that.pos);
         }
-
         @Override
         public int hashCode() {
             return pos.hashCode();
         }
     }
-
     private enum ContainerType {
         CHEST, DOUBLE_CHEST, TRAPPED_CHEST, DOUBLE_TRAPPED_CHEST, BARREL, ENDER_CHEST
     }
-
     private static StashMover INSTANCE;
-
     public StashMover() {
         super(Bep.CATEGORY, "stash-mover", "Automatically moves items between stash areas using pearl loading");
         INSTANCE = this;
     }
-
     @Override
     public void onActivate() {
-        // Reset state
         stateTimer = 0;
         retryCount = 0;
         itemsTransferred = 0;
@@ -527,9 +466,7 @@ public class StashMover extends Module {
         waitingForPearl = false;
         pearlRetryCount = 0;
         containerOpenFailures = 0;
-
         String prefix = meteordevelopment.meteorclient.systems.config.Config.get().prefix.get();
-
         info("StashMover activated");
         if (inputAreaPos1 != null && inputAreaPos2 != null) {
             info("§aInput area set with §f" + inputContainers.size() + "§a containers");
@@ -541,50 +478,40 @@ public class StashMover extends Module {
         } else {
             info("§7Use §f" + prefix + "setoutput §7to select output area");
         }
-
-        // Automatically start if areas are configured
         if (hasValidAreas()) {
             info("§eStarting automated transfer process...");
             currentState = ProcessState.CHECKING_LOCATION;
+            stateTimer = 0;
         } else {
             info("§cConfigure both input and output areas to start");
             currentState = ProcessState.IDLE;
+            stateTimer = 20;
         }
     }
-
     @Override
     public void onDeactivate() {
         if (mc.currentScreen instanceof GenericContainerScreen) {
             mc.player.closeHandledScreen();
         }
-
         if (BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
             BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
         }
-
-        // Stop all movement
         mc.options.sneakKey.setPressed(false);
         mc.options.forwardKey.setPressed(false);
         mc.options.backKey.setPressed(false);
         mc.options.leftKey.setPressed(false);
         mc.options.rightKey.setPressed(false);
         mc.options.sprintKey.setPressed(false);
-
-        // Clear input
         if (mc.player != null && mc.player.input != null) {
             mc.player.input.movementForward = 0.0f;
             mc.player.input.movementSideways = 0.0f;
         }
-
         currentState = ProcessState.IDLE;
         info("StashMover deactivated");
     }
-
-
     public void handleBlockSelectionPublic(BlockPos pos) {
         handleBlockSelection(pos);
     }
-
     private void handleBlockSelection(BlockPos pos) {
         switch (selectionMode) {
             case INPUT_FIRST -> {
@@ -621,39 +548,25 @@ public class StashMover extends Module {
             }
         }
     }
-
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.world == null) return;
-
-        // Only process module logic if module is active
         if (!isActive()) return;
-
-        // State timer
         if (stateTimer > 0) {
             stateTimer--;
-            return;
+            if (currentState != ProcessState.IDLE) {
+                return;
+            }
         }
-
-        // Check lag
         if (pauseOnLag.get() && isServerLagging()) {
             return;
         }
-
-        // Do not auto-start - wait for manual command
-
-        // Process state
         handleCurrentState();
     }
-
     @EventHandler
     private void onRender3D(Render3DEvent event) {
-        // Only render if module is active or in selection mode
         if (!isActive() && selectionMode == SelectionMode.NONE) return;
         if (!renderSelection.get() && selectionMode == SelectionMode.NONE) return;
-
-        // Render input area outline only
         if (inputAreaPos1 != null && inputAreaPos2 != null) {
             Box inputBox = new Box(
                 inputAreaPos1.getX(), inputAreaPos1.getY(), inputAreaPos1.getZ(),
@@ -661,8 +574,6 @@ public class StashMover extends Module {
             );
             event.renderer.box(inputBox, inputAreaColor.get(), inputAreaColor.get(), ShapeMode.Lines, outlineWidth.get());
         }
-
-        // Render output area outline only
         if (outputAreaPos1 != null && outputAreaPos2 != null) {
             Box outputBox = new Box(
                 outputAreaPos1.getX(), outputAreaPos1.getY(), outputAreaPos1.getZ(),
@@ -670,18 +581,13 @@ public class StashMover extends Module {
             );
             event.renderer.box(outputBox, outputAreaColor.get(), outputAreaColor.get(), ShapeMode.Lines, outlineWidth.get());
         }
-
-        // Only render containers if module is active
         if (isActive()) {
-            // Render input containers (only non-empty ones)
             for (ContainerInfo container : inputContainers) {
                 if (!container.isEmpty) {
                     SettingColor color = container == currentContainer ? activeContainerColor.get() : inputContainerColor.get();
                     renderContainer(event, container, color);
                 }
             }
-
-            // Render output containers (only non-full ones)
             for (ContainerInfo container : outputContainers) {
                 if (!container.isFull) {
                     SettingColor color = container == currentContainer ? activeContainerColor.get() : outputContainerColor.get();
@@ -689,13 +595,9 @@ public class StashMover extends Module {
                 }
             }
         }
-
-        // Render selection in progress
         if (selectionMode != SelectionMode.NONE && selectionPos1 != null) {
-            // Get the block the player is looking at
             BlockPos currentPos = mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK ?
                 ((BlockHitResult)mc.crosshairTarget).getBlockPos() : mc.player.getBlockPos();
-
             Box selectionBox = new Box(
                 Math.min(selectionPos1.getX(), currentPos.getX()),
                 Math.min(selectionPos1.getY(), currentPos.getY()),
@@ -704,37 +606,28 @@ public class StashMover extends Module {
                 Math.max(selectionPos1.getY(), currentPos.getY()) + 1,
                 Math.max(selectionPos1.getZ(), currentPos.getZ()) + 1
             );
-
             SettingColor color = (selectionMode == SelectionMode.INPUT_FIRST || selectionMode == SelectionMode.INPUT_SECOND) ?
                 new SettingColor(0, 255, 0, 100) : new SettingColor(0, 100, 255, 100);
-
             event.renderer.box(selectionBox, color, color, ShapeMode.Both, 0);
-
-            // Render corner markers
             Box corner1 = new Box(
                 selectionPos1.getX(), selectionPos1.getY(), selectionPos1.getZ(),
                 selectionPos1.getX() + 1, selectionPos1.getY() + 1, selectionPos1.getZ() + 1
             );
             event.renderer.box(corner1, new SettingColor(255, 255, 0, 200),
-                             new SettingColor(255, 255, 0, 100), ShapeMode.Both, 0);
+                new SettingColor(255, 255, 0, 100), ShapeMode.Both, 0);
         }
     }
-
     private void renderContainer(Render3DEvent event, ContainerInfo container, SettingColor color) {
         Box box = new Box(
             container.pos.getX(), container.pos.getY(), container.pos.getZ(),
             container.pos.getX() + 1, container.pos.getY() + 1, container.pos.getZ() + 1
         );
-
-        // Expand box for double chests
         if (container.type == ContainerType.DOUBLE_CHEST ||
             container.type == ContainerType.DOUBLE_TRAPPED_CHEST) {
-
             BlockState state = mc.world.getBlockState(container.pos);
             if (state.contains(Properties.CHEST_TYPE)) {
                 ChestType chestType = state.get(Properties.CHEST_TYPE);
                 Direction facing = state.get(Properties.HORIZONTAL_FACING);
-
                 if (chestType == ChestType.LEFT) {
                     BlockPos otherPos = container.pos.offset(facing.rotateYClockwise());
                     box = box.union(new Box(
@@ -750,14 +643,15 @@ public class StashMover extends Module {
                 }
             }
         }
-
-        // Render with both fill and outline for visibility
         event.renderer.box(box, color, color, ShapeMode.Both, 1);
     }
-
     private void handleCurrentState() {
+        if (debugMode.get() && currentState != lastDebugState) {
+            info("State: " + currentState + " (timer: " + stateTimer + ")");
+            lastDebugState = currentState;
+        }
         switch (currentState) {
-            case IDLE -> { /* Waiting */ }
+            case IDLE -> handleIdleState();
             case CHECKING_LOCATION -> checkLocation();
             case INPUT_PROCESS -> handleInputProcess();
             case LOADING_PEARL -> handlePearlLoading();
@@ -774,32 +668,29 @@ public class StashMover extends Module {
             case CLOSING_CONTAINER -> handleClosingContainer();
             case BREAKING_CONTAINER -> handleBreakingContainer();
             case MOVING_TO_CONTAINER -> handleMovingToContainer();
+            case MANUAL_MOVING -> handleManualMoving();
             case OPENING_ENDERCHEST -> handleOpeningEnderChest();
             case FILLING_ENDERCHEST -> handleFillingEnderChest();
             case EMPTYING_ENDERCHEST -> handleEmptyingEnderChest();
             case WAITING -> handleWaiting();
+            case MOVING_FORWARD_RETRY -> handleMovingForwardRetry();
         }
     }
-
-    // Area selection methods
     public void startInputSelection() {
         selectionMode = SelectionMode.INPUT_FIRST;
         selectionPos1 = null;
         info("§aInput area selection started - §fLeft-click §afirst corner block");
     }
-
     public void startOutputSelection() {
         selectionMode = SelectionMode.OUTPUT_FIRST;
         selectionPos1 = null;
         info("§bOutput area selection started - §fLeft-click §bfirst corner block");
     }
-
     public void cancelSelection() {
         selectionMode = SelectionMode.NONE;
         selectionPos1 = null;
         info("§cSelection cancelled");
     }
-
     public void setInputArea(BlockPos pos1, BlockPos pos2) {
         inputAreaPos1 = new BlockPos(
             Math.min(pos1.getX(), pos2.getX()),
@@ -811,11 +702,9 @@ public class StashMover extends Module {
             Math.max(pos1.getY(), pos2.getY()),
             Math.max(pos1.getZ(), pos2.getZ())
         );
-
         detectContainersInArea(inputAreaPos1, inputAreaPos2, true);
         info("§aInput area set with §f" + inputContainers.size() + " §acontainers");
     }
-
     public void setOutputArea(BlockPos pos1, BlockPos pos2) {
         outputAreaPos1 = new BlockPos(
             Math.min(pos1.getX(), pos2.getX()),
@@ -827,42 +716,32 @@ public class StashMover extends Module {
             Math.max(pos1.getY(), pos2.getY()),
             Math.max(pos1.getZ(), pos2.getZ())
         );
-
         detectContainersInArea(outputAreaPos1, outputAreaPos2, false);
         info("§bOutput area set with §f" + outputContainers.size() + " §bcontainers");
     }
-
     private void detectContainersInArea(BlockPos pos1, BlockPos pos2, boolean isInput) {
         Set<ContainerInfo> containers = isInput ? inputContainers : outputContainers;
         containers.clear();
         Set<BlockPos> processedPositions = new HashSet<>();
-
         for (int x = pos1.getX(); x <= pos2.getX(); x++) {
             for (int y = pos1.getY(); y <= pos2.getY(); y++) {
                 for (int z = pos1.getZ(); z <= pos2.getZ(); z++) {
                     BlockPos pos = new BlockPos(x, y, z);
-
                     if (processedPositions.contains(pos)) continue;
-
                     BlockState state = mc.world.getBlockState(pos);
                     Block block = state.getBlock();
-
                     ContainerInfo container = null;
-
                     if (block instanceof ChestBlock && !(block instanceof TrappedChestBlock)) {
-                        // Always detect double chests properly
                         if (state.contains(Properties.CHEST_TYPE)) {
                             ChestType chestType = state.get(Properties.CHEST_TYPE);
                             if (chestType != ChestType.SINGLE) {
                                 Direction facing = state.get(Properties.HORIZONTAL_FACING);
                                 BlockPos otherPos = null;
-
                                 if (chestType == ChestType.LEFT) {
                                     otherPos = pos.offset(facing.rotateYClockwise());
                                 } else {
                                     otherPos = pos.offset(facing.rotateYCounterclockwise());
                                 }
-
                                 processedPositions.add(otherPos);
                                 container = new ContainerInfo(pos, ContainerType.DOUBLE_CHEST);
                             } else {
@@ -872,19 +751,16 @@ public class StashMover extends Module {
                             container = new ContainerInfo(pos, ContainerType.CHEST);
                         }
                     } else if (block instanceof TrappedChestBlock) {
-                        // Always include trapped chests and detect doubles
                         if (state.contains(Properties.CHEST_TYPE)) {
                             ChestType chestType = state.get(Properties.CHEST_TYPE);
                             if (chestType != ChestType.SINGLE) {
                                 Direction facing = state.get(Properties.HORIZONTAL_FACING);
                                 BlockPos otherPos = null;
-
                                 if (chestType == ChestType.LEFT) {
                                     otherPos = pos.offset(facing.rotateYClockwise());
                                 } else {
                                     otherPos = pos.offset(facing.rotateYCounterclockwise());
                                 }
-
                                 processedPositions.add(otherPos);
                                 container = new ContainerInfo(pos, ContainerType.DOUBLE_TRAPPED_CHEST);
                             } else {
@@ -894,10 +770,8 @@ public class StashMover extends Module {
                             container = new ContainerInfo(pos, ContainerType.TRAPPED_CHEST);
                         }
                     } else if (block instanceof BarrelBlock) {
-                        // Always include barrels
                         container = new ContainerInfo(pos, ContainerType.BARREL);
                     }
-
                     if (container != null) {
                         containers.add(container);
                         processedPositions.add(pos);
@@ -906,31 +780,24 @@ public class StashMover extends Module {
             }
         }
     }
-
-    // Process control methods
     private void startProcess() {
         if (!hasValidAreas()) {
             error("Please set input and output areas first!");
             return;
         }
-
         currentState = ProcessState.CHECKING_LOCATION;
         info("Starting StashMover process...");
     }
-
     public void startProcessManually() {
         startProcess();
     }
-
     private void stopCurrentProcess() {
         if (mc.currentScreen instanceof GenericContainerScreen) {
             mc.player.closeHandledScreen();
         }
-
         if (BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
             BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
         }
-
         currentState = ProcessState.IDLE;
         currentContainer = null;
         waitingForPearl = false;
@@ -946,177 +813,965 @@ public class StashMover extends Module {
         enderChestFull = false;
         pearlFailRetries = 0;
         offhandBackup = ItemStack.EMPTY;
-
         info("Process stopped");
     }
-
     public void stopProcessManually() {
         stopCurrentProcess();
     }
-
-
     private void checkLocation() {
         if (isNearInputArea()) {
             info("Near input area, starting input process");
+            enderChestEmptied = false;
+            detectContainersInArea(inputAreaPos1, inputAreaPos2, true);
+            info("Found " + inputContainers.size() + " input containers");
             currentState = ProcessState.INPUT_PROCESS;
-            findNextInputContainer();
+            stateTimer = 0;
         } else if (isNearOutputArea()) {
             info("Near output area, resetting pearl first");
-            // ALWAYS reset pearl when arriving at output to ensure one is in stasis
+            detectContainersInArea(outputAreaPos1, outputAreaPos2, false);
+            info("Found " + outputContainers.size() + " output containers");
             currentState = ProcessState.RESET_PEARL_PICKUP;
             hasThrownPearl = false;
             hasPlacedShulker = false;
-            isGoingToInput = false; // We're at output, pearl will be for going back to input
+            isGoingToInput = false;
         } else {
-            warning("Not near any configured area!");
-            warning("Player pos: " + mc.player.getBlockPos());
-            warning("Input area: " + inputAreaPos1 + " to " + inputAreaPos2);
-            warning("Output area: " + outputAreaPos1 + " to " + outputAreaPos2);
+            warning("Not near any configured area! Will retry in 5 seconds...");
+            if (debugMode.get()) {
+                // Removed coordinate logging
+                warning("Input area not set");
+                warning("Output area not set");
+            }
             currentState = ProcessState.IDLE;
+            stateTimer = 100;
         }
     }
-
-    // Input process methods
     private void handleInputProcess() {
-        // First check if inventory is full
+        // Prevent re-entering if we're already transitioning to enderchest handling
+        if (currentState == ProcessState.OPENING_ENDERCHEST) {
+            return;
+        }
+
         if (isInventoryFull()) {
-            // Use enderchest
             if (fillEnderChest.get() && !isEnderChestFull()) {
                 info("Inventory full, checking enderchest...");
                 findOrPlaceEnderChest();
                 return;
             } else {
-                // Can't use enderchest or it's full
                 info("Inventory full and enderchest not available/full, starting pearl loading");
                 currentState = ProcessState.LOADING_PEARL;
                 return;
             }
         }
-
-        // Find next container to process
-        if (currentContainer == null) {
-            findNextInputContainer();
-        }
+        findNextInputContainer();
     }
-
     private void findNextInputContainer() {
         currentContainer = inputContainers.stream()
             .filter(c -> !c.isEmpty)
             .min(Comparator.comparingDouble(c -> mc.player.getPos().distanceTo(Vec3d.ofCenter(c.pos))))
             .orElse(null);
-
         if (currentContainer == null) {
-            info("All input containers processed!");
-            currentState = ProcessState.LOADING_PEARL;
+            if (isInventoryFull() || (fillEnderChest.get() && hasItemsInEnderChest())) {
+                info("All input containers processed, starting pearl loading!");
+                currentState = ProcessState.LOADING_PEARL;
+            } else {
+                info("No containers with items found, rescanning...");
+                detectContainersInArea(inputAreaPos1, inputAreaPos2, true);
+                currentContainer = inputContainers.stream()
+                    .filter(c -> !c.isEmpty)
+                    .min(Comparator.comparingDouble(c -> mc.player.getPos().distanceTo(Vec3d.ofCenter(c.pos))))
+                    .orElse(null);
+                if (currentContainer != null) {
+                    info("Found container after rescan");
+                    moveToContainer(currentContainer);
+                } else {
+                    info("No containers found, waiting 5 seconds...");
+                    currentState = ProcessState.IDLE;
+                    stateTimer = 100;
+                }
+            }
         } else {
+            info("Moving to container");
             moveToContainer(currentContainer);
         }
     }
-
     private void moveToContainer(ContainerInfo container) {
-        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(container.pos));
-
-        if (distance > 4.5) {
-            // Use Baritone to move to container
-            GoalBlock goal = new GoalBlock(container.pos);
-            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
-            currentState = ProcessState.MOVING_TO_CONTAINER;
-            stateTimer = moveDelay.get();
+        if (currentContainer != container) {
+            containerOpenFailures = 0;
+            stuckCounter = 0;
+            stuckRecoveryAttempts = 0;
+            lastPlayerPos = null;
+        }
+        Vec3d eyePos = mc.player.getEyePos();
+        double distance = eyePos.distanceTo(Vec3d.ofCenter(container.pos));
+        if (distance > 3.5) {
+            BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
+            BlockPos validPosition = findValidStandingPositionNear(container.pos);
+            if (validPosition != null) {
+                GoalBlock goal = new GoalBlock(validPosition);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                currentState = ProcessState.MOVING_TO_CONTAINER;
+                if (distance > 20) {
+                    stateTimer = 200;
+                } else if (distance > 10) {
+                    stateTimer = 120;
+                } else {
+                    stateTimer = 80;
+                }
+                info("Moving to container (distance: " + String.format("%.1f", distance) + "m)");
+            } else {
+                int nearDistance = Math.max(2, containerReach.get().intValue());
+                GoalNear goal = new GoalNear(container.pos, nearDistance);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                currentState = ProcessState.MOVING_TO_CONTAINER;
+                stateTimer = 120;
+                warning("No ideal position found, using GoalNear for container");
+            }
         } else {
-            // Close enough, open container
             currentState = ProcessState.OPENING_CONTAINER;
-            stateTimer = 10; // Hold view for 10 ticks (half second)
+            stateTimer = 5;
         }
     }
-
+    private BlockPos findValidStandingPositionNear(BlockPos containerPos) {
+        for (int yOffset = 0; yOffset >= -2; yOffset--) {
+            for (Direction dir : Direction.Type.HORIZONTAL) {
+                BlockPos checkPos = containerPos.offset(dir).add(0, yOffset, 0);
+                if (isValidStandingSpot(checkPos)) {
+                    Vec3d standingEyePos = Vec3d.of(checkPos).add(0.5, 1.62, 0.5);
+                    double reach = standingEyePos.distanceTo(Vec3d.ofCenter(containerPos));
+                    if (reach <= 4.2) {
+                        return checkPos;
+                    }
+                }
+            }
+            BlockPos[] diagonals = {
+                containerPos.add(1, yOffset, 1),
+                containerPos.add(1, yOffset, -1),
+                containerPos.add(-1, yOffset, 1),
+                containerPos.add(-1, yOffset, -1)
+            };
+            for (BlockPos checkPos : diagonals) {
+                if (isValidStandingSpot(checkPos)) {
+                    Vec3d standingEyePos = Vec3d.of(checkPos).add(0.5, 1.62, 0.5);
+                    double reach = standingEyePos.distanceTo(Vec3d.ofCenter(containerPos));
+                    if (reach <= 4.2) {
+                        return checkPos;
+                    }
+                }
+            }
+        }
+        for (Direction dir : Direction.Type.HORIZONTAL) {
+            for (int yOffset = 0; yOffset >= -2; yOffset--) {
+                BlockPos checkPos = containerPos.offset(dir, 2).add(0, yOffset, 0);
+                if (isValidStandingSpot(checkPos)) {
+                    Vec3d standingEyePos = Vec3d.of(checkPos).add(0.5, 1.62, 0.5);
+                    double reach = standingEyePos.distanceTo(Vec3d.ofCenter(containerPos));
+                    if (reach <= 4.2) {
+                        return checkPos;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    private boolean isValidStandingSpot(BlockPos pos) {
+        BlockState below = mc.world.getBlockState(pos.down());
+        BlockState at = mc.world.getBlockState(pos);
+        BlockState above = mc.world.getBlockState(pos.up());
+        return below.isSolidBlock(mc.world, pos.down()) &&
+            !below.isAir() &&
+            (at.isAir() || !at.isSolidBlock(mc.world, pos)) &&
+            (above.isAir() || !above.isSolidBlock(mc.world, pos.up()));
+    }
     private void handleMovingToContainer() {
         if (currentContainer == null) {
             currentState = ProcessState.INPUT_PROCESS;
             return;
         }
-
-        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(currentContainer.pos));
-
-        if (distance <= 4.5) {
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d playerPos = mc.player.getPos();
+        double distance = eyePos.distanceTo(Vec3d.ofCenter(currentContainer.pos));
+        if (lastPlayerPos != null) {
+            double movementDelta = playerPos.distanceTo(lastPlayerPos);
+            if (movementDelta < 0.1) {
+                stuckCounter++;
+            } else {
+                stuckCounter = Math.max(0, stuckCounter - 2);
+            }
+            if (stuckCounter >= 40) {
+                warning("Stuck detected! Attempting recovery...");
+                performStuckRecovery();
+                return;
+            }
+        }
+        lastPlayerPos = playerPos;
+        if (distance <= 3.5) {
             BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
             currentState = ProcessState.OPENING_CONTAINER;
-            stateTimer = 10; // Hold view for 10 ticks (half second)
+            stateTimer = 5;
+            info("Reached container, opening...");
+            pathfindingFailures = 0;
+            stuckCounter = 0;
+            stuckRecoveryAttempts = 0;
+            lastPlayerPos = null;
+        } else if (!BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
+            pathfindingFailures++;
+            if (pathfindingFailures >= 2) {
+                warning("Pathfinding failed, using improved manual movement");
+                improvedManualMovement(currentContainer);
+                pathfindingFailures = 0;
+            } else {
+                warning("Pathfinding stopped, trying alternative path");
+                alternativePathToContainer(currentContainer);
+            }
+        } else if (stateTimer > 0) {
+            stateTimer--;
+            if (stateTimer == 0) {
+                warning("Movement timeout, switching to manual");
+                BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
+                improvedManualMovement(currentContainer);
+            }
         }
     }
-
     private void handleOpeningContainer() {
         if (currentContainer == null) {
-            currentState = ProcessState.INPUT_PROCESS;
-            return;
-        }
-
-        // Look at container and HOLD the rotation for GrimAC
-        Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
-        double yaw = Rotations.getYaw(containerCenter);
-        double pitch = Rotations.getPitch(containerCenter);
-
-        // Apply rotation
-        Rotations.rotate(yaw, pitch);
-
-        // Set rotation directly
-        mc.player.setYaw((float)yaw);
-        mc.player.setPitch((float)pitch);
-
-        // Hold view for 10 ticks
-        if (stateTimer > 0) {
-            stateTimer--;
-
-            // Log when we're about to open
-            if (stateTimer == 1) {
-                info("Opening container");
+            if (isNearOutputArea()) {
+                currentState = ProcessState.OUTPUT_PROCESS;
+            } else {
+                currentState = ProcessState.INPUT_PROCESS;
             }
             return;
         }
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d playerPos = mc.player.getPos();
+        double distance = eyePos.distanceTo(Vec3d.ofCenter(currentContainer.pos));
 
-        // After holding view, open container
+        double horizontalDistance = Math.sqrt(
+            Math.pow(currentContainer.pos.getX() + 0.5 - playerPos.x, 2) +
+                Math.pow(currentContainer.pos.getZ() + 0.5 - playerPos.z, 2)
+        );
+        double verticalDiff = Math.abs(currentContainer.pos.getY() - eyePos.y);
+
+        boolean isDiagonal = verticalDiff > 1.5 && horizontalDistance < 2.5;
+        double effectiveReach = isDiagonal ? 3.2 : 3.5;
+
+        if (distance > effectiveReach) {
+            if (retryCount < 2) {
+                info("Too far (" + String.format("%.1f", distance) + "m), moving closer...");
+                improvedManualMovement(currentContainer);
+                retryCount++;
+                return;
+            } else {
+                warning("Can't reach, trying manual approach");
+                manualMoveToContainer(currentContainer);
+                return;
+            }
+        }
+        retryCount = 0;
+        Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
+        double targetYaw = Rotations.getYaw(containerCenter);
+        double targetPitch = Rotations.getPitch(containerCenter);
+        mc.player.setYaw((float)targetYaw);
+        mc.player.setPitch((float)targetPitch);
+
+        for (int i = 0; i < 2; i++) {
+            mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+                (float)targetYaw, (float)targetPitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+        }
+
+        info("Opening container (attempt " + (containerOpenFailures + 1) + ")");
+        performImprovedInteraction(containerCenter);
+        currentState = ProcessState.WAITING;
+        stateTimer = 15;
+    }
+    private void performStandardInteraction(Vec3d containerCenter) {
+        Vec3d eyePos = mc.player.getEyePos();
+        Direction clickFace = getOptimalClickFace(currentContainer.pos, eyePos);
+        Vec3d hitVec = calculatePreciseHitVector(currentContainer.pos, clickFace, eyePos);
+        double yaw = Rotations.getYaw(hitVec);
+        double pitch = Rotations.getPitch(hitVec);
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+            (float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
         BlockHitResult hitResult = new BlockHitResult(
-            containerCenter,
-            Direction.UP,
+            hitVec,
+            clickFace,
             currentContainer.pos,
             false
         );
-
-        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-
-        currentState = ProcessState.WAITING;
-        stateTimer = openDelay.get();
-    }
-
-    private void handleWaiting() {
-        if (mc.currentScreen instanceof GenericContainerScreen) {
-            // Successfully opened container - reset failure counter
-            containerOpenFailures = 0;
-            currentState = ProcessState.TRANSFERRING_ITEMS;
-            stateTimer = transferDelay.get();
-        } else if (retryCount < maxRetries.get()) {
-            retryCount++;
-            containerOpenFailures++;
-
-            // Check failures
-            if (isNearOutputArea() && containerOpenFailures >= 10) {
-                error("Failed to open output containers 10 times - disabling module");
-                toggle(); // Turn off the module
-                return;
-            }
-
-            currentState = ProcessState.OPENING_CONTAINER;
-            stateTimer = 10;
-        } else {
-            warning("Failed to open container after " + maxRetries.get() + " retries");
-            currentContainer.isEmpty = true;
-            currentContainer = null;
-            retryCount = 0;
-            currentState = ProcessState.INPUT_PROCESS;
+        ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+            Hand.MAIN_HAND,
+            hitResult,
+            0
+        ));
+        if (result != ActionResult.SUCCESS) {
+            mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+        }
+        if (debugMode.get()) {
+            info("Interaction: face=" + clickFace + ", result=" + result);
         }
     }
+    private Vec3d calculatePreciseHitVector(BlockPos pos, Direction face, Vec3d eyePos) {
+        double x = pos.getX() + 0.5;
+        double y = pos.getY() + 0.5;
+        double z = pos.getZ() + 0.5;
+        double heightDiff = pos.getY() - eyePos.y;
+        switch (face) {
+            case UP -> {
+                y = pos.getY() + 1.0;
+                x = pos.getX() + 0.5;
+                z = pos.getZ() + 0.5;
+            }
+            case DOWN -> {
+                y = pos.getY();
+                x = pos.getX() + 0.5;
+                z = pos.getZ() + 0.5;
+            }
+            case NORTH -> {
+                z = pos.getZ();
+                if (heightDiff > 1.5) {
+                    y = pos.getY() + 0.3;
+                } else if (heightDiff > 0.5) {
+                    y = pos.getY() + 0.4;
+                }
+            }
+            case SOUTH -> {
+                z = pos.getZ() + 1.0;
+                if (heightDiff > 1.5) {
+                    y = pos.getY() + 0.3;
+                } else if (heightDiff > 0.5) {
+                    y = pos.getY() + 0.4;
+                }
+            }
+            case WEST -> {
+                x = pos.getX();
+                if (heightDiff > 1.5) {
+                    y = pos.getY() + 0.3;
+                } else if (heightDiff > 0.5) {
+                    y = pos.getY() + 0.4;
+                }
+            }
+            case EAST -> {
+                x = pos.getX() + 1.0;
+                if (heightDiff > 1.5) {
+                    y = pos.getY() + 0.3;
+                } else if (heightDiff > 0.5) {
+                    y = pos.getY() + 0.4;
+                }
+            }
+        }
+        return new Vec3d(x, y, z);
+    }
+    private void performInteractionWithMovement(Vec3d containerCenter) {
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d currentPos = mc.player.getPos();
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(
+            currentPos.x, currentPos.y, currentPos.z,
+            mc.player.getYaw(), mc.player.getPitch(),
+            mc.player.isOnGround(), mc.player.horizontalCollision));
+        Direction bestFace = getOptimalClickFace(currentContainer.pos, eyePos);
+        Vec3d[] hitPositions = new Vec3d[3];
+        if (bestFace == Direction.UP || bestFace == Direction.DOWN) {
+            hitPositions[0] = Vec3d.ofCenter(currentContainer.pos);
+            hitPositions[1] = Vec3d.ofCenter(currentContainer.pos).add(0.2, 0, 0.2);
+            hitPositions[2] = Vec3d.ofCenter(currentContainer.pos).add(-0.2, 0, -0.2);
+        } else {
+            hitPositions[0] = calculatePreciseHitVector(currentContainer.pos, bestFace, eyePos);
+            hitPositions[1] = hitPositions[0].add(0, 0.1, 0);
+            hitPositions[2] = hitPositions[0].add(0, -0.1, 0);
+        }
+        for (int i = 0; i < hitPositions.length; i++) {
+            Vec3d hitPos = hitPositions[i];
+            double yaw = Rotations.getYaw(hitPos);
+            double pitch = Rotations.getPitch(hitPos);
+            mc.player.setYaw((float)yaw);
+            mc.player.setPitch((float)pitch);
+            BlockHitResult hitResult = new BlockHitResult(
+                hitPos,
+                bestFace,
+                currentContainer.pos,
+                false
+            );
+            ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                Hand.MAIN_HAND,
+                hitResult,
+                i
+            ));
+            if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
+                if (debugMode.get()) {
+                    info("Container opened with position " + i + ", face: " + bestFace);
+                }
+                return;
+            }
+        }
+        if (debugMode.get()) {
+            info("All interaction attempts failed, face: " + bestFace);
+        }
+    }
+    private void performAggressiveInteraction(Vec3d containerCenter) {
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d pos = mc.player.getPos();
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(
+            pos.x, pos.y, pos.z,
+            mc.player.getYaw(), mc.player.getPitch(),
+            mc.player.isOnGround(), mc.player.horizontalCollision
+        ));
+        double heightDiff = currentContainer.pos.getY() - eyePos.y;
+        Direction[] facesToTry;
+        if (heightDiff > 2.0) {
+            facesToTry = new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+        } else if (heightDiff > 1.0) {
+            facesToTry = new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.UP};
+        } else {
+            facesToTry = new Direction[]{Direction.UP, Direction.NORTH, Direction.SOUTH};
+        }
+        for (Direction face : facesToTry) {
+            Vec3d hitVec = calculatePreciseHitVector(currentContainer.pos, face, eyePos);
+            double yaw = Rotations.getYaw(hitVec);
+            double pitch = Rotations.getPitch(hitVec);
+            mc.player.setYaw((float)yaw);
+            mc.player.setPitch((float)pitch);
+            mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+                (float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+            BlockHitResult hitResult = new BlockHitResult(
+                hitVec,
+                face,
+                currentContainer.pos,
+                false
+            );
+            ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                Hand.MAIN_HAND,
+                hitResult,
+                0
+            ));
+            if (result != ActionResult.SUCCESS) {
+                mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+                mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                    Hand.OFF_HAND,
+                    hitResult,
+                    1
+                ));
+            }
+            if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
+                if (debugMode.get()) {
+                    info("Opened with face: " + face);
+                }
+                return;
+            }
+        }
+        if (debugMode.get()) {
+            warning("Failed to open chest at Y=" + currentContainer.pos.getY() + ", height diff=" + String.format("%.1f", heightDiff));
+        }
+    }
+    private void handleOpeningContainer_OLD() {
+        if (currentContainer == null) {
+            if (isNearOutputArea()) {
+                currentState = ProcessState.OUTPUT_PROCESS;
+            } else {
+                currentState = ProcessState.INPUT_PROCESS;
+            }
+            return;
+        }
+        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(currentContainer.pos));
+        if (distance > containerReach.get()) {
+            if (retryCount < 3) {
+                info("Too far from container (" + String.format("%.1f", distance) + "m), moving closer...");
+                moveToContainer(currentContainer);
+                retryCount++;
+                return;
+            } else {
+                warning("Baritone pathfinding failed, attempting manual approach");
+                manualMoveToContainer(currentContainer);
+                return;
+            }
+        }
+        retryCount = 0;
+        if (containerOpenFailures >= 2) {
+            if (containerOpenFailures % 2 == 0) {
+                mc.options.leftKey.setPressed(true);
+            } else {
+                mc.options.leftKey.setPressed(false);
+                mc.options.rightKey.setPressed(true);
+            }
+            if (containerOpenFailures % 3 == 0) {
+                mc.options.leftKey.setPressed(false);
+                mc.options.rightKey.setPressed(false);
+            }
+        }
+        Vec3d containerCenter;
+        double offsetX = 0, offsetY = 0, offsetZ = 0;
+        switch (containerOpenFailures % 9) {
+            case 0 -> containerCenter = Vec3d.ofCenter(currentContainer.pos);
+            case 1 -> { offsetY = 0.25; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(0, offsetY, 0); }
+            case 2 -> { offsetY = -0.25; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(0, offsetY, 0); }
+            case 3 -> { offsetX = 0.2; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(offsetX, 0, 0); }
+            case 4 -> { offsetX = -0.2; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(offsetX, 0, 0); }
+            case 5 -> { offsetZ = 0.2; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(0, 0, offsetZ); }
+            case 6 -> { offsetZ = -0.2; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(0, 0, offsetZ); }
+            case 7 -> { offsetX = 0.15; offsetY = 0.15; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(offsetX, offsetY, 0); }
+            case 8 -> { offsetX = -0.15; offsetZ = 0.15; containerCenter = Vec3d.ofCenter(currentContainer.pos).add(offsetX, 0, offsetZ); }
+            default -> containerCenter = Vec3d.ofCenter(currentContainer.pos);
+        }
+        double yaw = Rotations.getYaw(containerCenter);
+        double pitch = Rotations.getPitch(containerCenter);
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround((float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        if (containerOpenFailures == 0 && stateTimer <= 0) {
+            stateTimer = 5;
+        }
+        if (stateTimer > 0) {
+            stateTimer--;
+            mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround((float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+            return;
+        }
+        if (containerOpenFailures >= 2) {
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            switch (containerOpenFailures % 4) {
+                case 0 -> {
+                    mc.options.leftKey.setPressed(true);
+                    mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                        mc.player.getX() - 0.01, mc.player.getY(), mc.player.getZ(), mc.player.isOnGround(), mc.player.horizontalCollision));
+                    mc.options.leftKey.setPressed(false);
+                }
+                case 1 -> {
+                    mc.options.rightKey.setPressed(true);
+                    mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                        mc.player.getX() + 0.01, mc.player.getY(), mc.player.getZ(), mc.player.isOnGround(), mc.player.horizontalCollision));
+                    mc.options.rightKey.setPressed(false);
+                }
+                case 2 -> {
+                    mc.options.forwardKey.setPressed(true);
+                    mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                        mc.player.getX(), mc.player.getY(), mc.player.getZ() - 0.01, mc.player.isOnGround(), mc.player.horizontalCollision));
+                    mc.options.forwardKey.setPressed(false);
+                }
+                case 3 -> {
+                    mc.options.backKey.setPressed(true);
+                    mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
+                        mc.player.getX(), mc.player.getY(), mc.player.getZ() + 0.01, mc.player.isOnGround(), mc.player.horizontalCollision));
+                    mc.options.backKey.setPressed(false);
+                }
+            }
+        }
+        info("Attempting to open container (attempt " + (containerOpenFailures + 1) + "/8)");
+        Direction clickFace = getOptimalClickFace(currentContainer.pos, mc.player.getEyePos());
+        BlockHitResult hitResult = new BlockHitResult(
+            containerCenter,
+            clickFace,
+            currentContainer.pos,
+            false
+        );
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround((float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+        mc.options.leftKey.setPressed(false);
+        mc.options.rightKey.setPressed(false);
+        mc.options.forwardKey.setPressed(false);
+        mc.options.backKey.setPressed(false);
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround((float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+        ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+        if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+            result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+        }
+        if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
+            info("Interaction sent successfully");
+        } else {
+            info("Interaction result: " + result);
+        }
+        currentState = ProcessState.WAITING;
+        stateTimer = 5;
+    }
+    private void handleWaiting() {
+        if (mc.currentScreen instanceof GenericContainerScreen) {
+            containerOpenFailures = 0;
+            pathfindingFailures = 0;
+            retryCount = 0;
+            mc.options.leftKey.setPressed(false);
+            mc.options.rightKey.setPressed(false);
+            mc.options.forwardKey.setPressed(false);
+            mc.options.backKey.setPressed(false);
+            mc.options.sneakKey.setPressed(false);
+            currentState = ProcessState.TRANSFERRING_ITEMS;
+            stateTimer = transferDelay.get();
+            info("Container opened successfully!");
+            return;
+        }
+        if (stateTimer > 0) {
+            stateTimer--;
+            if (stateTimer % 2 == 0 && currentContainer != null) {
+                Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
+                double yaw = Rotations.getYaw(containerCenter);
+                double pitch = Rotations.getPitch(containerCenter);
+                mc.player.setYaw((float)yaw);
+                mc.player.setPitch((float)pitch);
+                mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+                    (float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision
+                ));
 
+                Direction[] faces = {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+                Direction face = faces[stateTimer % faces.length];
+                Vec3d hitVec = calculatePreciseHitVector(currentContainer.pos, face, mc.player.getEyePos());
+
+                BlockHitResult hitResult = new BlockHitResult(
+                    hitVec, face, currentContainer.pos, false
+                );
+
+                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+                mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                    Hand.MAIN_HAND, hitResult, stateTimer
+                ));
+            }
+            return;
+        }
+        containerOpenFailures++;
+        info("Container didn't open, attempt " + containerOpenFailures + "/10");
+        if (containerOpenFailures >= 10) {
+            warning("Cannot open container at Y=" + currentContainer.pos.getY() + " after 10 attempts");
+            stopAllMovement();
+            if (isNearInputArea()) {
+                currentContainer.isEmpty = true;
+                info("Marked input container as empty/inaccessible");
+            } else if (isNearOutputArea()) {
+                currentContainer.isFull = true;
+                info("Marked output container as full/inaccessible");
+            }
+            currentContainer = null;
+            containerOpenFailures = 0;
+            retryCount = 0;
+            currentState = isNearOutputArea() ? ProcessState.OUTPUT_PROCESS : ProcessState.INPUT_PROCESS;
+        } else {
+            if (currentContainer != null) {
+                Vec3d eyePos = mc.player.getEyePos();
+                Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
+                double distance = eyePos.distanceTo(containerCenter);
+                if (containerOpenFailures >= 5) {
+                    performSmartRepositioning(currentContainer.pos, distance);
+                    currentState = ProcessState.MOVING_FORWARD_RETRY;
+                    stateTimer = 20;
+                } else if (distance > 3.0 && containerOpenFailures < 3) {
+                    double yaw = Rotations.getYaw(containerCenter);
+                    double pitch = Rotations.getPitch(containerCenter);
+                    mc.player.setYaw((float)yaw);
+                    mc.player.setPitch((float)pitch);
+                    if (distance > 4.0) {
+                        stateTimer = 20;
+                    } else {
+                        stateTimer = 20;
+                    }
+                    info("Moving closer to container (distance: " + String.format("%.1f", distance) + ")");
+                    currentState = ProcessState.MOVING_FORWARD_RETRY;
+                } else if (containerOpenFailures >= 3 && distance > 2.5) {
+                    info("Trying side approach after " + containerOpenFailures + " failures");
+                    Vec3d playerPos = mc.player.getPos();
+                    Vec3d toContainer = Vec3d.of(currentContainer.pos).add(0.5, 0, 0.5).subtract(playerPos);
+                    mc.options.leftKey.setPressed(true);
+                    mc.options.forwardKey.setPressed(true);
+                    stateTimer = 10;
+                    currentState = ProcessState.MOVING_FORWARD_RETRY;
+                } else if (distance < 2.0) {
+                    info("Too close to container, backing up...");
+                    mc.options.backKey.setPressed(true);
+                    stateTimer = 5;
+                    currentState = ProcessState.MOVING_FORWARD_RETRY;
+                } else {
+                    currentState = ProcessState.OPENING_CONTAINER;
+                    stateTimer = 2;
+                }
+            } else {
+                currentState = isNearOutputArea() ? ProcessState.OUTPUT_PROCESS : ProcessState.INPUT_PROCESS;
+            }
+        }
+    }
+    private void handleMovingForwardRetry() {
+        if (mc.currentScreen instanceof GenericContainerScreen) {
+            stopAllMovement();
+            containerOpenFailures = 0;
+            pathfindingFailures = 0;
+            retryCount = 0;
+            currentState = ProcessState.TRANSFERRING_ITEMS;
+            stateTimer = transferDelay.get();
+            info("Container opened successfully!");
+            return;
+        }
+        if (currentContainer == null) {
+            stopAllMovement();
+            currentState = isNearOutputArea() ? ProcessState.OUTPUT_PROCESS : ProcessState.INPUT_PROCESS;
+            return;
+        }
+        Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d playerPos = mc.player.getPos();
+        double distance = eyePos.distanceTo(containerCenter);
+        Vec3d toContainer = Vec3d.of(currentContainer.pos).add(0.5, 0, 0.5).subtract(playerPos);
+        double horizontalDistance = Math.sqrt(toContainer.x * toContainer.x + toContainer.z * toContainer.z);
+        double targetYaw = Rotations.getYaw(containerCenter);
+        double targetPitch = Rotations.getPitch(containerCenter);
+        float currentYaw = mc.player.getYaw();
+        float currentPitch = mc.player.getPitch();
+        float yawDiff = (float)(targetYaw - currentYaw);
+        while (yawDiff > 180) yawDiff -= 360;
+        while (yawDiff < -180) yawDiff += 360;
+        float pitchDiff = (float)(targetPitch - currentPitch);
+        float smoothingFactor = 0.6f;
+        float newYaw = currentYaw + yawDiff * smoothingFactor;
+        float newPitch = currentPitch + pitchDiff * smoothingFactor;
+        mc.player.setYaw(newYaw);
+        mc.player.setPitch(newPitch);
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+            newYaw, newPitch, mc.player.isOnGround(), mc.player.horizontalCollision));
+        if (containerOpenFailures >= 3 && mc.options.leftKey.isPressed()) {
+            if (stateTimer > 3) {
+                mc.options.leftKey.setPressed(true);
+                mc.options.forwardKey.setPressed(true);
+            } else {
+                stopAllMovement();
+            }
+        } else {
+            if (stateTimer > 3) {
+                if (horizontalDistance > 3.5) {
+                    mc.options.forwardKey.setPressed(true);
+                    mc.options.sprintKey.setPressed(true);
+                } else if (horizontalDistance > 2.0) {
+                    mc.options.forwardKey.setPressed(true);
+                    mc.options.sprintKey.setPressed(false);
+                    mc.options.sneakKey.setPressed(false);
+                } else if (horizontalDistance > 1.2) {
+                    mc.options.forwardKey.setPressed(true);
+                    mc.options.sneakKey.setPressed(true);
+                    mc.options.sprintKey.setPressed(false);
+                } else {
+                    stopAllMovement();
+                }
+            } else {
+                stopAllMovement();
+            }
+        }
+        if (distance <= 4.5 && stateTimer % 4 == 0) {
+            attemptContainerInteraction(containerCenter, eyePos, stateTimer);
+        }
+        stateTimer--;
+        if (stateTimer <= 0) {
+            stopAllMovement();
+            double finalDistance = eyePos.distanceTo(containerCenter);
+            if (finalDistance <= 4.0) {
+                info("At good distance (" + String.format("%.1f", finalDistance) + "), attempting to open");
+                currentState = ProcessState.OPENING_CONTAINER;
+                stateTimer = 5;
+            } else if (containerOpenFailures >= 5) {
+                warning("Failed to reach container after " + containerOpenFailures + " attempts, using Baritone");
+                moveToContainer(currentContainer);
+            } else {
+                info("Distance still " + String.format("%.1f", finalDistance) + ", trying alternative approach");
+                attemptAlternativeApproach();
+            }
+        }
+    }
+    private void handleIntelligentMovement(double horizontalDistance, Vec3d toContainer) {
+        boolean blocked = isPathBlocked(toContainer);
+        boolean needsJump = shouldJump();
+        boolean canStrafe = canStrafeAround();
+        mc.options.forwardKey.setPressed(false);
+        mc.options.backKey.setPressed(false);
+        mc.options.leftKey.setPressed(false);
+        mc.options.rightKey.setPressed(false);
+        mc.options.sneakKey.setPressed(false);
+        mc.options.jumpKey.setPressed(false);
+        if (horizontalDistance < 1.2) {
+            return;
+        }
+        if (blocked) {
+            if (needsJump) {
+                mc.options.jumpKey.setPressed(true);
+                mc.options.forwardKey.setPressed(true);
+                if (debugMode.get()) info("Jumping over obstacle");
+            } else if (canStrafe) {
+                handleStrafeMovement(toContainer);
+            } else {
+                attemptAlternativeApproach();
+            }
+        } else {
+            if (horizontalDistance > 3.0) {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sprintKey.setPressed(true);
+            } else if (horizontalDistance > 1.8) {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sprintKey.setPressed(false);
+            } else {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sneakKey.setPressed(true);
+            }
+        }
+    }
+    private boolean isPathBlocked(Vec3d toContainer) {
+        Vec3d checkPos = mc.player.getPos().add(toContainer.normalize().multiply(1.0));
+        BlockPos blockPos = BlockPos.ofFloored(checkPos);
+        BlockPos blockPosAbove = blockPos.up();
+        BlockState state = mc.world.getBlockState(blockPos);
+        BlockState stateAbove = mc.world.getBlockState(blockPosAbove);
+        return !state.isAir() && state.isSolidBlock(mc.world, blockPos) ||
+            !stateAbove.isAir() && stateAbove.isSolidBlock(mc.world, blockPosAbove);
+    }
+    private boolean shouldJump() {
+        Vec3d feetPos = mc.player.getPos();
+        Vec3d forwardPos = feetPos.add(mc.player.getRotationVector().multiply(1.0));
+        BlockPos feetBlock = BlockPos.ofFloored(forwardPos);
+        BlockPos headBlock = feetBlock.up();
+        BlockPos aboveBlock = feetBlock.up(2);
+        BlockState feetState = mc.world.getBlockState(feetBlock);
+        BlockState headState = mc.world.getBlockState(headBlock);
+        BlockState aboveState = mc.world.getBlockState(aboveBlock);
+        return !feetState.isAir() && headState.isAir() && aboveState.isAir();
+    }
+    private boolean canStrafeAround() {
+        Vec3d leftCheck = mc.player.getPos().add(mc.player.getRotationVector().rotateY((float)Math.toRadians(90)));
+        Vec3d rightCheck = mc.player.getPos().add(mc.player.getRotationVector().rotateY((float)Math.toRadians(-90)));
+        BlockPos leftBlock = BlockPos.ofFloored(leftCheck);
+        BlockPos rightBlock = BlockPos.ofFloored(rightCheck);
+        return mc.world.getBlockState(leftBlock).isAir() || mc.world.getBlockState(rightBlock).isAir();
+    }
+    private void handleStrafeMovement(Vec3d toContainer) {
+        Vec3d left = mc.player.getRotationVector().rotateY((float)Math.toRadians(90));
+        Vec3d right = mc.player.getRotationVector().rotateY((float)Math.toRadians(-90));
+        Vec3d leftCheck = mc.player.getPos().add(left);
+        Vec3d rightCheck = mc.player.getPos().add(right);
+        BlockPos leftBlock = BlockPos.ofFloored(leftCheck);
+        BlockPos rightBlock = BlockPos.ofFloored(rightCheck);
+        boolean leftClear = mc.world.getBlockState(leftBlock).isAir();
+        boolean rightClear = mc.world.getBlockState(rightBlock).isAir();
+        mc.options.forwardKey.setPressed(true);
+        if (leftClear && !rightClear) {
+            mc.options.leftKey.setPressed(true);
+            if (debugMode.get()) info("Strafing left around obstacle");
+        } else if (rightClear && !leftClear) {
+            mc.options.rightKey.setPressed(true);
+            if (debugMode.get()) info("Strafing right around obstacle");
+        } else if (leftClear && rightClear) {
+            Vec3d containerPos = Vec3d.of(currentContainer.pos);
+            double leftDist = leftCheck.distanceTo(containerPos);
+            double rightDist = rightCheck.distanceTo(containerPos);
+            if (leftDist < rightDist) {
+                mc.options.leftKey.setPressed(true);
+            } else {
+                mc.options.rightKey.setPressed(true);
+            }
+        }
+    }
+    private void attemptAlternativeApproach() {
+        if (currentContainer == null) return;
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d containerPos = Vec3d.of(currentContainer.pos).add(0.5, 0, 0.5);
+        Vec3d[] approachPoints = {
+            containerPos.add(2, 0, 0),
+            containerPos.add(-2, 0, 0),
+            containerPos.add(0, 0, 2),
+            containerPos.add(0, 0, -2),
+            containerPos.add(1.5, 0, 1.5),
+            containerPos.add(-1.5, 0, 1.5),
+            containerPos.add(1.5, 0, -1.5),
+            containerPos.add(-1.5, 0, -1.5)
+        };
+        Vec3d bestPoint = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Vec3d point : approachPoints) {
+            BlockPos checkPos = BlockPos.ofFloored(point);
+            if (mc.world.getBlockState(checkPos).isAir() &&
+                mc.world.getBlockState(checkPos.up()).isAir()) {
+                double dist = playerPos.distanceTo(point);
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestPoint = point;
+                }
+            }
+        }
+        if (bestPoint != null) {
+            info("Trying alternative approach angle");
+            GoalBlock goal = new GoalBlock(BlockPos.ofFloored(bestPoint));
+            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+            currentState = ProcessState.MOVING_TO_CONTAINER;
+            stateTimer = 60;
+        } else {
+            warning("No valid approach to container, skipping");
+            currentContainer.isEmpty = true;
+            currentContainer = null;
+            currentState = isNearOutputArea() ? ProcessState.OUTPUT_PROCESS : ProcessState.INPUT_PROCESS;
+        }
+    }
+    private void attemptContainerInteraction(Vec3d containerCenter, Vec3d eyePos, int timer) {
+        Direction optimalFace = getOptimalClickFace(currentContainer.pos, eyePos);
+        double yaw = Rotations.getYaw(containerCenter);
+        double pitch = Rotations.getPitch(containerCenter);
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        Vec3d pos = mc.player.getPos();
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(
+            pos.x, pos.y, pos.z, (float)yaw, (float)pitch,
+            mc.player.isOnGround(), mc.player.horizontalCollision));
+        Vec3d optimalTarget = calculateOptimalTargetPoint(currentContainer.pos, eyePos);
+        Vec3d[] hitPositions = {
+            containerCenter,
+            containerCenter.add(0, 0.15, 0),
+            containerCenter.add(0, -0.15, 0),
+            optimalTarget
+        };
+        for (int i = 0; i < 2; i++) {
+            Vec3d hitPos = hitPositions[timer % hitPositions.length];
+            BlockHitResult hitResult = new BlockHitResult(
+                hitPos,
+                optimalFace,
+                currentContainer.pos,
+                false
+            );
+            ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                Hand.MAIN_HAND, hitResult, timer + i));
+            if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
+                if (debugMode.get()) {
+                    info("Interaction successful!");
+                }
+                break;
+            }
+        }
+    }
+    private Vec3d calculateOptimalTargetPoint(BlockPos containerPos, Vec3d eyePos) {
+        double heightDiff = containerPos.getY() - eyePos.y;
+        double yOffset = 0.0;
+        if (heightDiff > 1.5) {
+            yOffset = -0.3;
+        } else if (heightDiff > 0.5) {
+            yOffset = -0.15;
+        } else if (heightDiff < -1.5) {
+            yOffset = 0.3;
+        } else if (heightDiff < -0.5) {
+            yOffset = 0.15;
+        }
+        if (containerOpenFailures > 0) {
+            double variation = (containerOpenFailures % 3 - 1) * 0.1;
+            yOffset += variation;
+        }
+        return Vec3d.ofCenter(containerPos).add(0, yOffset, 0);
+    }
+    private void stopAllMovement() {
+        mc.options.forwardKey.setPressed(false);
+        mc.options.backKey.setPressed(false);
+        mc.options.leftKey.setPressed(false);
+        mc.options.rightKey.setPressed(false);
+        mc.options.jumpKey.setPressed(false);
+        mc.options.sneakKey.setPressed(false);
+        mc.options.sprintKey.setPressed(false);
+    }
     private void handleTransferringItems() {
-        // Check location
+        if (currentContainer != null && mc.currentScreen instanceof GenericContainerScreen) {
+            Vec3d containerCenter = Vec3d.ofCenter(currentContainer.pos);
+            double yaw = Rotations.getYaw(containerCenter);
+            double pitch = Rotations.getPitch(containerCenter);
+            mc.player.setYaw((float)yaw);
+            mc.player.setPitch((float)pitch);
+        }
         if (isNearInputArea()) {
             handleInputTransferringItems();
         } else if (isNearOutputArea()) {
@@ -1125,13 +1780,9 @@ public class StashMover extends Module {
             currentState = ProcessState.CHECKING_LOCATION;
         }
     }
-
     private void handleInputTransferringItems() {
         if (!(mc.currentScreen instanceof GenericContainerScreen)) {
-            // Container window was closed unexpectedly (attacked by endermite, etc.)
-            // Check if we still have the container and should reopen it
             if (currentContainer != null && !currentContainer.isEmpty && !currentContainer.isFull) {
-                // Check if inventory is not full - we still need to transfer items
                 boolean inventoryHasSpace = false;
                 for (int j = 0; j < 36; j++) {
                     if (mc.player.getInventory().getStack(j).isEmpty()) {
@@ -1139,15 +1790,11 @@ public class StashMover extends Module {
                         break;
                     }
                 }
-
                 if (inventoryHasSpace) {
                     warning("Container window closed unexpectedly! Reopening...");
-                    // Attempt to reopen the container
                     currentState = ProcessState.OPENING_CONTAINER;
-                    stateTimer = 10;
+                    stateTimer = 5;
                     containerOpenFailures++;
-
-                    // If we've failed too many times, skip this container
                     if (containerOpenFailures > 3) {
                         warning("Failed to reopen container multiple times, skipping");
                         currentContainer = null;
@@ -1157,134 +1804,82 @@ public class StashMover extends Module {
                     return;
                 }
             }
-
             currentState = ProcessState.INPUT_PROCESS;
             return;
         }
-
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
         }
-
-        boolean transferredItem = false;
-        boolean inventoryHasSpace = false;
-
-        // Check inventory space
-        for (int j = 0; j < 36; j++) {
-            if (mc.player.getInventory().getStack(j).isEmpty()) {
-                inventoryHasSpace = true;
-                break;
-            }
-        }
-
-        if (!inventoryHasSpace) {
-            // Inventory full - check if we should drop non-shulkers
-            if (onlyShulkers.get()) {
-                // Drop non-shulker items to make room
-                boolean droppedItem = false;
-                for (int j = 0; j < 36; j++) {
-                    ItemStack invStack = mc.player.getInventory().getStack(j);
-                    // Only keep shulkers when onlyShulkers is enabled
-                    if (!invStack.isEmpty() && !isShulkerBox(invStack.getItem())) {
-                        // Close container first then drop the item
-                        mc.player.closeHandledScreen();
-                        // Use InvUtils to drop the correct item from inventory
-                        InvUtils.drop().slot(j);
-                        droppedItem = true;
-                        info("Dropped non-shulker item: " + invStack.getItem().getName().getString());
-                        // Set state to reopen container after dropping
-                        currentState = ProcessState.OPENING_CONTAINER;
-                        stateTimer = transferDelay.get();
-                        return; // Drop one item at a time, will reopen container next tick
-                    }
-                }
-
-                if (!droppedItem) {
-                    // No non-shulker items to drop, inventory truly full
-                    currentState = ProcessState.CLOSING_CONTAINER;
+        if (onlyShulkers.get()) {
+            for (int j = 0; j < 36; j++) {
+                ItemStack invStack = mc.player.getInventory().getStack(j);
+                if (!invStack.isEmpty() && !isShulkerBox(invStack.getItem())) {
+                    mc.player.closeHandledScreen();
+                    InvUtils.drop().slot(j);
+                    info("Dropping non-shulker: " + invStack.getItem().getName().getString());
+                    currentState = ProcessState.OPENING_CONTAINER;
+                    stateTimer = 5;
                     return;
                 }
-            } else {
-                // Not in OnlyShulker mode, inventory is full
-                currentState = ProcessState.CLOSING_CONTAINER;
-                return;
             }
         }
-
-        // Container to inventory
-        // Container slots are indexed from 0 to totalSlots-1 in the handler
+        if (isInventoryFull()) {
+            currentState = ProcessState.CLOSING_CONTAINER;
+            return;
+        }
+        boolean transferredItem = false;
         for (int i = 0; i < currentContainer.totalSlots; i++) {
             Slot slot = handler.getSlot(i);
             ItemStack stack = slot.getStack();
-
             if (!stack.isEmpty()) {
-                // Filter - only take shulkers when onlyShulkers is enabled
                 if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
                     continue;
                 }
-
-                // Shift-click the item to transfer it to inventory
                 mc.interactionManager.clickSlot(
                     handler.syncId,
                     slot.id,
-                    0, // button (0 for left click)
-                    SlotActionType.QUICK_MOVE, // shift-click
+                    0,
+                    SlotActionType.QUICK_MOVE,
                     mc.player
                 );
-
                 transferredItem = true;
                 itemsTransferred++;
                 stateTimer = transferDelay.get();
-                return; // Process one item at a time
+                return;
             }
         }
-
-        // Container is empty
         if (!transferredItem) {
             currentContainer.isEmpty = true;
             info("Container is now empty");
             currentState = ProcessState.CLOSING_CONTAINER;
         }
     }
-
     private void handleClosingContainer() {
         if (mc.currentScreen instanceof GenericContainerScreen) {
             mc.player.closeHandledScreen();
         }
-
         stateTimer = closeDelay.get();
-
-        // Handle by location
         if (isNearOutputArea()) {
-            // At OUTPUT area - handle depositing items
-
-            // If OnlyShulker mode, drop any non-shulker items BEFORE processing
             if (onlyShulkers.get()) {
                 for (int i = 0; i < 36; i++) {
                     ItemStack stack = mc.player.getInventory().getStack(i);
-                    // Drop ALL non-shulker items
                     if (!stack.isEmpty() && !isShulkerBox(stack.getItem())) {
                         InvUtils.drop().slot(i);
                         info("Dropped non-shulker at output: " + stack.getItem().getName().getString());
                         stateTimer = 5;
-                        return; // Drop one at a time
+                        return;
                     }
                 }
             }
-
-            // Check inventory
             boolean inventoryEmpty = !hasItemsToTransfer();
-
             if (inventoryEmpty && enderChestHasItems && fillEnderChest.get()) {
-                // Need to get items from enderchest
                 info("Getting items from enderchest to continue depositing");
                 enderChestPos = findNearbyEnderChest();
                 if (enderChestPos != null) {
                     currentState = ProcessState.OPENING_ENDERCHEST;
-                    stateTimer = 10; // Hold view for 10 ticks (half second)
+                    stateTimer = 5;
                 } else {
-                    // Try to place enderchest
                     FindItemResult enderChest = InvUtils.findInHotbar(Items.ENDER_CHEST);
                     if (enderChest.found()) {
                         BlockPos placePos = findSuitablePlacePos();
@@ -1295,91 +1890,64 @@ public class StashMover extends Module {
                 }
                 return;
             }
-
             if (inventoryEmpty && !enderChestHasItems) {
-                // Both inventory and enderchest are empty, go back
                 info("All items deposited, going back to input");
                 currentContainer = null;
                 currentState = ProcessState.GOING_BACK;
                 return;
             }
-
-            // Still have items, find next output container
             currentContainer = null;
             currentState = ProcessState.OUTPUT_PROCESS;
-
         } else if (isNearInputArea()) {
-            // At INPUT area - handle collecting items
-
-            // If OnlyShulker mode, drop any non-shulker items
             if (onlyShulkers.get()) {
                 boolean foundNonShulker = false;
                 for (int i = 0; i < 36; i++) {
                     ItemStack stack = mc.player.getInventory().getStack(i);
-                    // Drop ALL non-shulker items when onlyShulkers is enabled
                     if (!stack.isEmpty() && !isShulkerBox(stack.getItem())) {
-                        // Drop non-shulker item using InvUtils for consistency
                         InvUtils.drop().slot(i);
                         info("Dropped non-shulker: " + stack.getItem().getName().getString());
                         stateTimer = 5;
                         foundNonShulker = true;
-                        // After dropping, reopen container if it still has items
                         if (currentContainer != null && !currentContainer.isEmpty) {
                             currentState = ProcessState.OPENING_CONTAINER;
                         } else {
                             currentState = ProcessState.INPUT_PROCESS;
                         }
-                        return; // Drop one at a time
+                        return;
                     }
                 }
-
-                // If we went through all slots and found no non-shulkers, continue
                 if (!foundNonShulker) {
                     info("No non-shulker items to drop");
                 }
             }
-
-            // Break empty container
             if (currentContainer != null && currentContainer.isEmpty && breakEmptyContainers.get()) {
                 currentState = ProcessState.BREAKING_CONTAINER;
                 return;
             }
-
-            // Check if full
             if (isInventoryFull()) {
                 info("Inventory full");
-
-                // Fill enderchest
                 if (fillEnderChest.get() && !isEnderChestFull()) {
                     info("Checking enderchest...");
                     findOrPlaceEnderChest();
                 } else {
-                    // Both inventory and enderchest are full, start pearl loading
                     info("Inventory and enderchest full, starting pearl loading");
                     currentContainer = null;
                     currentState = ProcessState.LOADING_PEARL;
                 }
             } else {
-                // Inventory not full, continue with next container
                 currentContainer = null;
                 currentState = ProcessState.INPUT_PROCESS;
             }
         } else {
-            // Not at either area, check location
             currentState = ProcessState.CHECKING_LOCATION;
         }
     }
-
     private void handleBreakingContainer() {
         if (currentContainer == null) {
             currentState = ProcessState.INPUT_PROCESS;
             return;
         }
-
-        // Break the container
         mc.interactionManager.updateBlockBreakingProgress(currentContainer.pos, Direction.UP);
-
-        // Check broken
         if (mc.world.getBlockState(currentContainer.pos).isAir()) {
             inputContainers.remove(currentContainer);
             containersProcessed++;
@@ -1388,15 +1956,16 @@ public class StashMover extends Module {
             stateTimer = moveDelay.get();
         }
     }
-
     private void findOrPlaceEnderChest() {
         enderChestPos = findNearbyEnderChest();
-
         if (enderChestPos != null) {
             currentState = ProcessState.OPENING_ENDERCHEST;
-            stateTimer = 10; // Hold view for 10 ticks (half second)
+            stateTimer = 0;  // Set to 0 to immediately initiate movement
+            // Directly set Baritone goal to move to enderchest
+            GoalNear goal = new GoalNear(enderChestPos, 2);
+            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+            info("Moving to enderchest");
         } else {
-            // Try to place enderchest
             FindItemResult enderChest = InvUtils.findInHotbar(Items.ENDER_CHEST);
             if (enderChest.found()) {
                 BlockPos placePos = findSuitablePlacePos();
@@ -1409,92 +1978,92 @@ public class StashMover extends Module {
             }
         }
     }
-
     private void handleOpeningEnderChest() {
         if (enderChestPos == null) {
-            currentState = ProcessState.INPUT_PROCESS;
+            // Try to find enderchest one more time
+            enderChestPos = findNearbyEnderChest();
+            if (enderChestPos == null) {
+                // Still no enderchest found, try to place one if we have it
+                FindItemResult enderChest = InvUtils.findInHotbar(Items.ENDER_CHEST);
+                if (enderChest.found()) {
+                    BlockPos placePos = findSuitablePlacePos();
+                    if (placePos != null) {
+                        placeEnderChest(placePos, enderChest.slot());
+                        return;
+                    }
+                }
+                // No enderchest available at all, go back to input process
+                warning("No enderchest found or available to place");
+                currentState = ProcessState.INPUT_PROCESS;
+                return;
+            }
+        }
+
+        // Check if enderchest GUI is already open
+        if (mc.currentScreen instanceof GenericContainerScreen) {
+            containerOpenFailures = 0;
+            if (isNearOutputArea()) {
+                currentState = ProcessState.EMPTYING_ENDERCHEST;
+            } else {
+                currentState = ProcessState.FILLING_ENDERCHEST;
+            }
+            stateTimer = transferDelay.get();
             return;
         }
 
-        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(enderChestPos));
+        // Check if we're close enough to open the enderchest
+        Vec3d eyePos = mc.player.getEyePos();
+        double distance = eyePos.distanceTo(Vec3d.ofCenter(enderChestPos));
 
-        if (distance > 4.5) {
-            GoalBlock goal = new GoalBlock(enderChestPos);
-            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
-            stateTimer = moveDelay.get();
-            return;
+        if (distance <= 4.5) {
+            // We're close enough, try to open it
+            Vec3d enderChestCenter = Vec3d.ofCenter(enderChestPos);
+            double targetYaw = Rotations.getYaw(enderChestCenter);
+            double targetPitch = Rotations.getPitch(enderChestCenter);
+            mc.player.setYaw((float)targetYaw);
+            mc.player.setPitch((float)targetPitch);
+
+            BlockHitResult hitResult = new BlockHitResult(
+                enderChestCenter,
+                Direction.UP,
+                enderChestPos,
+                false
+            );
+            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            stateTimer = 10; // Small delay to let the GUI open
+        } else {
+            // Too far, check if Baritone is already pathing
+            if (!BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
+                // Not pathing, initiate movement
+                GoalNear goal = new GoalNear(enderChestPos, 2);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                info("Moving to enderchest");
+            }
+            // Otherwise, Baritone is already moving us there, just wait
         }
 
-        // Look at enderchest and HOLD the rotation for GrimAC
-        Vec3d echestCenter = Vec3d.ofCenter(enderChestPos);
-        double yaw = Rotations.getYaw(echestCenter);
-        double pitch = Rotations.getPitch(echestCenter);
-
-        // Apply rotation
-        Rotations.rotate(yaw, pitch);
-
-        // Set rotation directly
-        mc.player.setYaw((float)yaw);
-        mc.player.setPitch((float)pitch);
-
-        // Hold view for 10 ticks
         if (stateTimer > 0) {
             stateTimer--;
-
-            // Log when we're about to open
-            if (stateTimer == 1) {
-                info("Opening enderchest");
-            }
-            return;
         }
-
-        // After holding view, open enderchest
-        BlockHitResult hitResult = new BlockHitResult(
-            echestCenter,
-            Direction.UP,
-            enderChestPos,
-            false
-        );
-
-        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-
-        // Reset failure counter on successful attempt
-        containerOpenFailures = 0;
-
-        // Determine next state
-        if (isNearOutputArea()) {
-            currentState = ProcessState.EMPTYING_ENDERCHEST;
-        } else {
-            currentState = ProcessState.FILLING_ENDERCHEST;
-        }
-        stateTimer = openDelay.get();
     }
-
     private void handleFillingEnderChest() {
         if (!(mc.currentScreen instanceof GenericContainerScreen)) {
-            // Enderchest closed, check what to do next
             checkNextStepAfterEnderChest();
             return;
         }
-
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             mc.player.closeHandledScreen();
             checkNextStepAfterEnderChest();
             return;
         }
-
-        // Inventory to enderchest
         boolean transferred = false;
         boolean enderChestHasSpace = false;
-
-        // First check if enderchest has any space
         for (int j = 0; j < 27; j++) {
             if (handler.getSlot(j).getStack().isEmpty()) {
                 enderChestHasSpace = true;
                 break;
             }
         }
-
         if (!enderChestHasSpace) {
             enderChestFull = true;
             info("Enderchest is full");
@@ -1503,91 +2072,72 @@ public class StashMover extends Module {
             checkNextStepAfterEnderChest();
             return;
         }
-
-        // Try to transfer items from inventory to enderchest
-        // Enderchest has 27 slots (0-26)
-        // Player inventory starts at slot 27
-        for (int i = 27; i < 63; i++) { // Player inventory slots in enderchest GUI
+        for (int i = 27; i < 63; i++) {
             Slot slot = handler.getSlot(i);
             ItemStack stack = slot.getStack();
-
             if (!stack.isEmpty()) {
-                // Only transfer shulkers when onlyShulkers is enabled
                 if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
                     continue;
                 }
-
-                // Shift-click to transfer to enderchest
                 mc.interactionManager.clickSlot(
                     handler.syncId,
                     slot.id,
-                    0, // button (0 for left click)
-                    SlotActionType.QUICK_MOVE, // shift-click
+                    0,
+                    SlotActionType.QUICK_MOVE,
                     mc.player
                 );
-
                 transferred = true;
-                enderChestHasItems = true; // Mark that we have items in enderchest
+                enderChestHasItems = true;
                 stateTimer = transferDelay.get();
                 info("Transferred item to enderchest");
-                return; // Process one item at a time
+                return;
             }
         }
-
         if (!transferred) {
-            // No more items to transfer or enderchest full
             mc.player.closeHandledScreen();
             stateTimer = closeDelay.get();
             checkNextStepAfterEnderChest();
         }
     }
-
     private void checkNextStepAfterEnderChest() {
-        // Both full check
         if (isInventoryFull() && enderChestFull) {
             info("Both inventory and enderchest are full, starting pearl loading");
             currentContainer = null;
             currentState = ProcessState.LOADING_PEARL;
         } else {
-            // Continue processing input containers
             currentContainer = null;
             currentState = ProcessState.INPUT_PROCESS;
         }
     }
-
     private void handleEmptyingEnderChest() {
         if (!(mc.currentScreen instanceof GenericContainerScreen)) {
-            // Enderchest closed, continue output process
-            currentState = ProcessState.OUTPUT_PROCESS;
+            if (hasItemsToTransfer()) {
+                currentState = ProcessState.OUTPUT_PROCESS;
+            } else {
+                enderChestEmptied = true;
+                currentState = ProcessState.OUTPUT_PROCESS;
+            }
             return;
         }
-
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             mc.player.closeHandledScreen();
             currentState = ProcessState.OUTPUT_PROCESS;
             return;
         }
-
-        // Enderchest to inventory
         boolean transferred = false;
         boolean inventoryHasSpace = false;
-
-        // Check space
         for (int i = 0; i < 36; i++) {
             if (mc.player.getInventory().getStack(i).isEmpty()) {
                 inventoryHasSpace = true;
                 break;
             }
         }
-
         if (!inventoryHasSpace) {
-            // Inventory is full, close enderchest and continue
+            info("Inventory full, closing enderchest to deposit items");
             mc.player.closeHandledScreen();
             currentState = ProcessState.OUTPUT_PROCESS;
             return;
         }
-
-        // Check if enderchest has any items first
         boolean enderChestIsEmpty = true;
         for (int i = 0; i < 27; i++) {
             if (!handler.getSlot(i).getStack().isEmpty()) {
@@ -1595,65 +2145,49 @@ public class StashMover extends Module {
                 break;
             }
         }
-
         if (enderChestIsEmpty) {
-            // Enderchest is empty, we're done
             enderChestHasItems = false;
             enderChestEmptied = true;
-            info("Enderchest is empty");
+            info("Enderchest is empty, all items transferred");
             mc.player.closeHandledScreen();
             stateTimer = closeDelay.get();
             currentState = ProcessState.OUTPUT_PROCESS;
             return;
         }
-
-        // Try to transfer items from enderchest to inventory
-        // Enderchest slots are 0-26
         for (int i = 0; i < 27; i++) {
             Slot slot = handler.getSlot(i);
             ItemStack stack = slot.getStack();
-
             if (!stack.isEmpty()) {
-                // Only transfer shulkers if in OnlyShulkers mode
                 if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
                     continue;
                 }
-
-                // Shift-click to transfer to inventory
                 mc.interactionManager.clickSlot(
                     handler.syncId,
                     slot.id,
-                    0, // button (0 for left click)
-                    SlotActionType.QUICK_MOVE, // shift-click
+                    0,
+                    SlotActionType.QUICK_MOVE,
                     mc.player
                 );
-
                 transferred = true;
-                enderChestHasItems = true; // Mark that chest still has items
+                enderChestHasItems = true;
                 stateTimer = transferDelay.get();
                 info("Retrieved item from enderchest");
-                return; // Process one item at a time
+                return;
             }
         }
-
-        // If no items transferred but enderchest not empty, inventory must be full or only non-shulkers left
         if (!transferred && !enderChestIsEmpty) {
             if (inventoryHasSpace && onlyShulkers.get()) {
-                // Only non-shulkers left in enderchest
                 info("Only non-shulkers left in enderchest");
                 enderChestHasItems = false;
                 mc.player.closeHandledScreen();
                 currentState = ProcessState.OUTPUT_PROCESS;
             } else {
-                // Inventory full, deposit first
                 info("Inventory full, depositing items first");
                 mc.player.closeHandledScreen();
                 currentState = ProcessState.OUTPUT_PROCESS;
             }
         }
     }
-
-    // Pearl loading methods
     private void handlePearlLoading() {
         if (!waitingForPearl) {
             sendPearlCommand();
@@ -1662,34 +2196,25 @@ public class StashMover extends Module {
             pearlRetryCount = 0;
             initialPlayerPos = mc.player.getPos();
         }
-
-        // Check teleport
         Vec3d currentPos = mc.player.getPos();
         double distance = currentPos.distanceTo(initialPlayerPos);
-
-        // If we moved more than 100 blocks, we likely teleported
         if (distance > 100) {
-            // Near output
             if (isNearOutputArea()) {
                 info("Successfully pearl loaded to output area!");
                 waitingForPearl = false;
-
-                // Go through pearl reset
+                ensureOffhandHasItem();
                 currentState = ProcessState.RESET_PEARL_PICKUP;
                 hasThrownPearl = false;
                 hasPlacedShulker = false;
-                isGoingToInput = false; // We're going to output area
+                isGoingToInput = false;
                 return;
             } else if (!isNearInputArea()) {
-                // We teleported but not to the expected area, retry
                 warning("Teleported but not to output area, retrying...");
                 waitingForPearl = false;
                 currentState = ProcessState.LOADING_PEARL;
                 return;
             }
         }
-
-        // Timeout check
         if (System.currentTimeMillis() - lastPearlMessageTime > pearlTimeout.get() * 1000) {
             if (pearlRetryCount < maxRetries.get()) {
                 pearlRetryCount++;
@@ -1703,192 +2228,159 @@ public class StashMover extends Module {
             }
         }
     }
-
     private void sendPearlCommand() {
         String randomSuffix = generateRandomString(8);
         String command = String.format("/msg %s %s %s",
             pearlPlayerName.get(),
             pearlCommand.get(),
             randomSuffix);
-
         ChatUtils.sendPlayerMsg(command);
         lastRandomString = randomSuffix;
         info("Sent pearl command: " + command);
     }
-
-    // Pearl methods
     private void handleResetPearlPickup() {
-        // Use correct coordinates based on where we are
         BlockPos pickupPos;
         if (isGoingToInput) {
             pickupPos = inputPearlPickupPos.get();
         } else {
             pickupPos = outputPearlPickupPos.get();
         }
-        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(pickupPos));
 
+        ensureOffhandHasItem();
+
+        double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(pickupPos));
         if (distance > 3) {
-            // Move to pickup location
             GoalBlock goal = new GoalBlock(pickupPos);
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
             stateTimer = moveDelay.get();
         } else {
-            // At pickup location, place shulker in offhand
             currentState = ProcessState.RESET_PEARL_PLACE_SHULKER;
             stateTimer = 10;
         }
     }
-
     private void handleResetPearlPlaceShulker() {
-        // Try to place shulker in offhand if available (optional)
         if (!hasPlacedShulker) {
-            // Find shulker in hotbar slot 0
             ItemStack slot0 = mc.player.getInventory().getStack(0);
 
+            if (slot0.getItem() == Items.ENDER_PEARL) {
+                for (int i = 1; i < 36; i++) {
+                    if (mc.player.getInventory().getStack(i).isEmpty()) {
+                        InvUtils.move().from(36).to(i);
+                        info("Moved pearl from slot 0 temporarily");
+                        break;
+                    }
+                }
+            }
+
+            ensureOffhandHasItem();
+
+            slot0 = mc.player.getInventory().getStack(0);
             if (isShulkerBox(slot0.getItem())) {
-                // Backup what's currently in offhand
                 offhandBackup = mc.player.getOffHandStack().copy();
-
-                // Move shulker to offhand
-                mc.interactionManager.clickSlot(
-                    mc.player.currentScreenHandler.syncId,
-                    45, // Offhand slot
-                    0,
-                    SlotActionType.PICKUP,
-                    mc.player
-                );
-
-                mc.interactionManager.clickSlot(
-                    mc.player.currentScreenHandler.syncId,
-                    36, // Hotbar slot 0
-                    0,
-                    SlotActionType.PICKUP,
-                    mc.player
-                );
-
-                mc.interactionManager.clickSlot(
-                    mc.player.currentScreenHandler.syncId,
-                    45, // Offhand slot
-                    0,
-                    SlotActionType.PICKUP,
-                    mc.player
-                );
-
+                if (!mc.player.getOffHandStack().isEmpty()) {
+                    for (int i = 1; i < 36; i++) {
+                        if (mc.player.getInventory().getStack(i).isEmpty()) {
+                            InvUtils.move().fromOffhand().to(i);
+                            break;
+                        }
+                    }
+                }
+                InvUtils.move().from(36).toOffhand();
                 hasPlacedShulker = true;
-                info("Placed shulker in offhand");
-                stateTimer = 20;
+                info("Placed shulker in offhand, now walking to pressure plate");
+                BlockPos pickupPos = isGoingToInput ? inputPearlPickupPos.get() : outputPearlPickupPos.get();
+                GoalBlock goal = new GoalBlock(pickupPos);
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                stateTimer = 30;
             } else {
-                // No shulker found, that's OK - mark as done and continue
                 info("No shulker in slot 0, continuing without offhand shulker");
-                hasPlacedShulker = true; // Mark as done so we don't keep trying
-                stateTimer = 10;
+                hasPlacedShulker = true;
+                stateTimer = 5;
             }
         } else {
-            // Wait for pearl to be dispensed and pick it up
-            // Check pearl
             FindItemResult pearl = InvUtils.find(Items.ENDER_PEARL);
             if (pearl.found()) {
                 info("Pearl picked up, moving to throw location");
                 currentState = ProcessState.RESET_PEARL_APPROACH;
-                stateTimer = 10;
+                stateTimer = 5;
             } else {
-                // Wait for pearl
-                stateTimer = 10;
+                BlockPos pickupPos = isGoingToInput ? inputPearlPickupPos.get() : outputPearlPickupPos.get();
+                double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(pickupPos));
+                if (distance > 1.0) {
+                    GoalBlock goal = new GoalBlock(pickupPos);
+                    BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                }
+                stateTimer = 5;
             }
         }
     }
-
     private void handleResetPearlApproach() {
-        // Use correct coordinates based on where we are (trapdoor position)
         BlockPos throwPos;
         if (isGoingToInput) {
             throwPos = inputPearlThrowPos.get();
         } else {
             throwPos = outputPearlThrowPos.get();
         }
-
-        // Calculate distance to throw position
         double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(throwPos));
-
-        // Check if we're close enough to start manual approach
-        if (distance <= 3.0) {
-            // We're within 3 blocks, cancel Baritone and start manual approach
+        if (distance <= 1.5) {
             if (BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
                 BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
             }
             lastBaritoneGoal = null;
+            safeRetreatPos = mc.player.getBlockPos();
+            info("Starting precise positioning from adjacent block - stored safe retreat position");
             currentState = ProcessState.RESET_PEARL_PREPARE;
             stateTimer = 5;
-            info("Starting precise positioning");
             return;
         }
-
-        // Check if Baritone is already pathing to a goal
         if (BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
-            // Let it continue pathing, don't set a new goal
-            stateTimer = 10;
+            stateTimer = 5;
             return;
         }
-
-        // Find a safe air block adjacent to the trapdoor to approach from
         BlockPos goalPos = null;
         safeRetreatPos = null;
-
-        // Look for air blocks adjacent to the trapdoor
-        for (Direction dir : Direction.Type.HORIZONTAL) {
+        Direction[] preferredDirections = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+        for (Direction dir : preferredDirections) {
             BlockPos adjacent = throwPos.offset(dir);
             BlockState adjacentState = mc.world.getBlockState(adjacent);
             BlockState belowState = mc.world.getBlockState(adjacent.down());
-
-            // Check if this is an air block with solid ground below
             if (adjacentState.isAir() && belowState.isSolidBlock(mc.world, adjacent.down())) {
-                // Found a safe air block to approach from
                 goalPos = adjacent;
-                safeRetreatPos = adjacent; // Store this as our retreat position
+                safeRetreatPos = adjacent;
                 approachDirection = dir.getOpposite();
-                info("Found safe approach position");
+                info("Found safe approach position from " + dir + " side");
                 break;
             }
         }
-
-        // If no air block found, try 2 blocks away
         if (goalPos == null) {
-            for (Direction dir : Direction.Type.HORIZONTAL) {
+            for (Direction dir : preferredDirections) {
                 BlockPos candidate = throwPos.offset(dir, 2);
                 BlockState state = mc.world.getBlockState(candidate);
                 BlockState belowState = mc.world.getBlockState(candidate.down());
-
                 if (state.isAir() && belowState.isSolidBlock(mc.world, candidate.down())) {
                     goalPos = candidate;
-                    safeRetreatPos = throwPos.offset(dir); // Middle position for retreat
+                    safeRetreatPos = throwPos.offset(dir);
                     approachDirection = dir.getOpposite();
-                    info("Using fallback approach position");
+                    info("Using fallback approach position from " + dir + " side");
                     break;
                 }
             }
         }
-
         if (goalPos == null) {
-            // Final fallback - just try north
             goalPos = throwPos.offset(Direction.NORTH, 2);
             safeRetreatPos = throwPos.offset(Direction.NORTH);
             approachDirection = Direction.SOUTH;
             warning("Using fallback approach position");
         }
-
-        // Only set goal if it's different from the last one
         if (lastBaritoneGoal == null || !lastBaritoneGoal.equals(goalPos)) {
             lastBaritoneGoal = goalPos;
             GoalBlock goal = new GoalBlock(goalPos);
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
             info("Pathing to approach position");
         }
-
         stateTimer = moveDelay.get();
     }
-
     private void handleResetPearlPrepare() {
-        // Use correct coordinates based on where we are
         BlockPos throwPos;
         double throwYaw, throwPitch;
         if (isGoingToInput) {
@@ -1900,38 +2392,17 @@ public class StashMover extends Module {
             throwYaw = outputPearlThrowYaw.get();
             throwPitch = outputPearlThrowPitch.get();
         }
-
-        // ALWAYS sneak to prevent falling or water walking
         mc.options.sneakKey.setPressed(true);
-
-        // Check if there's a trapdoor at the throw position
         BlockState throwState = mc.world.getBlockState(throwPos);
         boolean isTrapdoor = throwState.getBlock() instanceof TrapdoorBlock;
-
-        // Store current position as safe retreat if not already set
-        if (safeRetreatPos == null) {
-            safeRetreatPos = mc.player.getBlockPos();
-            info("Stored retreat position");
-        }
-
-        // Target the exact center of the water/trapdoor block
         double targetX = throwPos.getX() + 0.5;
         double targetZ = throwPos.getZ() + 0.5;
-
-        // Calculate vector from player to target
         double dx = targetX - mc.player.getX();
         double dz = targetZ - mc.player.getZ();
         double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-
-        // Calculate the EXACT yaw needed to face the target from current position
         double requiredYaw = Math.toDegrees(Math.atan2(-dx, dz));
-
-        // Store the approach yaw for backward movement later
-        // This is the direction we're walking toward the pearl position
         if (approachDirection == null && horizontalDistance > 0.1) {
-            // Determine which direction we're approaching from based on position
-            double approachAngle = Math.toDegrees(Math.atan2(dx, -dz)); // Note: different order for approach
-            // Store as a direction for clarity
+            double approachAngle = Math.toDegrees(Math.atan2(dx, -dz));
             if (Math.abs(approachAngle) <= 45) {
                 approachDirection = Direction.NORTH;
             } else if (Math.abs(approachAngle) >= 135) {
@@ -1943,44 +2414,23 @@ public class StashMover extends Module {
             }
             info("Approach direction: " + approachDirection);
         }
-
-        // Look slightly down at the water source
-        double requiredPitch = 15.0; // Look slightly down, not too steep
-
-        // Set and LOCK the rotation - this is critical
-        Rotations.rotate(requiredYaw, requiredPitch);
-
-        // Also set the player's actual rotation to ensure it sticks
+        double requiredPitch = 15.0;
         mc.player.setYaw((float)requiredYaw);
         mc.player.setPitch((float)requiredPitch);
-
-        // Check if we're close enough
         boolean inPosition = horizontalDistance < positionTolerance.get();
-
         if (!inPosition) {
-            // Clear ALL movement keys first to ensure clean movement
             mc.options.forwardKey.setPressed(false);
             mc.options.backKey.setPressed(false);
             mc.options.leftKey.setPressed(false);
             mc.options.rightKey.setPressed(false);
-
-            // Keep sneaking
             mc.options.sneakKey.setPressed(true);
-
-            // Move ONLY forward - no strafing, no turning
             mc.options.forwardKey.setPressed(true);
-
             stateTimer++;
-
-            // Log progress
             if (stateTimer % 20 == 0) {
                 info(String.format("Approaching water (%.2f blocks away) Yaw: %.1f",
                     horizontalDistance, requiredYaw));
             }
-
-            // Check for stuck condition (not making progress)
             if (stateTimer > 60 && horizontalDistance > 2.0) {
-                // Try backing up briefly then continue
                 if (stateTimer % 40 < 5) {
                     mc.options.forwardKey.setPressed(false);
                     mc.options.backKey.setPressed(true);
@@ -1990,51 +2440,33 @@ public class StashMover extends Module {
                     mc.options.forwardKey.setPressed(true);
                 }
             }
-
-            // Timeout with more lenient position acceptance
             if (stateTimer > 120) {
-                // Use a slightly larger tolerance after timeout to avoid getting stuck
                 if (horizontalDistance < positionTolerance.get() * 1.5) {
                     info("Close enough after timeout");
                     inPosition = true;
                 } else {
-                    // Keep trying
                     info(String.format("Still approaching (%.2f blocks away)", horizontalDistance));
                 }
             }
-
-            return; // Keep moving until in position
+            return;
         }
-
         if (inPosition) {
-            // We're in position at the edge
             mc.options.forwardKey.setPressed(false);
             mc.options.backKey.setPressed(false);
             mc.options.leftKey.setPressed(false);
             mc.options.rightKey.setPressed(false);
-
-            // Keep sneaking to maintain position
             mc.options.sneakKey.setPressed(true);
-
-            // NOW switch to the EXACT configured yaw and pitch for throwing
-            // This is different from the yaw we used to walk here
             Rotations.rotate(throwYaw, throwPitch);
-
-            // Set rotation directly
             mc.player.setYaw((float)throwYaw);
             mc.player.setPitch((float)throwPitch);
-
             info("Switching to throw angle - Yaw: " + String.format("%.3f", throwYaw) +
-                 " Pitch: " + String.format("%.3f", throwPitch));
-
+                " Pitch: " + String.format("%.3f", throwPitch));
             info("In position, ready to throw");
             currentState = ProcessState.RESET_PEARL_THROW;
-            stateTimer = 5; // Very short wait to avoid delays
+            stateTimer = 5;
         }
     }
-
     private void handleResetPearlThrow() {
-        // Get throw parameters
         BlockPos throwPos;
         double throwYaw, throwPitch;
         if (isGoingToInput) {
@@ -2046,114 +2478,62 @@ public class StashMover extends Module {
             throwYaw = outputPearlThrowYaw.get();
             throwPitch = outputPearlThrowPitch.get();
         }
-
         if (!hasThrownPearl) {
-            // Make sure we're still sneaking at the edge
             mc.options.sneakKey.setPressed(true);
-
-            // Check if we're dealing with a trapdoor
             BlockState throwState = mc.world.getBlockState(throwPos);
             boolean isTrapdoor = throwState.getBlock() instanceof TrapdoorBlock;
-
-            // Set rotation if not already set
             if (!rotationSet) {
-                // Use EXACT configured values for throwing - no calculations!
                 Rotations.rotate(throwYaw, throwPitch);
-
-                // Also set player rotation directly
                 mc.player.setYaw((float)throwYaw);
                 mc.player.setPitch((float)throwPitch);
-
                 info("Set exact throw angle: Yaw=" + String.format("%.3f", throwYaw) +
-                     " Pitch=" + String.format("%.3f", throwPitch));
-
+                    " Pitch=" + String.format("%.3f", throwPitch));
                 rotationSet = true;
-                rotationStabilizationTimer = 10; // Wait 10 ticks (0.5 seconds) for rotation to stabilize
+                rotationStabilizationTimer = 10;
                 return;
             }
-
-            // Wait for rotation to stabilize (important for GrimAC)
             if (rotationStabilizationTimer > 0) {
-                // Keep applying the EXACT configured rotation every tick
                 Rotations.rotate(throwYaw, throwPitch);
                 mc.player.setYaw((float)throwYaw);
                 mc.player.setPitch((float)throwPitch);
-
                 rotationStabilizationTimer--;
                 if (rotationStabilizationTimer == 0) {
                     info("Rotation stabilized, ready to throw");
                 }
                 return;
             }
-
-            // Select pearl and ensure it's in hand
             FindItemResult pearl = InvUtils.find(Items.ENDER_PEARL);
             if (pearl.found()) {
-                // Only swap if we don't already have a pearl in hand
                 if (mc.player.getMainHandStack().getItem() != Items.ENDER_PEARL) {
-                    // Save current slot before switching
                     previousSlot = mc.player.getInventory().selectedSlot;
                     InvUtils.swap(pearl.slot(), false);
-                    stateTimer = 3; // Wait for swap to register
+                    stateTimer = 3;
                     return;
                 }
-
-                // Double-check we have pearl in hand
                 if (mc.player.getMainHandStack().getItem() != Items.ENDER_PEARL) {
                     warning("Pearl not in hand, retrying swap");
                     return;
                 }
-
-                // Very short wait if timer is set
                 if (stateTimer > 1) {
                     stateTimer--;
                     return;
                 }
-
-                // Store position BEFORE throwing pearl
                 initialPlayerPos = mc.player.getPos();
-
                 info("Throwing pearl");
-
-                // Throw pearl
                 mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-
                 hasThrownPearl = true;
                 pearlThrowTime = System.currentTimeMillis();
-                info("Threw ender pearl - MOVING BACK NOW!");
-
-                // Calculate the yaw to face AWAY from the pearl (opposite of approach)
-                // This ensures we walk straight back regardless of throw rotation
-                double retreatYaw = 0;
-                if (approachDirection != null) {
-                    // Face opposite of approach direction
-                    switch (approachDirection) {
-                        case NORTH -> retreatYaw = 180; // Face south to walk back
-                        case SOUTH -> retreatYaw = 0;   // Face north to walk back
-                        case EAST -> retreatYaw = -90;  // Face west to walk back
-                        case WEST -> retreatYaw = 90;   // Face east to walk back
-                    }
-                } else {
-                    // Fallback: use current yaw + 180 to walk straight back
-                    retreatYaw = mc.player.getYaw() + 180;
-                }
-
-                // Set rotation to face away from pearl
-                Rotations.rotate(retreatYaw, 0);
-                mc.player.setYaw((float)retreatYaw);
-                mc.player.setPitch(0);
-
-                // Start moving backward (forward in the retreat direction)
+                info("Pearl thrown! Walking back immediately!");
                 mc.options.sneakKey.setPressed(true);
-                mc.options.forwardKey.setPressed(true); // Walk forward in retreat direction
-                mc.options.backKey.setPressed(false);
-                mc.player.input.movementForward = 1.0f;
+                mc.options.forwardKey.setPressed(false);
+                mc.options.leftKey.setPressed(false);
+                mc.options.rightKey.setPressed(false);
+                mc.options.sprintKey.setPressed(false);
+                mc.options.backKey.setPressed(true);
+                mc.player.input.movementForward = -1.0f;
                 mc.player.input.movementSideways = 0.0f;
-
-                // No delay
-                rotationStabilizationTimer = 0; // Don't wait, move NOW
-                stateTimer = 10; // Move back for 10 ticks (0.5 seconds) - just enough to avoid pearl
-
+                rotationSet = false;
+                stateTimer = 20;
                 currentState = ProcessState.RESET_PEARL_WAIT;
             } else {
                 error("No ender pearl found!");
@@ -2162,109 +2542,77 @@ public class StashMover extends Module {
             }
         }
     }
-
     private void handleResetPearlWait() {
-        // Move backward for reduced ticks
         if (stateTimer > 0) {
-            // Keep sneaking
             mc.options.sneakKey.setPressed(true);
-
-            // Keep the retreat rotation locked
-            double retreatYaw = 0;
-            if (approachDirection != null) {
-                switch (approachDirection) {
-                    case NORTH -> retreatYaw = 180; // Face south to walk back
-                    case SOUTH -> retreatYaw = 0;   // Face north to walk back
-                    case EAST -> retreatYaw = -90;  // Face west to walk back
-                    case WEST -> retreatYaw = 90;   // Face east to walk back
-                }
-                Rotations.rotate(retreatYaw, 0);
-                mc.player.setYaw((float)retreatYaw);
-                mc.player.setPitch(0);
+            double throwYaw, throwPitch;
+            if (isGoingToInput) {
+                throwYaw = inputPearlThrowYaw.get();
+                throwPitch = inputPearlThrowPitch.get();
+            } else {
+                throwYaw = outputPearlThrowYaw.get();
+                throwPitch = outputPearlThrowPitch.get();
             }
-
-            // Clear other movement
-            mc.options.backKey.setPressed(false);
+            Rotations.rotate(throwYaw, throwPitch);
+            mc.player.setYaw((float)throwYaw);
+            mc.player.setPitch((float)throwPitch);
+            mc.options.forwardKey.setPressed(false);
             mc.options.leftKey.setPressed(false);
             mc.options.rightKey.setPressed(false);
             mc.options.sprintKey.setPressed(false);
-
-            // Force forward movement (in retreat direction)
-            mc.options.forwardKey.setPressed(true);
-
-            // Set input directly
-            mc.player.input.movementForward = 1.0f;
+            mc.options.backKey.setPressed(true);
+            mc.player.input.movementForward = -1.0f;
             mc.player.input.movementSideways = 0.0f;
-
-            stateTimer--;
-
-            // Log progress
-            if (stateTimer == 9) {
-                info("Moving backward to avoid pearl!");
+            if (safeRetreatPos != null) {
+                double distanceToSafe = mc.player.getPos().distanceTo(Vec3d.ofCenter(safeRetreatPos));
+                if (distanceToSafe < 0.5) {
+                    info("Reached safe position!");
+                    stateTimer = 0;
+                }
             }
-
+            stateTimer--;
+            if (stateTimer == 19) {
+                info("Walking backward to safe position!");
+            } else if (stateTimer == 10) {
+                info("Still backing up...");
+            }
             if (stateTimer == 0) {
                 info("Safe distance reached");
-                // Stop all movement
                 mc.options.forwardKey.setPressed(false);
                 mc.options.backKey.setPressed(false);
                 mc.player.input.movementForward = 0.0f;
-                // Stop sneaking to allow normal movement
                 mc.options.sneakKey.setPressed(false);
-
-                // CRITICAL: Unlock rotation here to allow free look for containers
-                // Reset Rotations module state by setting to current rotation
                 Rotations.rotate(mc.player.getYaw(), mc.player.getPitch());
-
-                // Store initial position for teleport detection
                 if (initialPlayerPos == null) {
                     initialPlayerPos = mc.player.getPos();
                 }
             }
             return;
         }
-
-        // Stop all movement and sneaking
         mc.options.sneakKey.setPressed(false);
         mc.options.forwardKey.setPressed(false);
         mc.options.backKey.setPressed(false);
         mc.options.leftKey.setPressed(false);
         mc.options.rightKey.setPressed(false);
         mc.options.sprintKey.setPressed(false);
-
-        // Ensure rotation is unlocked for free look
         Rotations.rotate(mc.player.getYaw(), mc.player.getPitch());
-
-        // Wait to ensure pearl wasn't loaded
         if (System.currentTimeMillis() - pearlThrowTime > pearlWaitTime.get() * 1000) {
-            // Check if we're still at the same location (pearl wasn't loaded)
             BlockPos throwPos;
             if (isGoingToInput) {
                 throwPos = inputPearlThrowPos.get();
             } else {
                 throwPos = outputPearlThrowPos.get();
             }
-
-            // Use the position stored when we threw the pearl
             double distance = mc.player.getPos().distanceTo(initialPlayerPos);
-
-            // Also check if we have pearls in inventory (we shouldn't if it went into stasis)
             FindItemResult pearlCheck = InvUtils.find(Items.ENDER_PEARL);
             boolean stillHasPearl = pearlCheck.found() && pearlCheck.count() > 0;
-
-            if (distance < 5 && !stillHasPearl) {  // Tighter tolerance and check for pearl
+            if (distance < 5 && !stillHasPearl) {
                 info("Pearl successfully placed in stasis (no pearl in inventory)");
-
-                // Restore offhand item
                 restoreOffhandItem();
-
-                // Restore previous hotbar slot if it was saved
                 if (previousSlot >= 0 && previousSlot < 9) {
                     mc.player.getInventory().selectedSlot = previousSlot;
                     previousSlot = -1;
                 }
-
-                // Reset pearl tracking
                 hasThrownPearl = false;
                 hasPlacedShulker = false;
                 pearlFailRetries = 0;
@@ -2273,11 +2621,7 @@ public class StashMover extends Module {
                 rotationSet = false;
                 rotationStabilizationTimer = 0;
                 safeRetreatPos = null;
-
-                // IMPORTANT: Final rotation unlock to ensure we can look at containers
                 Rotations.rotate(mc.player.getYaw(), mc.player.getPitch());
-
-                // Check where we should continue based on location
                 if (isNearInputArea()) {
                     info("Continuing to input process");
                     currentState = ProcessState.INPUT_PROCESS;
@@ -2285,19 +2629,15 @@ public class StashMover extends Module {
                 } else if (isNearOutputArea()) {
                     info("Continuing to output process");
                     currentState = ProcessState.OUTPUT_PROCESS;
-                    // Small delay before finding containers to ensure rotation is unlocked
                     stateTimer = 5;
                 } else {
                     currentState = ProcessState.CHECKING_LOCATION;
                 }
             } else {
                 warning("Pearl was loaded! Teleportation detected");
-
-                // Pearl failed, retry if we haven't exceeded max retries
                 pearlFailRetries++;
                 if (pearlFailRetries < maxRetries.get()) {
                     warning("Pearl throw failed, retrying (attempt " + pearlFailRetries + "/" + maxRetries.get() + ")");
-                    // Restore offhand and retry pearl pickup
                     restoreOffhandItem();
                     hasThrownPearl = false;
                     hasPlacedShulker = false;
@@ -2312,70 +2652,57 @@ public class StashMover extends Module {
             }
         }
     }
-
     private void restoreOffhandItem() {
-        // First, move shulker from offhand back to slot 0 if there is one
         ItemStack offhandItem = mc.player.getOffHandStack();
         if (!offhandItem.isEmpty() && isShulkerBox(offhandItem.getItem())) {
-            // Move shulker from offhand to hotbar slot 0
             mc.interactionManager.clickSlot(
                 mc.player.currentScreenHandler.syncId,
-                45, // Offhand slot
+                45,
                 0,
                 SlotActionType.PICKUP,
                 mc.player
             );
-
             mc.interactionManager.clickSlot(
                 mc.player.currentScreenHandler.syncId,
-                36, // Hotbar slot 0
+                36,
                 0,
                 SlotActionType.PICKUP,
                 mc.player
             );
-
             mc.interactionManager.clickSlot(
                 mc.player.currentScreenHandler.syncId,
-                45, // Offhand slot (put back what was in slot 0 if anything)
+                45,
                 0,
                 SlotActionType.PICKUP,
                 mc.player
             );
-
             info("Moved shulker back to hotbar slot 0");
         }
-
-        // Then restore the original offhand item if there was one
         if (!offhandBackup.isEmpty()) {
-            // Find the backup item in inventory
             for (int i = 0; i < 36; i++) {
                 ItemStack stack = mc.player.getInventory().getStack(i);
                 if (ItemStack.areEqual(stack, offhandBackup)) {
-                    // Move it back to offhand
                     mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId,
-                        45, // Offhand slot
+                        45,
                         0,
                         SlotActionType.PICKUP,
                         mc.player
                     );
-
                     mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId,
-                        i < 9 ? i + 36 : i, // Convert inventory slot to handler slot
+                        i < 9 ? i + 36 : i,
                         0,
                         SlotActionType.PICKUP,
                         mc.player
                     );
-
                     mc.interactionManager.clickSlot(
                         mc.player.currentScreenHandler.syncId,
-                        45, // Offhand slot
+                        45,
                         0,
                         SlotActionType.PICKUP,
                         mc.player
                     );
-
                     info("Restored original offhand item");
                     break;
                 }
@@ -2383,73 +2710,79 @@ public class StashMover extends Module {
         }
         offhandBackup = ItemStack.EMPTY;
     }
-
-    // Output process methods
     private void handleOutputProcess() {
-        // Small delay to ensure rotation is properly unlocked after pearl reset
         if (stateTimer > 0) {
             stateTimer--;
-            // Keep resetting rotation to ensure it's unlocked
             Rotations.rotate(mc.player.getYaw(), mc.player.getPitch());
             return;
         }
-
-        // Reset enderchest flag since we're now at output
         enderChestFull = false;
-
-        // Check if we have items in inventory to deposit
         if (hasItemsToTransfer()) {
-            // We have items, find a container to deposit them
             if (currentContainer == null) {
                 findNextOutputContainer();
             } else {
-                // Continue with current container
                 moveToContainer(currentContainer);
             }
             return;
         }
-
-        // Check if we need to get items from enderchest
-        if (hasItemsInEnderChest()) {
-            info("Inventory empty but enderchest has items, opening enderchest");
-            // Find enderchest in output area
-            enderChestPos = findNearbyEnderChest();
-            if (enderChestPos != null) {
-                currentState = ProcessState.OPENING_ENDERCHEST;
-                stateTimer = 10; // Hold view for 10 ticks (half second)
+        if (fillEnderChest.get()) {
+            if (!enderChestEmptied) {
+                info("Inventory empty, checking enderchest for items...");
+                enderChestPos = findNearbyEnderChest();
+                if (enderChestPos != null) {
+                    currentState = ProcessState.OPENING_ENDERCHEST;
+                    stateTimer = 5;
+                    return;
+                } else {
+                    FindItemResult enderChest = InvUtils.findInHotbar(Items.ENDER_CHEST);
+                    if (enderChest.found()) {
+                        BlockPos placePos = findSuitablePlacePos();
+                        if (placePos != null) {
+                            info("Placing enderchest to check for items");
+                            placeEnderChest(placePos, enderChest.slot());
+                            return;
+                        }
+                    }
+                    warning("No enderchest available, skipping enderchest check");
+                    enderChestEmptied = true;
+                }
             } else {
-                warning("No enderchest found in output area!");
+                info("All items deposited and enderchest verified empty, going back to input");
                 currentState = ProcessState.GOING_BACK;
+                enderChestEmptied = false;
             }
-            return;
+        } else {
+            info("All items deposited, going back to input");
+            currentState = ProcessState.GOING_BACK;
         }
-
-        // Both inventory and enderchest are empty
-        info("Inventory and enderchest empty, going back to input");
-        currentState = ProcessState.GOING_BACK;
     }
-
     private void findNextOutputContainer() {
-        // Find containers that aren't full
         currentContainer = outputContainers.stream()
             .filter(c -> !c.isFull)
             .min(Comparator.comparingDouble(c -> mc.player.getPos().distanceTo(Vec3d.ofCenter(c.pos))))
             .orElse(null);
-
         if (currentContainer == null) {
-            warning("All output containers are full!");
-            currentState = ProcessState.GOING_BACK;
+            info("All output containers full, rescanning...");
+            detectContainersInArea(outputAreaPos1, outputAreaPos2, false);
+            currentContainer = outputContainers.stream()
+                .filter(c -> !c.isFull)
+                .min(Comparator.comparingDouble(c -> mc.player.getPos().distanceTo(Vec3d.ofCenter(c.pos))))
+                .orElse(null);
+            if (currentContainer == null) {
+                warning("All output containers are still full! Going back to input.");
+                currentState = ProcessState.GOING_BACK;
+            } else {
+                info("Found available container after rescan");
+                moveToContainer(currentContainer);
+            }
         } else {
+            info("Moving to output container");
             moveToContainer(currentContainer);
         }
     }
-
     private void handleOutputTransferringItems() {
         if (!(mc.currentScreen instanceof GenericContainerScreen)) {
-            // Container window was closed unexpectedly (attacked by endermite, etc.)
-            // Check if we still have the container and should reopen it
             if (currentContainer != null && !currentContainer.isFull) {
-                // Check if we still have items to transfer
                 boolean hasItems = false;
                 for (int i = 0; i < 36; i++) {
                     if (!mc.player.getInventory().getStack(i).isEmpty()) {
@@ -2457,15 +2790,11 @@ public class StashMover extends Module {
                         break;
                     }
                 }
-
                 if (hasItems) {
                     warning("Container window closed unexpectedly! Reopening...");
-                    // Attempt to reopen the container
                     currentState = ProcessState.OPENING_CONTAINER;
-                    stateTimer = 10;
+                    stateTimer = 5;
                     containerOpenFailures++;
-
-                    // If we've failed too many times, skip this container
                     if (containerOpenFailures > 3) {
                         warning("Failed to reopen container multiple times, marking as full");
                         currentContainer.isFull = true;
@@ -2476,86 +2805,61 @@ public class StashMover extends Module {
                     return;
                 }
             }
-
             currentState = ProcessState.OUTPUT_PROCESS;
             return;
         }
-
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
         }
-
         boolean transferredItem = false;
         boolean containerHasSpace = false;
-
-        // Check if container has any empty slots
         for (int i = 0; i < currentContainer.totalSlots; i++) {
             if (handler.getSlot(i).getStack().isEmpty()) {
                 containerHasSpace = true;
                 break;
             }
         }
-
         if (!containerHasSpace) {
-            // Container is full
             currentContainer.isFull = true;
             info("Container is now full");
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
         }
-
-        // Check if we have any items to transfer
         boolean hasItems = false;
-        for (int i = 0; i < 36; i++) { // Check player inventory (not including armor/offhand)
+        for (int i = 0; i < 36; i++) {
             if (!mc.player.getInventory().getStack(i).isEmpty()) {
                 hasItems = true;
                 break;
             }
         }
-
         if (!hasItems) {
-            // No items to transfer
             info("No items left to transfer");
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
         }
-
-        // Inventory to container
-        // In a container GUI, player inventory slots start after container slots
-        // Container slots: 0 to currentContainer.totalSlots-1
-        // Player inventory slots: currentContainer.totalSlots to currentContainer.totalSlots+35
         int playerInventoryStart = currentContainer.totalSlots;
-
         for (int i = playerInventoryStart; i < playerInventoryStart + 36; i++) {
             Slot slot = handler.getSlot(i);
             ItemStack stack = slot.getStack();
-
             if (!stack.isEmpty()) {
-                // Only transfer shulkers when onlyShulkers is enabled
                 if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
                     continue;
                 }
-
-                // Shift-click to transfer item to container
                 mc.interactionManager.clickSlot(
                     handler.syncId,
                     slot.id,
-                    0, // button (0 for left click)
-                    SlotActionType.QUICK_MOVE, // shift-click
+                    0,
+                    SlotActionType.QUICK_MOVE,
                     mc.player
                 );
-
                 transferredItem = true;
                 itemsTransferred++;
                 stateTimer = transferDelay.get();
-                return; // Process one item at a time
+                return;
             }
         }
-
-        // No more items to transfer or container is full
         if (!transferredItem) {
-            // Check if we actually have no items left
             boolean inventoryEmpty = true;
             for (int i = 0; i < 36; i++) {
                 if (!mc.player.getInventory().getStack(i).isEmpty()) {
@@ -2563,9 +2867,7 @@ public class StashMover extends Module {
                     break;
                 }
             }
-
             if (inventoryEmpty) {
-                // Check if we have items in enderchest
                 if (enderChestHasItems && fillEnderChest.get()) {
                     info("Inventory empty but enderchest has items, retrieving from enderchest");
                     currentState = ProcessState.CLOSING_CONTAINER;
@@ -2574,28 +2876,21 @@ public class StashMover extends Module {
                     currentState = ProcessState.CLOSING_CONTAINER;
                 }
             } else {
-                // Container must be full if we couldn't transfer
                 currentContainer.isFull = true;
                 info("Container is now full");
                 currentState = ProcessState.CLOSING_CONTAINER;
             }
         }
     }
-
     private boolean hasItemsInEnderChest() {
-        // Return true if we stored items and haven't emptied yet
-        // This flag is set when we put items in and cleared when we empty
         return enderChestHasItems && !enderChestEmptied;
     }
-
-    // Go back process methods
     private void handleGoingBack() {
         switch (goBackMethod.get()) {
             case KILL -> {
                 if (!waitingForRespawn) {
                     String killCommand = "/kill";
                     if (killRetryCount > 0) {
-                        // Add random string if we're retrying due to spam filter
                         killCommand = "/kill " + generateRandomString(6);
                     }
                     ChatUtils.sendPlayerMsg(killCommand);
@@ -2604,18 +2899,12 @@ public class StashMover extends Module {
                     lastKillTime = System.currentTimeMillis();
                     initialPlayerPos = mc.player.getPos();
                 }
-
-                // Check if player is dead and send respawn packet
                 if (mc.player.isDead() || mc.player.getHealth() <= 0) {
-                    // Send respawn packet to respawn
                     mc.getNetworkHandler().sendPacket(new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.PERFORM_RESPAWN));
                     info("Sent respawn packet");
                 }
-
-                // Check if we respawned (position changed significantly or health restored)
                 Vec3d currentPos = mc.player.getPos();
                 double distance = currentPos.distanceTo(initialPlayerPos);
-
                 if ((distance > 100 || mc.player.getHealth() > 0) && System.currentTimeMillis() - lastKillTime > 1000) {
                     if (isNearInputArea()) {
                         info("Respawned at input area!");
@@ -2624,7 +2913,6 @@ public class StashMover extends Module {
                         currentState = ProcessState.INPUT_PROCESS;
                         findNextInputContainer();
                     } else if (System.currentTimeMillis() - lastKillTime > 5000) {
-                        // Retry if not respawned after 5 seconds (likely spam filtered)
                         killRetryCount++;
                         waitingForRespawn = false;
                         warning("Kill command may have been spam filtered, retrying with random suffix...");
@@ -2632,7 +2920,6 @@ public class StashMover extends Module {
                 }
             }
             case PEARL -> {
-                // Pearl loading method for going back
                 if (!waitingForPearl) {
                     sendGoBackPearlCommand();
                     waitingForPearl = true;
@@ -2640,31 +2927,22 @@ public class StashMover extends Module {
                     pearlRetryCount = 0;
                     initialPlayerPos = mc.player.getPos();
                 }
-
-                // Check teleport
                 Vec3d currentPos = mc.player.getPos();
                 double distance = currentPos.distanceTo(initialPlayerPos);
-
-                // If we moved more than 100 blocks, we likely teleported
                 if (distance > 100) {
-                    // Check if we're back at input area
                     if (isNearInputArea()) {
                         info("Successfully returned to input area via pearl!");
                         waitingForPearl = false;
-
-                        // Always reset pearl after GoBack pearl teleport (as per requirements)
+                        ensureOffhandHasItem();
                         currentState = ProcessState.RESET_PEARL_PICKUP;
                         hasThrownPearl = false;
                         hasPlacedShulker = false;
-                        isGoingToInput = true; // We're going back to input area
+                        isGoingToInput = true;
                     } else if (!isNearOutputArea()) {
-                        // We teleported but not to the expected area, retry
                         warning("Teleported but not to input area, retrying...");
                         waitingForPearl = false;
-                        // Don't change state, let it retry
                     }
                 } else {
-                    // Timeout check and retry
                     if (System.currentTimeMillis() - lastPearlMessageTime > pearlTimeout.get() * 1000) {
                         if (pearlRetryCount < maxRetries.get()) {
                             pearlRetryCount++;
@@ -2681,78 +2959,65 @@ public class StashMover extends Module {
             }
         }
     }
-
     private void sendGoBackPearlCommand() {
         String randomSuffix = generateRandomString(8);
         String command = String.format("/msg %s %s %s",
             goBackPlayerName.get(),
             goBackCommand.get(),
             randomSuffix);
-
         ChatUtils.sendPlayerMsg(command);
         info("Sent go back command: " + command);
     }
-
-    // Helper methods
     private boolean hasValidAreas() {
         return inputAreaPos1 != null && inputAreaPos2 != null &&
-               outputAreaPos1 != null && outputAreaPos2 != null;
+            outputAreaPos1 != null && outputAreaPos2 != null;
     }
-
     private boolean isNearInputArea() {
         if (inputAreaPos1 == null || inputAreaPos2 == null) return false;
-
         BlockPos playerPos = mc.player.getBlockPos();
         return playerPos.getX() >= inputAreaPos1.getX() - 10 &&
-               playerPos.getX() <= inputAreaPos2.getX() + 10 &&
-               playerPos.getY() >= inputAreaPos1.getY() - 5 &&
-               playerPos.getY() <= inputAreaPos2.getY() + 5 &&
-               playerPos.getZ() >= inputAreaPos1.getZ() - 10 &&
-               playerPos.getZ() <= inputAreaPos2.getZ() + 10;
+            playerPos.getX() <= inputAreaPos2.getX() + 10 &&
+            playerPos.getY() >= inputAreaPos1.getY() - 5 &&
+            playerPos.getY() <= inputAreaPos2.getY() + 5 &&
+            playerPos.getZ() >= inputAreaPos1.getZ() - 10 &&
+            playerPos.getZ() <= inputAreaPos2.getZ() + 10;
     }
-
     private boolean isNearOutputArea() {
         if (outputAreaPos1 == null || outputAreaPos2 == null) return false;
-
         BlockPos playerPos = mc.player.getBlockPos();
         return playerPos.getX() >= outputAreaPos1.getX() - 10 &&
-               playerPos.getX() <= outputAreaPos2.getX() + 10 &&
-               playerPos.getY() >= outputAreaPos1.getY() - 5 &&
-               playerPos.getY() <= outputAreaPos2.getY() + 5 &&
-               playerPos.getZ() >= outputAreaPos1.getZ() - 10 &&
-               playerPos.getZ() <= outputAreaPos2.getZ() + 10;
+            playerPos.getX() <= outputAreaPos2.getX() + 10 &&
+            playerPos.getY() >= outputAreaPos1.getY() - 5 &&
+            playerPos.getY() <= outputAreaPos2.getY() + 5 &&
+            playerPos.getZ() >= outputAreaPos1.getZ() - 10 &&
+            playerPos.getZ() <= outputAreaPos2.getZ() + 10;
     }
-
     private boolean isServerLagging() {
-        // Simple lag detection based on TPS or packet response time
-        return false; // Implement actual lag detection if needed
+        return false;
     }
-
     private boolean isInventoryFull() {
-        // Check main inventory slots (9-35) and hotbar (0-8), but NOT offhand
-        for (int i = 0; i < 36; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
-            if (stack.isEmpty()) {
-                return false;
+        if (onlyShulkers.get()) {
+            int shulkerCount = 0;
+            for (int i = 0; i < 36; i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
+                if (!stack.isEmpty() && isShulkerBox(stack.getItem())) {
+                    shulkerCount++;
+                }
             }
-            // If we only want shulkers, non-shulker items don't count as taking space
-            if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
-                return false; // This slot can be replaced by dropping the item
+            return shulkerCount >= 36;
+        } else {
+            for (int i = 0; i < 36; i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
+                if (stack.isEmpty()) {
+                    return false;
+                }
             }
-        }
-        // Also check offhand is empty (for pearl handling)
-        ItemStack offhand = mc.player.getOffHandStack();
-        if (!offhand.isEmpty() && !isShulkerBox(offhand.getItem())) {
-            // Offhand should be empty or only have a shulker for pearl process
             return true;
         }
-        return true;
     }
-
     private boolean isEnderChestFull() {
         return enderChestFull;
     }
-
     private boolean hasItemsToTransfer() {
         for (int i = 0; i < 36; i++) {
             ItemStack stack = mc.player.getInventory().getStack(i);
@@ -2764,145 +3029,217 @@ public class StashMover extends Module {
         }
         return false;
     }
-
     private boolean isShulkerBox(Item item) {
         return item == Items.SHULKER_BOX ||
-               item == Items.WHITE_SHULKER_BOX ||
-               item == Items.ORANGE_SHULKER_BOX ||
-               item == Items.MAGENTA_SHULKER_BOX ||
-               item == Items.LIGHT_BLUE_SHULKER_BOX ||
-               item == Items.YELLOW_SHULKER_BOX ||
-               item == Items.LIME_SHULKER_BOX ||
-               item == Items.PINK_SHULKER_BOX ||
-               item == Items.GRAY_SHULKER_BOX ||
-               item == Items.LIGHT_GRAY_SHULKER_BOX ||
-               item == Items.CYAN_SHULKER_BOX ||
-               item == Items.PURPLE_SHULKER_BOX ||
-               item == Items.BLUE_SHULKER_BOX ||
-               item == Items.BROWN_SHULKER_BOX ||
-               item == Items.GREEN_SHULKER_BOX ||
-               item == Items.RED_SHULKER_BOX ||
-               item == Items.BLACK_SHULKER_BOX;
+            item == Items.WHITE_SHULKER_BOX ||
+            item == Items.ORANGE_SHULKER_BOX ||
+            item == Items.MAGENTA_SHULKER_BOX ||
+            item == Items.LIGHT_BLUE_SHULKER_BOX ||
+            item == Items.YELLOW_SHULKER_BOX ||
+            item == Items.LIME_SHULKER_BOX ||
+            item == Items.PINK_SHULKER_BOX ||
+            item == Items.GRAY_SHULKER_BOX ||
+            item == Items.LIGHT_GRAY_SHULKER_BOX ||
+            item == Items.CYAN_SHULKER_BOX ||
+            item == Items.PURPLE_SHULKER_BOX ||
+            item == Items.BLUE_SHULKER_BOX ||
+            item == Items.BROWN_SHULKER_BOX ||
+            item == Items.GREEN_SHULKER_BOX ||
+            item == Items.RED_SHULKER_BOX ||
+            item == Items.BLACK_SHULKER_BOX;
     }
-
     private boolean isContainerItem(Item item) {
-        // Check if item is a container that we might want to keep
         return item == Items.CHEST ||
-               item == Items.TRAPPED_CHEST ||
-               item == Items.BARREL ||
-               item == Items.ENDER_CHEST;
+            item == Items.TRAPPED_CHEST ||
+            item == Items.BARREL ||
+            item == Items.ENDER_CHEST;
     }
-
     private BlockPos findNearbyEnderChest() {
-        int searchRadius = 5;
+        // Start with a smaller search radius for efficiency
+        int searchRadius = 32; // Reduced from 128 for faster searching
         BlockPos playerPos = mc.player.getBlockPos();
 
+        BlockPos closestEnderChest = null;
+        double closestDistance = Double.MAX_VALUE;
+
+        // Search more thoroughly without skipping blocks
         for (int x = -searchRadius; x <= searchRadius; x++) {
-            for (int y = -2; y <= 2; y++) {
+            for (int y = -5; y <= 5; y++) {  // Reduced vertical range
                 for (int z = -searchRadius; z <= searchRadius; z++) {
                     BlockPos pos = playerPos.add(x, y, z);
-                    Block block = mc.world.getBlockState(pos).getBlock();
 
+                    // Skip if too far away
+                    double dist = playerPos.getSquaredDistance(pos);
+                    if (dist > searchRadius * searchRadius) continue;
+
+                    if (!mc.world.isChunkLoaded(pos)) continue;
+
+                    Block block = mc.world.getBlockState(pos).getBlock();
                     if (block instanceof EnderChestBlock) {
-                        return pos;
+                        if (dist < closestDistance) {
+                            closestDistance = dist;
+                            closestEnderChest = pos;
+                        }
                     }
                 }
             }
         }
 
-        return null;
+        if (closestEnderChest != null) {
+            info("Found enderchest nearby");
+        }
+        return closestEnderChest;
     }
-
     private BlockPos findSuitablePlacePos() {
         BlockPos playerPos = mc.player.getBlockPos();
-
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
                 BlockPos pos = playerPos.add(x, 0, z);
-
                 if (mc.world.getBlockState(pos).isAir() &&
                     mc.world.getBlockState(pos.down()).isSolidBlock(mc.world, pos.down())) {
                     return pos;
                 }
             }
         }
-
         return null;
     }
-
     private void placeEnderChest(BlockPos pos, int slot) {
         InvUtils.swap(slot, false);
-
         BlockHitResult hitResult = new BlockHitResult(
             Vec3d.ofCenter(pos),
             Direction.UP,
             pos.down(),
             false
         );
-
         mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-
         enderChestPos = pos;
         currentState = ProcessState.OPENING_ENDERCHEST;
         stateTimer = openDelay.get();
     }
-
     private String generateRandomString(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder result = new StringBuilder();
-        Random random = new Random();
-
+        java.util.concurrent.ThreadLocalRandom random = java.util.concurrent.ThreadLocalRandom.current();
         for (int i = 0; i < length; i++) {
             result.append(chars.charAt(random.nextInt(chars.length())));
         }
-
         return result.toString();
     }
-
-
-    // getWidget override for custom buttons
-
-    // Public API methods for commands
+    private void handleIdleState() {
+        if (stateTimer <= 0) {
+            if (hasValidAreas()) {
+                info("Rechecking location...");
+                currentState = ProcessState.CHECKING_LOCATION;
+            } else {
+                stateTimer = 100;
+            }
+        }
+    }
+    private void handleManualMoving() {
+        if (stateTimer > 0) {
+            stateTimer--;
+            return;
+        }
+        mc.options.forwardKey.setPressed(false);
+        mc.options.sneakKey.setPressed(false);
+        if (currentContainer != null) {
+            Vec3d eyePos = mc.player.getEyePos();
+            double distance = eyePos.distanceTo(Vec3d.ofCenter(currentContainer.pos));
+            if (distance <= 3.5) {
+                currentState = ProcessState.OPENING_CONTAINER;
+                stateTimer = 5;
+            } else {
+                manualMoveToContainer(currentContainer);
+            }
+        } else {
+            if (isNearOutputArea()) {
+                currentState = ProcessState.OUTPUT_PROCESS;
+            } else {
+                currentState = ProcessState.INPUT_PROCESS;
+            }
+        }
+    }
+    private void manualMoveToContainer(ContainerInfo container) {
+        if (container == null) return;
+        Vec3d targetPos = Vec3d.ofCenter(container.pos);
+        Vec3d eyePos = mc.player.getEyePos();
+        double distance = eyePos.distanceTo(targetPos);
+        double yaw = Rotations.getYaw(targetPos);
+        double pitch = Rotations.getPitch(targetPos);
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        if (distance > 3.2) {
+            info("Manual move to container, distance from eye: " + String.format("%.1f", distance));
+            mc.options.forwardKey.setPressed(true);
+            mc.options.sneakKey.setPressed(true);
+            currentState = ProcessState.MANUAL_MOVING;
+            stateTimer = 20;
+        } else {
+            mc.options.forwardKey.setPressed(false);
+            mc.options.sneakKey.setPressed(false);
+            info("Close enough to container (eye distance: " + String.format("%.1f", distance) + "), opening...");
+            currentState = ProcessState.OPENING_CONTAINER;
+            stateTimer = 5;
+        }
+    }
+    private Direction getOptimalClickFace(BlockPos containerPos, Vec3d eyePos) {
+        double heightDiff = containerPos.getY() - eyePos.y;
+        if (heightDiff > 2.0) {
+            double dx = eyePos.x - (containerPos.getX() + 0.5);
+            double dz = eyePos.z - (containerPos.getZ() + 0.5);
+            if (Math.abs(dx) > Math.abs(dz)) {
+                return dx > 0 ? Direction.WEST : Direction.EAST;
+            } else {
+                return dz > 0 ? Direction.NORTH : Direction.SOUTH;
+            }
+        }
+        Vec3d containerCenter = Vec3d.ofCenter(containerPos);
+        Vec3d toContainer = containerCenter.subtract(eyePos).normalize();
+        Direction bestFace = Direction.UP;
+        double bestDot = Double.NEGATIVE_INFINITY;
+        for (Direction face : Direction.values()) {
+            Vec3d faceNormal = Vec3d.of(face.getVector());
+            double dot = toContainer.dotProduct(faceNormal);
+            if (dot > bestDot) {
+                bestDot = dot;
+                bestFace = face;
+            }
+        }
+        if (bestFace == Direction.DOWN) {
+            bestFace = Direction.UP;
+        }
+        return bestFace;
+    }
     public SelectionMode getSelectionMode() {
         return selectionMode;
     }
-
     public BlockPos getSelectionPos1() {
         return selectionPos1;
     }
-
     public boolean isSelecting() {
         return selectionMode != SelectionMode.NONE;
     }
-
     public ProcessState getCurrentState() {
         return currentState;
     }
-
     public int getItemsTransferred() {
         return itemsTransferred;
     }
-
     public int getContainersProcessed() {
         return containersProcessed;
     }
-
     public boolean hasInputArea() {
         return inputAreaPos1 != null && inputAreaPos2 != null;
     }
-
     public boolean hasOutputArea() {
         return outputAreaPos1 != null && outputAreaPos2 != null;
     }
-
     public int getInputContainerCount() {
         return inputContainers.size();
     }
-
     public int getOutputContainerCount() {
         return outputContainers.size();
     }
-
     public void clearAreas() {
         inputAreaPos1 = null;
         inputAreaPos2 = null;
@@ -2913,9 +3250,7 @@ public class StashMover extends Module {
         selectionMode = SelectionMode.NONE;
         info("All areas cleared");
     }
-
     public void renderAreas(Render3DEvent event) {
-        // Render input area
         if (inputAreaPos1 != null && inputAreaPos2 != null) {
             Box inputBox = new Box(
                 inputAreaPos1.getX(), inputAreaPos1.getY(), inputAreaPos1.getZ(),
@@ -2924,8 +3259,6 @@ public class StashMover extends Module {
             SettingColor inputColor = new SettingColor(0, 255, 0, 50);
             event.renderer.box(inputBox, inputColor, inputColor, ShapeMode.Both, 0);
         }
-
-        // Render output area
         if (outputAreaPos1 != null && outputAreaPos2 != null) {
             Box outputBox = new Box(
                 outputAreaPos1.getX(), outputAreaPos1.getY(), outputAreaPos1.getZ(),
@@ -2934,5 +3267,373 @@ public class StashMover extends Module {
             SettingColor outputColor = new SettingColor(0, 0, 255, 50);
             event.renderer.box(outputBox, outputColor, outputColor, ShapeMode.Both, 0);
         }
+    }
+    private boolean validateChestTarget(BlockPos chestPos) {
+        HitResult hitResult = mc.crosshairTarget;
+        if (hitResult == null || hitResult.getType() != HitResult.Type.BLOCK) {
+            return false;
+        }
+        BlockHitResult blockHit = (BlockHitResult) hitResult;
+        BlockPos targetPos = blockHit.getBlockPos();
+        return targetPos.equals(chestPos);
+    }
+    private void performImprovedInteraction(Vec3d containerCenter) {
+        Vec3d eyePos = mc.player.getEyePos();
+        Vec3d pos = mc.player.getPos();
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.Full(
+            pos.x, pos.y, pos.z,
+            mc.player.getYaw(), mc.player.getPitch(),
+            mc.player.isOnGround(), mc.player.horizontalCollision
+        ));
+        Direction optimalFace = calculateOptimalFace(currentContainer.pos, eyePos);
+        boolean success = false;
+        success = tryDirectInteraction(currentContainer.pos, optimalFace, eyePos);
+        if (!success && containerOpenFailures >= 2) {
+            success = tryAllFacesInteraction(currentContainer.pos, eyePos);
+        }
+        if (!success && containerOpenFailures >= 4) {
+            performPacketSpamInteraction(currentContainer.pos, eyePos);
+        }
+    }
+    private boolean tryDirectInteraction(BlockPos pos, Direction face, Vec3d eyePos) {
+        Vec3d hitVec = calculatePreciseHitVector(pos, face, eyePos);
+        double yaw = Rotations.getYaw(hitVec);
+        double pitch = Rotations.getPitch(hitVec);
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
+            (float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision
+        ));
+        BlockHitResult hitResult = new BlockHitResult(
+            hitVec, face, pos, false
+        );
+        ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+            Hand.MAIN_HAND, hitResult, 0
+        ));
+        if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+            result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                Hand.OFF_HAND, hitResult, 1
+            ));
+        }
+        return result == ActionResult.SUCCESS || result == ActionResult.CONSUME;
+    }
+    private boolean tryAllFacesInteraction(BlockPos pos, Vec3d eyePos) {
+        Direction[] facesToTry = {
+            Direction.UP, Direction.NORTH, Direction.SOUTH,
+            Direction.EAST, Direction.WEST, Direction.DOWN
+        };
+        for (Direction face : facesToTry) {
+            if (tryDirectInteraction(pos, face, eyePos)) {
+                if (debugMode.get()) {
+                    info("Successfully interacted using face: " + face);
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+    private void performPacketSpamInteraction(BlockPos pos, Vec3d eyePos) {
+        Vec3d[] hitPositions = {
+            Vec3d.ofCenter(pos),
+            Vec3d.ofCenter(pos).add(0, 0.25, 0),
+            Vec3d.ofCenter(pos).add(0.25, 0, 0),
+            Vec3d.ofCenter(pos).add(0, 0, 0.25),
+            Vec3d.ofCenter(pos).add(-0.25, 0, 0),
+            Vec3d.ofCenter(pos).add(0, 0, -0.25)
+        };
+        for (int i = 0; i < 3; i++) {
+            Vec3d hitPos = hitPositions[i % hitPositions.length];
+            Direction face = i == 0 ? Direction.UP : (i == 1 ? Direction.NORTH : Direction.EAST);
+            BlockHitResult hitResult = new BlockHitResult(
+                hitPos, face, pos, false
+            );
+            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
+                Hand.MAIN_HAND, hitResult, i
+            ));
+        }
+        if (debugMode.get()) {
+            info("Sent packet spam interaction for stubborn chest");
+        }
+    }
+    private Direction calculateOptimalFace(BlockPos pos, Vec3d eyePos) {
+        double dx = pos.getX() + 0.5 - eyePos.x;
+        double dy = pos.getY() + 0.5 - eyePos.y;
+        double dz = pos.getZ() + 0.5 - eyePos.z;
+        double absDx = Math.abs(dx);
+        double absDy = Math.abs(dy);
+        double absDz = Math.abs(dz);
+        if (absDy > absDx && absDy > absDz) {
+            return dy > 0 ? Direction.DOWN : Direction.UP;
+        } else if (absDx > absDz) {
+            return dx > 0 ? Direction.WEST : Direction.EAST;
+        } else {
+            return dz > 0 ? Direction.NORTH : Direction.SOUTH;
+        }
+    }
+    private void performSmartRepositioning(BlockPos chestPos, double currentDistance) {
+        Vec3d chestCenter = Vec3d.ofCenter(chestPos);
+        Vec3d playerPos = mc.player.getPos();
+        double optimalDistance = 2.8;
+        Vec3d direction = playerPos.subtract(chestCenter).normalize();
+        Vec3d optimalPos = chestCenter.add(direction.multiply(optimalDistance));
+        double dx = optimalPos.x - playerPos.x;
+        double dz = optimalPos.z - playerPos.z;
+        if (Math.abs(dx) > Math.abs(dz)) {
+            if (dx > 0.2) {
+                mc.options.rightKey.setPressed(true);
+                info("Repositioning: moving right");
+            } else if (dx < -0.2) {
+                mc.options.leftKey.setPressed(true);
+                info("Repositioning: moving left");
+            }
+        } else {
+            if (dz > 0.2) {
+                mc.options.backKey.setPressed(true);
+                info("Repositioning: moving back");
+            } else if (dz < -0.2) {
+                mc.options.forwardKey.setPressed(true);
+                info("Repositioning: moving forward");
+            }
+        }
+        if (currentDistance > optimalDistance + 0.5) {
+            mc.options.forwardKey.setPressed(true);
+        } else if (currentDistance < optimalDistance - 0.5) {
+            mc.options.backKey.setPressed(true);
+        }
+        if (debugMode.get()) {
+            info(String.format("Smart repositioning: current=%.1f, optimal=%.1f", currentDistance, optimalDistance));
+        }
+    }
+    private void improvedManualMovement(ContainerInfo container) {
+        if (container == null) return;
+        Vec3d targetPos = Vec3d.ofCenter(container.pos);
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d eyePos = mc.player.getEyePos();
+        double distance = eyePos.distanceTo(targetPos);
+        double horizontalDistance = Math.sqrt(
+            Math.pow(targetPos.x - playerPos.x, 2) +
+                Math.pow(targetPos.z - playerPos.z, 2)
+        );
+        stopAllMovement();
+        double yaw = Rotations.getYaw(targetPos);
+        double pitch = Rotations.getPitch(targetPos);
+        mc.player.setYaw((float)yaw);
+        mc.player.setPitch((float)pitch);
+        if (distance > 3.2) {
+            if (horizontalDistance > 10) {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sprintKey.setPressed(true);
+                info("Sprinting to container (" + String.format("%.1f", distance) + "m)");
+            } else if (horizontalDistance > 4) {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sprintKey.setPressed(false);
+                info("Walking to container (" + String.format("%.1f", distance) + "m)");
+            } else {
+                mc.options.forwardKey.setPressed(true);
+                mc.options.sneakKey.setPressed(true);
+                info("Sneaking to container (" + String.format("%.1f", distance) + "m)");
+            }
+            if (isBlockedAhead()) {
+                mc.options.jumpKey.setPressed(true);
+                jumpTimer = 5;
+            } else if (jumpTimer > 0) {
+                jumpTimer--;
+                if (jumpTimer == 0) {
+                    mc.options.jumpKey.setPressed(false);
+                }
+            }
+            currentState = ProcessState.MANUAL_MOVING;
+            stateTimer = 30;
+        } else {
+            stopAllMovement();
+            info("Reached container, opening...");
+            currentState = ProcessState.OPENING_CONTAINER;
+            stateTimer = 5;
+        }
+    }
+    private void alternativePathToContainer(ContainerInfo container) {
+        if (container == null) return;
+        BlockPos targetPos = container.pos;
+        BlockPos[] alternatives = {
+            targetPos.north(2),
+            targetPos.south(2),
+            targetPos.east(2),
+            targetPos.west(2),
+            targetPos.north(2).up(),
+            targetPos.south(2).up(),
+            targetPos.east(2).up(),
+            targetPos.west(2).up()
+        };
+        BlockPos bestAlternative = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (BlockPos alt : alternatives) {
+            if (isValidStandingPosition(alt)) {
+                double dist = mc.player.getPos().distanceTo(Vec3d.ofCenter(alt));
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestAlternative = alt;
+                }
+            }
+        }
+        if (bestAlternative != null) {
+            GoalBlock goal = new GoalBlock(bestAlternative);
+            BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+            currentState = ProcessState.MOVING_TO_CONTAINER;
+            stateTimer = 100;
+            info("Using alternative path via " + bestAlternative);
+        } else {
+            warning("No alternative paths found, using manual movement");
+            improvedManualMovement(container);
+        }
+    }
+    private void ensureOffhandHasItem() {
+        ItemStack offhandStack = mc.player.getOffHandStack();
+        ItemStack slot0 = mc.player.getInventory().getStack(0);
+
+        if (!slot0.isEmpty() && slot0.getItem() != Items.ENDER_PEARL) {
+            if (offhandStack.isEmpty()) {
+                mc.interactionManager.clickSlot(
+                    mc.player.currentScreenHandler.syncId,
+                    36,
+                    0,
+                    SlotActionType.PICKUP,
+                    mc.player
+                );
+                mc.interactionManager.clickSlot(
+                    mc.player.currentScreenHandler.syncId,
+                    45,
+                    0,
+                    SlotActionType.PICKUP,
+                    mc.player
+                );
+                info("Moved " + slot0.getItem().getName().getString() + " from slot 0 to offhand");
+            } else {
+                for (int i = 9; i < 36; i++) {
+                    if (mc.player.getInventory().getStack(i).isEmpty()) {
+                        mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId,
+                            36,
+                            0,
+                            SlotActionType.PICKUP,
+                            mc.player
+                        );
+                        mc.interactionManager.clickSlot(
+                            mc.player.currentScreenHandler.syncId,
+                            i,
+                            0,
+                            SlotActionType.PICKUP,
+                            mc.player
+                        );
+                        info("Moved slot 0 to inventory to free space for pearl");
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+
+        if (offhandStack.isEmpty()) {
+            for (int i = 1; i < 9; i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
+                if (!stack.isEmpty() && stack.getItem() != Items.ENDER_PEARL) {
+                    mc.interactionManager.clickSlot(
+                        mc.player.currentScreenHandler.syncId,
+                        36 + i,
+                        0,
+                        SlotActionType.PICKUP,
+                        mc.player
+                    );
+                    mc.interactionManager.clickSlot(
+                        mc.player.currentScreenHandler.syncId,
+                        45,
+                        0,
+                        SlotActionType.PICKUP,
+                        mc.player
+                    );
+                    info("Moved " + stack.getItem().getName().getString() + " to offhand");
+                    return;
+                }
+            }
+
+            for (int i = 9; i < 36; i++) {
+                ItemStack stack = mc.player.getInventory().getStack(i);
+                if (!stack.isEmpty() && stack.getItem() != Items.ENDER_PEARL && !isShulkerBox(stack.getItem())) {
+                    mc.interactionManager.clickSlot(
+                        mc.player.currentScreenHandler.syncId,
+                        i,
+                        0,
+                        SlotActionType.PICKUP,
+                        mc.player
+                    );
+                    mc.interactionManager.clickSlot(
+                        mc.player.currentScreenHandler.syncId,
+                        45,
+                        0,
+                        SlotActionType.PICKUP,
+                        mc.player
+                    );
+                    info("Moved item from inventory to offhand");
+                    return;
+                }
+            }
+        }
+    }
+    private void performStuckRecovery() {
+        BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().cancelEverything();
+        stopAllMovement();
+        stuckRecoveryAttempts++;
+        if (stuckRecoveryAttempts >= 3) {
+            warning("Failed to recover from stuck state, skipping container");
+            if (currentContainer != null) {
+                currentContainer.isEmpty = true;
+                currentContainer = null;
+            }
+            currentState = isNearOutputArea() ? ProcessState.OUTPUT_PROCESS : ProcessState.INPUT_PROCESS;
+            stuckRecoveryAttempts = 0;
+            stuckCounter = 0;
+            lastPlayerPos = null;
+            return;
+        }
+        switch (stuckRecoveryAttempts) {
+            case 1 -> {
+                info("Stuck recovery: jumping backward");
+                mc.options.jumpKey.setPressed(true);
+                mc.options.backKey.setPressed(true);
+                currentState = ProcessState.MANUAL_MOVING;
+                stateTimer = 20;
+            }
+            case 2 -> {
+                info("Stuck recovery: strafing");
+                mc.options.jumpKey.setPressed(true);
+                mc.options.leftKey.setPressed(true);
+                currentState = ProcessState.MANUAL_MOVING;
+                stateTimer = 20;
+            }
+            default -> {
+                info("Stuck recovery: manual movement");
+                improvedManualMovement(currentContainer);
+            }
+        }
+        stuckCounter = 0;
+    }
+    private boolean isBlockedAhead() {
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d lookVec = mc.player.getRotationVector();
+        Vec3d checkPos = playerPos.add(lookVec.multiply(1.0));
+        BlockPos blockPos = BlockPos.ofFloored(checkPos);
+        BlockPos blockAbove = blockPos.up();
+        return !mc.world.getBlockState(blockPos).isAir() ||
+            !mc.world.getBlockState(blockAbove).isAir();
+    }
+    private boolean isValidStandingPosition(BlockPos pos) {
+        BlockState groundState = mc.world.getBlockState(pos.down());
+        BlockState feetState = mc.world.getBlockState(pos);
+        BlockState headState = mc.world.getBlockState(pos.up());
+        return groundState.isSolidBlock(mc.world, pos.down()) &&
+            feetState.isAir() &&
+            headState.isAir();
     }
 }
