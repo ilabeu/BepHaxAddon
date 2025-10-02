@@ -1,6 +1,7 @@
 package bep.hax.util;
 
 import java.io.File;
+import java.util.Random;
 import java.util.UUID;
 import java.time.Instant;
 import java.util.Optional;
@@ -15,12 +16,11 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.network.packet.c2s.play.*;
-import io.netty.util.internal.ThreadLocalRandom;
 import meteordevelopment.meteorclient.utils.Utils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ProfileComponent;
 import meteordevelopment.meteorclient.utils.world.Dimension;
-import bep.hax.mixin.ClientConnectionAccessor;
+import bep.hax.mixin.accessor.ClientConnectionAccessor;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
@@ -34,6 +34,8 @@ import meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor;
  * @author Tas [@0xTas] <root@0xTas.dev>
  **/
 public class StardustUtil {
+    private static final Random RANDOM = new Random();
+
     public static final boolean XAERO_AVAILABLE = FabricLoader.getInstance().isModLoaded("xaeroworldmap")
         && FabricLoader.getInstance().isModLoaded("xaerominimap");
 
@@ -50,7 +52,7 @@ public class StardustUtil {
         RainbowColor(String[] labels) { this.labels = labels; }
 
         public static RainbowColor getFirst() {
-            return RainbowColor.values()[ThreadLocalRandom.current().nextInt(RainbowColor.values().length)];
+            return RainbowColor.values()[RANDOM.nextInt(RainbowColor.values().length)];
         }
 
         public static RainbowColor getNext(RainbowColor previous) {
@@ -98,7 +100,7 @@ public class StardustUtil {
 
         // Omit gray, light_gray, and black from accent colors.
         while (color.equals("§0") || color.equals("§8") || color.equals("§7")) {
-            int luckyIndex = ThreadLocalRandom.current().nextInt(colors.length);
+            int luckyIndex = RANDOM.nextInt(colors.length);
             color = colors[luckyIndex].label;
         }
 
@@ -106,7 +108,7 @@ public class StardustUtil {
     }
 
     public static ItemStack chooseMenuIcon() {
-        int luckyIndex = ThreadLocalRandom.current().nextInt(menuIcons.length);
+        int luckyIndex = RANDOM.nextInt(menuIcons.length);
 
         return menuIcons[luckyIndex];
     }
@@ -185,9 +187,9 @@ public class StardustUtil {
         Items.ENCHANTED_GOLDEN_APPLE.getDefaultStack(),
         Items.HEARTBREAK_POTTERY_SHERD.getDefaultStack(),
         Items.EYE_ARMOR_TRIM_SMITHING_TEMPLATE.getDefaultStack(),
-        discIcons[ThreadLocalRandom.current().nextInt(discIcons.length)],
-        doorIcons[ThreadLocalRandom.current().nextInt(doorIcons.length)],
-        getCustomIcons()[ThreadLocalRandom.current().nextInt(getCustomIcons().length)]
+        discIcons[RANDOM.nextInt(discIcons.length)],
+        doorIcons[RANDOM.nextInt(doorIcons.length)],
+        getCustomIcons()[RANDOM.nextInt(getCustomIcons().length)]
     };
 
     private static ItemStack[] getCustomIcons() {
@@ -224,13 +226,13 @@ public class StardustUtil {
             "textures",
             new Property(
                 "textures", // Select a random player head texture from the playerHeadTextures array.
-                playerHeadTextures[ThreadLocalRandom.current().nextInt(playerHeadTextures.length)],""
+                playerHeadTextures[RANDOM.nextInt(playerHeadTextures.length)],""
             )
         );
         playerHead.set(DataComponentTypes.PROFILE, profileComponent);
 
         ItemStack enchantedPick = new ItemStack(
-            ThreadLocalRandom.current().nextInt(2) == 0 ? Items.DIAMOND_PICKAXE : Items.NETHERITE_PICKAXE);
+            RANDOM.nextInt(2) == 0 ? Items.DIAMOND_PICKAXE : Items.NETHERITE_PICKAXE);
         enchantedPick.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack[] enchantedGlass = new ItemStack[] {
@@ -252,7 +254,7 @@ public class StardustUtil {
         cgiElytra.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack sword32k = new ItemStack(
-            ThreadLocalRandom.current().nextInt(2) == 0 ? Items.DIAMOND_SWORD : Items.WOODEN_SWORD);
+            RANDOM.nextInt(2) == 0 ? Items.DIAMOND_SWORD : Items.WOODEN_SWORD);
         sword32k.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
 
         ItemStack illegalBow = new ItemStack(Items.BOW);
@@ -267,7 +269,7 @@ public class StardustUtil {
         return new ItemStack[] {
             playerHead,
             enchantedPick, sword32k, illegalBow, bindingPumpkin, cgiElytra, ripTridentFly,
-            enchantedGlass[ThreadLocalRandom.current().nextInt(enchantedGlass.length)]
+            enchantedGlass[RANDOM.nextInt(enchantedGlass.length)]
         };
     }
 

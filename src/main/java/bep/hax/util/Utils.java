@@ -3,6 +3,7 @@ package bep.hax.util;
 import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.item.Item;
@@ -13,6 +14,12 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 
+import javax.net.ssl.HttpsURLConnection;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownServiceException;
+
 public class Utils
 {
 
@@ -21,7 +28,7 @@ public class Utils
 
         // cant use a rocket if not wearing an elytra
         int elytraSwapSlot = -1;
-        if (elytraRequired && !mc.player.getInventory().getArmorStack(2).isOf(Items.ELYTRA))
+        if (elytraRequired && !mc.player.getInventory().getStack(SlotUtils.ARMOR_START + 2).isOf(Items.ELYTRA))
         {
             FindItemResult itemResult = InvUtils.findInHotbar(Items.ELYTRA);
             if (!itemResult.found()) {
@@ -148,5 +155,74 @@ public class Utils
             }
         }
         return itemCount;
+    }
+
+    public static float smoothRotation(double current, double target, double rotationScaling)
+    {
+        double difference = angleDifference(target, current);
+        return (float) (current + difference * rotationScaling);
+    }
+
+    public static double angleDifference(double target, double current)
+    {
+        double diff = (target - current + 180) % 360 - 180;
+        return diff < -180 ? diff + 360 : diff;
+    }
+
+    public static void sendWebhook(String webhookURL, String title, String message, String pingID, String playerName)
+    {
+        String json = "";
+        json += "{\"embeds\": [{"
+            + "\"title\": \""+ title +"\","
+            + "\"description\": \""+ message +"\","
+            + "\"color\": 15258703,"
+            + "\"footer\": {"
+            + "\"text\": \"From: " + playerName + "\"}"
+            + "}]}";
+        sendRequest(webhookURL, json);
+
+        if (pingID != null)
+        {
+            json = "{\"content\": \"<@" + pingID + ">\"}";
+            sendRequest(webhookURL, json);
+        }
+    }
+
+    public static void sendWebhook(String webhookURL, String jsonObject, String pingID)
+    {
+        sendRequest(webhookURL, jsonObject);
+
+        if (pingID != null)
+        {
+            jsonObject = "{\"content\": \"<@" + pingID + ">\"}";
+            sendRequest(webhookURL, jsonObject);
+        }
+    }
+
+    private static void sendRequest(String webhookURL, String json) {
+        try {
+            URL url = new URL(webhookURL);
+            HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
+            con.addRequestProperty("Content-Type", "application/json");
+            con.addRequestProperty("User-Agent", "Mozilla");
+            con.setDoOutput(true);
+            con.setRequestMethod("POST");
+            OutputStream stream = con.getOutputStream();
+            stream.write(json.getBytes());
+            stream.flush();
+            stream.close();
+            con.getInputStream().close();
+            con.disconnect();
+        }
+        catch (MalformedURLException | UnknownServiceException e)
+        {
+//            searchArea.logToWebhook.set(false);
+//            searchArea.webhookLink.set("");
+//            info("Issue with webhook link. It has been cleared, try again.");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 }

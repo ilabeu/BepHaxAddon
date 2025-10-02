@@ -41,7 +41,7 @@ public class YawLock extends Module {
     private int tickCounter = 0;
 
     public YawLock() {
-        super(Bep.CATEGORY, "yaw-lock", "Locks your yaw to the closest 45-degree increment.");
+        super(Bep.STASH, "yaw-lock", "Locks your yaw to the closest 45-degree increment.");
     }
 
     @Override

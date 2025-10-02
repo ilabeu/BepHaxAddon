@@ -27,22 +27,22 @@ public class AFKVanillaFly extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
     private final Setting<Integer> fireworkDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("Timed Delay (ms)")
-        .description("How long to wait between fireworks when using Timed Delay.")
+        .name("timed-delay")
+        .description("The delay between firework usages in milliseconds.")
         .defaultValue(4000)
         .sliderRange(0, 10000)
         .build()
     );
 
     private final Setting<Boolean> useManualY = sgGeneral.add(new BoolSetting.Builder()
-        .name("Use Manual Y Level")
+        .name("use-manual-y-level")
         .description("Use a manually set Y level instead of the Y level when activated.")
         .defaultValue(false)
         .build()
     );
 
     private final Setting<Integer> manualYLevel = sgGeneral.add(new IntSetting.Builder()
-        .name("Manual Y Level")
+        .name("manual-y-level")
         .description("The Y level to maintain when using manual Y level.")
         .defaultValue(256)
         .sliderRange(-64, 320)

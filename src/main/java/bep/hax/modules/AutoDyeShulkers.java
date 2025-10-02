@@ -1,6 +1,7 @@
 package bep.hax.modules;
 
 import bep.hax.Bep;
+import java.util.Random;
 import net.minecraft.item.Item;
 import net.minecraft.text.Text;
 import net.minecraft.item.Items;
@@ -11,7 +12,6 @@ import net.minecraft.item.ItemStack;
 import bep.hax.util.StardustUtil;
 import net.minecraft.sound.SoundEvents;
 import meteordevelopment.orbit.EventHandler;
-import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.screen.PlayerScreenHandler;
 import meteordevelopment.meteorclient.settings.*;
 import net.minecraft.screen.CraftingScreenHandler;
@@ -26,6 +26,8 @@ import net.minecraft.client.gui.screen.ingame.InventoryScreen;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class AutoDyeShulkers extends Module {
+    private static final Random RANDOM = new Random();
+
     public AutoDyeShulkers() { super(Bep.STARDUST, "AutoDyeShulkers", "Automatically dye shulker boxes and/or bundles in crafting grids."); }
 
     public enum DyeMode {
@@ -178,7 +180,7 @@ public class AutoDyeShulkers extends Module {
     private int getUnoccupiedSlot(int occupied, int inputEnd) {
         int slot;
         do {
-            slot = ThreadLocalRandom.current().nextInt(1, inputEnd);
+            slot = RANDOM.nextInt(1, inputEnd);
         } while (slot == occupied);
         return  slot;
     }

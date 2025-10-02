@@ -1,8 +1,12 @@
+/*
+ * This file is part of the Meteor Client distribution (https://github.com/MeteorDevelopment/meteor-client).
+ * Copyright (c) Meteor Development.
+ */
+
 package bep.hax.modules;
 
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.Utils;
@@ -11,7 +15,9 @@ import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
@@ -86,7 +92,7 @@ public class AutoEXPPlus extends Module {
                 for (int i = 0; i < mc.player.getInventory().armor.size(); i++) {
                     if (ignoreElytra.get() && mc.player.getInventory().armor.get(i).getItem() == Items.ELYTRA) continue;
                     if (needsRepair(mc.player.getInventory().armor.get(i), minThreshold.get())) {
-                        repairingI = SlotUtils.indexToId(SlotUtils.ARMOR_START + i);
+                        repairingI = SlotUtils.ARMOR_START + i;
                         break;
                     }
                 }

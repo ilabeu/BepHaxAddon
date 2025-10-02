@@ -1,6 +1,7 @@
 package bep.hax.mixin;
 
 import java.util.List;
+import java.util.Random;
 import net.minecraft.util.Identifier;
 import bep.hax.modules.MusicTweaks;
 import net.minecraft.client.sound.Sound;
@@ -8,7 +9,6 @@ import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import io.netty.util.internal.ThreadLocalRandom;
 import org.spongepowered.asm.mixin.injection.At;
 import net.minecraft.client.sound.SoundContainer;
 import net.minecraft.client.sound.WeightedSoundSet;
@@ -22,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  **/
 @Mixin(WeightedSoundSet.class)
 public abstract class WeightedSoundSetMixin implements SoundContainer<Sound> {
+    private static final Random RANDOM = new Random();
+
     @Shadow
     @Final
     private List<SoundContainer<Sound>> sounds;
@@ -58,7 +60,7 @@ public abstract class WeightedSoundSetMixin implements SoundContainer<Sound> {
 
         cir.setReturnValue(
             new Sound(
-                Identifier.of(soundIDs.get(ThreadLocalRandom.current().nextInt(soundIDs.size()))),
+                Identifier.of(soundIDs.get(RANDOM.nextInt(soundIDs.size()))),
                 ConstantFloatProvider.create(adjustedVolume),
                 ConstantFloatProvider.create(adjustedPitch),
                 this.getWeight(), Sound.RegistrationType.SOUND_EVENT,

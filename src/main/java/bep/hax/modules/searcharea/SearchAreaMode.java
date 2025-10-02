@@ -11,6 +11,8 @@ import net.minecraft.util.math.BlockPos;
 import static bep.hax.util.Utils.*;
 import java.io.*;
 
+import static bep.hax.util.Utils.sendWebhook;
+
 public class SearchAreaMode
 {
 
@@ -42,18 +44,9 @@ public class SearchAreaMode
         setPressed(mc.options.forwardKey, false);
     }
 
-    // stolen from autowalk
-
-
-    public void onMessageReceive(ReceiveMessageEvent event)
+    public void disable()
     {
-        Text message = event.getMessage();
-        if (message.getString().contains("joined the game"))
-        {
-            // why is it a double???
-            paused = (long) (System.nanoTime() + 1e10);
-        }
-
+        if (searchArea.isActive()) searchArea.toggle();
     }
 
     protected File getJsonFile(String fileName) {

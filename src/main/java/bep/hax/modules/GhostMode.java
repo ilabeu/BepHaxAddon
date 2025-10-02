@@ -4,12 +4,16 @@ import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.gui.screen.DeathScreen;
+import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
 
 public class GhostMode extends Module {
 
@@ -19,6 +23,32 @@ public class GhostMode extends Module {
         .name("full-food")
         .description("Sets the food level client-side to max.")
         .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Boolean> maintainHealth = sgGeneral.add(new BoolSetting.Builder()
+        .name("maintain-health")
+        .description("Maintains health at a specific value to prevent issues.")
+        .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Double> healthValue = sgGeneral.add(new DoubleSetting.Builder()
+        .name("health-value")
+        .description("Health value to maintain while in ghost mode.")
+        .defaultValue(20)
+        .min(1)
+        .max(20)
+        .sliderMin(1)
+        .sliderMax(20)
+        .visible(maintainHealth::get)
+        .build()
+    );
+
+    private final Setting<Boolean> blockDeathPackets = sgGeneral.add(new BoolSetting.Builder()
+        .name("block-death-packets")
+        .description("Blocks death-related packets from the server.")
+        .defaultValue(false)
         .build()
     );
 
@@ -47,9 +77,31 @@ public class GhostMode extends Module {
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (!active) return;
-        if (mc.player.getHealth() < 1f) mc.player.setHealth(20f);
+
+        // Maintain health to prevent death state issues
+        if (maintainHealth.get()) {
+            float targetHealth = healthValue.get().floatValue();
+            if (mc.player.getHealth() <= 0f || mc.player.getHealth() != targetHealth) {
+                mc.player.setHealth(targetHealth);
+            }
+        } else if (mc.player.getHealth() <= 0f) {
+            // At minimum, keep health above 0 to prevent issues
+            mc.player.setHealth(1f);
+        }
+
+        // Maintain food level
         if (fullFood.get() && mc.player.getHungerManager().getFoodLevel() < 20) {
             mc.player.getHungerManager().setFoodLevel(20);
+        }
+
+        // Force update player capabilities to ensure proper movement
+        if (mc.player.getAbilities().flying && !mc.player.getAbilities().allowFlying) {
+            mc.player.getAbilities().flying = false;
+        }
+
+        // Ensure the player is marked as "alive" client-side for proper physics
+        if (mc.player.isDead()) {
+            mc.player.setHealth(maintainHealth.get() ? healthValue.get().floatValue() : 1f);
         }
     }
 
@@ -59,8 +111,38 @@ public class GhostMode extends Module {
             event.cancel();
             if (!active) {
                 active = true;
-                info("You are now in a ghost mode. ");
+                info("You are now in ghost mode. Toggle off to respawn.");
             }
+        }
+    }
+
+    @EventHandler
+    private void onReceivePacket(PacketEvent.Receive event) {
+        if (!active) return;
+
+        // Block health update packets that would set health to 0
+        if (blockDeathPackets.get() && event.packet instanceof HealthUpdateS2CPacket packet) {
+            try {
+                // Use reflection to check the health value
+                var healthField = packet.getClass().getDeclaredField("health");
+                healthField.setAccessible(true);
+                float health = healthField.getFloat(packet);
+
+                if (health <= 0) {
+                    event.cancel();
+                    // Set our own health instead
+                    if (mc.player != null) {
+                        mc.player.setHealth(maintainHealth.get() ? healthValue.get().floatValue() : 1f);
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore reflection errors
+            }
+        }
+
+        // Block death message packets
+        if (blockDeathPackets.get() && event.packet instanceof DeathMessageS2CPacket) {
+            event.cancel();
         }
     }
 

@@ -9,6 +9,7 @@ base {
 }
 
 repositories {
+    mavenCentral()
     exclusiveContent {
         forRepository {
             maven {
@@ -41,14 +42,15 @@ dependencies {
     modImplementation("meteordevelopment:meteor-client:${project.property("minecraft_version")}-SNAPSHOT")
 
 // XaeroPlus
-    modImplementation("maven.modrinth:xaeroplus:2.25.1+fabric-1.21.4")
+    modImplementation("maven.modrinth:xaeroplus:2.28.1+fabric-1.21.4")
 // XaeroWorldMap
-    modImplementation("maven.modrinth:xaeros-world-map:1.39.2_Fabric_1.21.4")
+    modImplementation("maven.modrinth:xaeros-world-map:1.39.12_Fabric_1.21.4")
 // XaeroMinimap
-    modImplementation("maven.modrinth:xaeros-minimap:25.0.0_Fabric_1.21.4")
+    modImplementation("maven.modrinth:xaeros-minimap:25.2.10_Fabric_1.21.4")
 
-    modImplementation("net.lenni0451:LambdaEvents:2.4.2")
-    modImplementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    // Include these libraries in the jar
+    implementation(include("net.lenni0451:LambdaEvents:2.4.2")!!)
+    implementation(include("com.github.ben-manes.caffeine:caffeine:3.1.8")!!)
 }
 
 tasks {

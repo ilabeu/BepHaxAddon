@@ -12,6 +12,8 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import bep.hax.managers.PacketManager;
+
 
 public class Bep extends MeteorAddon {
     public static final Logger LOG = LoggerFactory.getLogger("BepHax");
@@ -19,6 +21,8 @@ public class Bep extends MeteorAddon {
     public static final Category STASH = new Category("Stash Hunt");
     public static final Category STARDUST= new Category("Stardust");
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
+
+    private PacketManager packetManager;
 
     @Override
     public void onInitialize() {
@@ -38,7 +42,7 @@ public class Bep extends MeteorAddon {
 
         Commands.add(new bep.hax.commands.IgnoreSyncCommand());
 
-        Modules.get().add(new AutoSmithing());
+        Modules.get().add(new AutoSmith());
         Modules.get().add(new BepMine());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
@@ -61,14 +65,20 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Replenish());
         Modules.get().add(new GhostMode());
 
+        bep.hax.util.CapeManager.getInstance();
+
+
+        // StashMover - Automated shulker transfer system
+        Modules.get().add(new StashMover());
+        Commands.add(new bep.hax.commands.SetInput());
+        Commands.add(new bep.hax.commands.SetOutput());
+        Commands.add(new bep.hax.commands.StashStatus());
+        Commands.add(new bep.hax.commands.SetClear());
 
         // INDICA MOD https://github.com/Faye-one/INDICA
-        Modules.get().add(new OminousVaultESP());
-        Modules.get().add(new ShulkerFrameESP());
         Modules.get().add(new KillEffects());
         Modules.get().add(new RespawnPointBlocker());
         Modules.get().add(new MapDuplicator());
-        Modules.get().add(new InventoryNotif());
 
 
         // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon
@@ -84,18 +94,16 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new HighlightOldLava());
         Modules.get().add(new Pitch40Util());
         Modules.get().add(new GrimAirPlace());
+        Modules.get().add(new GrimScaffold());
         Modules.get().add(new TrailFollower());
         Modules.get().add(new Stripper());
         Modules.get().add(new VanityESP());
         Modules.get().add(new BetterStashFinder());
         Modules.get().add(new OldChunkNotifier());
         Modules.get().add(new SearchArea());
+        Modules.get().add(new DiscordNotifs());
+        Modules.get().add(new TrailMaker());
 
-        // StashMover - Automated shulker transfer system
-        Modules.get().add(new StashMover());
-        Commands.add(new bep.hax.commands.SetInput());
-        Commands.add(new bep.hax.commands.SetOutput());
-        Commands.add(new bep.hax.commands.SetClear());
 
         // HIGTools https://github.com/RedCarlos26/HIGTools
         Commands.add(new bep.hax.commands.Coordinates());
@@ -115,6 +123,7 @@ public class Bep extends MeteorAddon {
         Commands.add(new bep.hax.commands.Loadout());
 
         // Stardust Modules https://github.com/0xTas/stardust
+        Modules.get().add(new AdBlocker());
         Modules.get().add(new Loadouts());
         Modules.get().add(new AntiToS());
         Modules.get().add(new ChatSigns());
@@ -136,9 +145,11 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new SignatureSign());
         Modules.get().add(new StashBrander());
         Modules.get().add(new WaxAura());
-        Modules.get().add(new TreasureESP());
         Modules.get().add(new Updraft());
         Modules.get().add(new Grinder());
+        Modules.get().add(new AutoDoors());
+        Modules.get().add(new AutoMason());
+
 
         // Meteorist https://github.com/Zgoly/Meteorist/
         Modules.get().add(new DisconnectSound());

@@ -24,24 +24,26 @@ public class Spiral extends SearchAreaMode
     @Override
     public void onActivate()
     {
-            startTime = System.nanoTime();
-            goingToStart = true;
-            File file = getJsonFile(super.toString());
-            if (file == null || !file.exists())
-            {
-                pd = new PathingDataSpiral(mc.player.getBlockPos(), mc.player.getBlockPos(), -90.0f, true, 0, 0);
+        startTime = System.nanoTime();
+        goingToStart = true;
+        File file = getJsonFile(super.toString());
+        if (file == null || !file.exists())
+        {
+            pd = new PathingDataSpiral(mc.player.getBlockPos(), mc.player.getBlockPos(), -90.0f, true, 0, 0);
+        }
+        else
+        {
+            try {
+                FileReader reader = new FileReader(file);
+                pd = GSON.fromJson(reader, PathingDataSpiral.class);
+                reader.close();
+                info("Loaded previously saved path, heading to where you left off.");
+            } catch (IOException e) {
+                info("Failed to load saved path, check logs for more details. Disabling module.");
+                e.printStackTrace();
+                this.disable();
             }
-            else
-            {
-                try {
-                    FileReader reader = new FileReader(file);
-                    pd = GSON.fromJson(reader, PathingDataSpiral.class);
-                    reader.close();
-                    info("Loaded previously saved path, heading to where you left off.");
-                } catch (Exception ignored) {
-
-                }
-            }
+        }
 
     }
 

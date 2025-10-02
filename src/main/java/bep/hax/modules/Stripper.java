@@ -34,7 +34,7 @@ public class Stripper extends Module {
         .name("strip-delay")
         .description("Ticks to wait before stripping")
         .defaultValue(0)
-        .range(1, 40)
+        .range(0, 40)
         .sliderRange(0, 40)
         .build()
     );
@@ -43,7 +43,7 @@ public class Stripper extends Module {
         .name("break-delay")
         .description("Ticks to wait before breaking")
         .defaultValue(0)
-        .range(1, 40)
+        .range(0, 40)
         .sliderRange(0, 40)
         .build()
     );

@@ -18,14 +18,14 @@ public class GotoPosition extends Module
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
     public final Setting<BlockPos> target = sgGeneral.add(new BlockPosSetting.Builder()
-        .name("Target Position")
+        .name("target-position")
         .description("Coords to go to. Y is ignored.")
         .defaultValue(new BlockPos(0,0,0))
         .build()
     );
 
     public final Setting<Boolean> disconnectOnComplete = sgGeneral.add(new BoolSetting.Builder()
-        .name("Disconnect when complete")
+        .name("disconnect-when-complete")
         .description("Disconnects when you get to the target")
         .defaultValue(false)
         .build()
@@ -34,7 +34,7 @@ public class GotoPosition extends Module
 
     public GotoPosition()
     {
-        super(Bep.STASH, "GotoPosition", "Goes in a straight line towards the position you give and stops once there.");
+        super(Bep.STASH, "goto-position", "Goes in a straight line towards the position you give and stops once there.");
     }
 
     @Override

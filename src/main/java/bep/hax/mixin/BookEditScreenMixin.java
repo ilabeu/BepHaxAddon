@@ -1,13 +1,13 @@
 package bep.hax.mixin;
 
 import java.util.ArrayList;
+import java.util.Random;
 import net.minecraft.text.Text;
 import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.*;
 import bep.hax.util.StardustUtil;
 import bep.hax.modules.BookTools;
 import net.minecraft.client.gui.screen.Screen;
-import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  **/
 @Mixin(BookEditScreen.class)
 public abstract class BookEditScreenMixin extends Screen {
+    private static final Random RANDOM = new Random();
+
     @Shadow
     private boolean dirty;
     @Shadow
@@ -88,7 +90,7 @@ public abstract class BookEditScreenMixin extends Screen {
         } else {
             lastCC = StardustUtil.RainbowColor.getNext(lastCC);
         }
-        return lastCC.labels[ThreadLocalRandom.current().nextInt(lastCC.labels.length)];
+        return lastCC.labels[RANDOM.nextInt(lastCC.labels.length)];
     }
 
     @Inject(method = "init", at = @At("TAIL"))

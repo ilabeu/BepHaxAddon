@@ -22,6 +22,8 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.MinecraftClient;
 import meteordevelopment.orbit.EventPriority;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import bep.hax.gui.screens.SolitaireScreen;
+import bep.hax.gui.screens.MeteoritesScreen;
 import meteordevelopment.meteorclient.settings.*;
 import net.minecraft.component.DataComponentTypes;
 import meteordevelopment.meteorclient.utils.Utils;
@@ -629,6 +631,11 @@ public class RocketMan extends Module {
         return false;
     }
 
+    private boolean isNotPlayingMinigames() {
+        return !(mc.currentScreen instanceof MeteoritesScreen)
+            && !(mc.currentScreen instanceof SolitaireScreen);
+    }
+
     private void handleDurabilityChecks() {
         if (mc.player == null) return;
         if (!warnOnLow.get() && !autoReplace.get()) return;
@@ -1059,8 +1066,8 @@ public class RocketMan extends Module {
                 if (!hasActiveRocket() && !justUsed) useFireworkRocket("dynamic usage");
             }
             case OnKey -> {
-                if (usageKey.get().isPressed() && !justUsed) {
-                    useFireworkRocket("forward key usage");
+                if (usageKey.get().isPressed() && !justUsed && isNotPlayingMinigames()) {
+                    useFireworkRocket("key usage");
                 }
             }
         }

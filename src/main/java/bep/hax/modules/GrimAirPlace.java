@@ -1,8 +1,6 @@
 package bep.hax.modules;
 
 import bep.hax.Bep;
-import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import net.minecraft.item.SpawnEggItem;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
@@ -11,8 +9,8 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -21,10 +19,10 @@ import net.minecraft.util.math.Direction;
 
 public class GrimAirPlace extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-    private final SettingGroup sgRange = settings.createGroup("Range");
+    private final SettingGroup sgRange = settings.createGroup("range");
 
     private final Setting<Integer> placeDelay = sgGeneral.add(new IntSetting.Builder()
-        .name("Place Delay")
+        .name("place-delay")
         .description("The delay in ticks between block placements.")
         .defaultValue(0)
         .build()
@@ -77,6 +75,7 @@ public class GrimAirPlace extends Module {
 
     private HitResult hitResult;
     private int delay = 0;
+    private boolean wasPressed = false;
 
     public GrimAirPlace() {
         super(Bep.STASH, "grim-air-place", "Places a block where your crosshair is pointing at.");
@@ -86,20 +85,36 @@ public class GrimAirPlace extends Module {
     public void onActivate()
     {
         delay = 0;
+        wasPressed = false;
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
-        delay++;
+
+        // Increment delay counter
+        if (delay < placeDelay.get()) {
+            delay++;
+        }
+
         double r = customRange.get() ? range.get() : mc.player.getBlockInteractionRange();
         hitResult = mc.getCameraEntity().raycast(r, 0, false);
 
-        if (!(hitResult instanceof BlockHitResult blockHitResult) || !(mc.player.getMainHandStack().getItem() instanceof BlockItem) && !(mc.player.getMainHandStack().getItem() instanceof SpawnEggItem)) return;
+        if (!(hitResult instanceof BlockHitResult blockHitResult) || !(mc.player.getMainHandStack().getItem() instanceof BlockItem) && !(mc.player.getMainHandStack().getItem() instanceof SpawnEggItem)) {
+            wasPressed = false;
+            return;
+        }
 
-        if (delay < placeDelay.get()) return;
+        boolean isPressed = mc.options.useKey.isPressed();
 
-        if (mc.options.useKey.isPressed()) {
+        // Don't place if screen is open (prevents placing when opening containers)
+        if (mc.currentScreen != null) {
+            wasPressed = isPressed;
+            return;
+        }
+
+        // Only place on fresh key press (not while held) and after delay
+        if (isPressed && !wasPressed && delay >= placeDelay.get()) {
             mc.player.networkHandler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.SWAP_ITEM_WITH_OFFHAND, new BlockPos(0,0,0), Direction.DOWN));
 
             mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(Hand.OFF_HAND, blockHitResult, mc.player.currentScreenHandler.getRevision() + 2));
@@ -109,6 +124,9 @@ public class GrimAirPlace extends Module {
             mc.player.swingHand(Hand.MAIN_HAND);
             delay = 0;
         }
+
+        // Track key state for next tick
+        wasPressed = isPressed;
     }
 
     @EventHandler

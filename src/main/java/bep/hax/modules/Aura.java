@@ -30,7 +30,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
-import bep.hax.modules.PVPModule;
 import bep.hax.util.*;
 import org.apache.commons.lang3.mutable.MutableDouble;
 
@@ -732,7 +731,7 @@ public class Aura extends Module {
                 return true;
             }
         }
-        
+
         // Use standard PlayerUtils pause conditions for other items
         return PlayerUtils.shouldPause(true, true, true);
     }

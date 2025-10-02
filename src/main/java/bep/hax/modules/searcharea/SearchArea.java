@@ -20,7 +20,7 @@ public class SearchArea extends Module {
 
 
     public final Setting<SearchAreaModes> chunkLoadMode = sgGeneral.add(new EnumSetting.Builder<SearchAreaModes>()
-        .name("Mode")
+        .name("mode")
         .description("The mode chunks are loaded.")
         .defaultValue(SearchAreaModes.Rectangle)
         .onModuleActivated(chunkMode -> onModeChanged(chunkMode.get()))
@@ -29,7 +29,7 @@ public class SearchArea extends Module {
     );
 
     public final Setting<BlockPos> startPos = sgGeneral.add(new BlockPosSetting.Builder()
-        .name("Start Position")
+        .name("start-position")
         .description("The coordinates to start the rectangle at. Y Pos is ignored")
         .defaultValue(new BlockPos(0,0,0))
         .visible(() -> chunkLoadMode.get() == SearchAreaModes.Rectangle)
@@ -37,7 +37,7 @@ public class SearchArea extends Module {
     );
 
     public final Setting<BlockPos> targetPos = sgGeneral.add(new BlockPosSetting.Builder()
-        .name("End Position")
+        .name("end-position")
         .description("The coordinates to end the rectangle at. Y Pos is ignored")
         .defaultValue(new BlockPos(0,0,0))
         .visible(() -> chunkLoadMode.get() == SearchAreaModes.Rectangle)
@@ -45,7 +45,7 @@ public class SearchArea extends Module {
     );
 
     public final Setting<Integer> rowGap = sgGeneral.add(new IntSetting.Builder()
-        .name("Path Gap")
+        .name("path-gap")
         .description("The amount of chunks to space between each chunk path.")
         .defaultValue(12)
         .min(1)
@@ -54,16 +54,14 @@ public class SearchArea extends Module {
     );
 
     public final Setting<String> saveLocation = sgGeneral.add(new StringSetting.Builder()
-        .name("Save Name")
+        .name("save-name")
         .description("The name to use for the folder that saves data, if you leave it blank, no data will be saved.")
         .defaultValue("")
         .build()
     );
 
-
-
     public final Setting<Boolean> disconnectOnCompletion = sgGeneral.add(new BoolSetting.Builder()
-        .name("Disconnect on Completion")
+        .name("disconnect-on-completion")
         .description("Whether to disconnect after the path is complete. This will turn autoreconnect off when disconnecting.")
         .defaultValue(false)
         .visible(() -> chunkLoadMode.get() == SearchAreaModes.Rectangle)
@@ -114,12 +112,6 @@ public class SearchArea extends Module {
             case Rectangle -> currentMode = new Rectangle();
             case Spiral -> currentMode = new Spiral();
         }
-    }
-
-    @EventHandler
-    private void onMessageReceive(ReceiveMessageEvent event)
-    {
-        currentMode.onMessageReceive(event);
     }
 
     public enum WebhookSettings

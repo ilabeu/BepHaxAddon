@@ -1,8 +1,13 @@
 package bep.hax.modules;
 
 import java.io.File;
+import java.util.List;
 import java.util.HashSet;
+import java.util.Optional;
+import java.util.ArrayList;
 import java.nio.file.Files;
+
+import bep.hax.Bep;
 import bep.hax.Bep;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -10,11 +15,23 @@ import net.minecraft.text.Text;
 import bep.hax.util.MsgUtil;
 import bep.hax.util.LogUtil;
 import net.minecraft.util.DyeColor;
+import com.mojang.authlib.GameProfile;
 import bep.hax.util.StardustUtil;
 import net.minecraft.block.entity.SignText;
+import meteordevelopment.orbit.EventHandler;
 import net.fabricmc.loader.api.FabricLoader;
+import meteordevelopment.orbit.EventPriority;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
 import meteordevelopment.meteorclient.settings.*;
+import meteordevelopment.meteorclient.utils.Utils;
+import bep.hax.mixin.accessor.GameProfileAccessor;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import bep.hax.mixin.accessor.PlayerListS2CPacketAccessor;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
+import bep.hax.mixin.accessor.EntityTrackerUpdateS2CPacketAccessor;
+import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
 
 /**
  * @author Tas [0xTas] <root@0xTas.dev>
@@ -178,4 +195,52 @@ public class AntiToS extends Module {
 
     @Override
     public void onDeactivate() { blacklisted.clear(); }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void onReceivePacket(PacketEvent.Receive event) {
+        if (!Utils.canUpdate()) return;
+        if ((event.packet instanceof EntityTrackerUpdateS2CPacket packet)) {
+            boolean modified = false;
+            List<DataTracker.SerializedEntry<?>> entries = new ArrayList<>();
+            for (DataTracker.SerializedEntry<?> entry : packet.trackedValues()) {
+                // https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Entity_Metadata
+                if (entry.id() == 2) { // Optional text component used for the entity's custom name
+                    @SuppressWarnings("unchecked")
+                    DataTracker.Entry<Optional<Text>> e = new DataTracker.Entry<>(
+                        (TrackedData<Optional<Text>>) entry.handler().create(entry.id()),
+                        (Optional<Text>) entry.value()
+                    );
+
+                    if (e.get().isPresent()) {
+                        Text data = e.get().get();
+                        if (containsBlacklistedText(data.getString())) {
+                            e.set(
+                                Optional.of(
+                                    Text.literal(censorText(data.getString())).setStyle(data.getStyle())
+                                )
+                            );
+
+                            modified = true;
+                            entries.add(e.toSerialized());
+                        } else entries.add(entry);
+                    } else entries.add(entry);
+                } else {
+                    entries.add(entry);
+                }
+            }
+
+            if (modified) ((EntityTrackerUpdateS2CPacketAccessor)(Object) packet).setTrackedValues(entries);
+        }
+        else if ((event.packet instanceof PlayerListS2CPacket packet)) {
+            for (PlayerListS2CPacket.Entry entry : packet.getEntries()) {
+                if (entry.profile() == null) continue;
+
+                GameProfile profile = entry.profile();
+                if (containsBlacklistedText(profile.getName())) {
+                    ((GameProfileAccessor) profile).setName(censorText(profile.getName()));
+                    ((PlayerListS2CPacketAccessor)(Object) entry).setProfile(profile);
+                }
+            }
+        }
+    }
 }

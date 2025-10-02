@@ -205,6 +205,11 @@ public class BepMine extends Module {
     private long lastBreak;
     private boolean instantTogglePressed = false;
 
+    // Swap management for dual break
+    private int swappedToSlot = -1;
+    private int originalSlot = -1;
+    private int swapBackTicks = 0;
+
     public BepMine() {
         super(Bep.CATEGORY, "bep-mine", "Mines blocks faster");
     }
@@ -225,6 +230,9 @@ public class BepMine extends Module {
         } else {
             miningQueue = new FirstOutQueue<>(1);
         }
+        swappedToSlot = -1;
+        originalSlot = -1;
+        swapBackTicks = 0;
     }
 
     @Override
@@ -233,6 +241,14 @@ public class BepMine extends Module {
             miningQueue.clear();
         }
         fadeList.clear();
+
+        // Swap back if we're still holding a tool
+        if (swappedToSlot != -1 && originalSlot != -1) {
+            swapBack(originalSlot);
+            swappedToSlot = -1;
+            originalSlot = -1;
+        }
+        swapBackTicks = 0;
     }
 
     @EventHandler
@@ -241,12 +257,24 @@ public class BepMine extends Module {
             return;
         }
 
+        // Handle delayed swap back
+        if (swapBackTicks > 0) {
+            swapBackTicks--;
+            if (swapBackTicks == 0 && swappedToSlot != -1 && originalSlot != -1) {
+                swapBack(originalSlot);
+                swappedToSlot = -1;
+                originalSlot = -1;
+            }
+        }
+
         // Check for instant toggle keybind - only when not in GUI
         if (instantToggleKey.get().isPressed() && mc.currentScreen == null) {
             if (!instantTogglePressed) {
                 instantTogglePressed = true;
                 instantConfig.set(!instantConfig.get());
-                // Send chat message to confirm toggle
+                if (!instantConfig.get()) {
+                    miningQueue.clear();
+                }
                 if (mc.player != null) {
                     String status = instantConfig.get() ? "§aenabled" : "§cdisabled";
                     mc.player.sendMessage(Text.literal("§7[§bBepMine§7] §fInstant mining " + status), false);
@@ -553,16 +581,29 @@ public class BepMine extends Module {
                 Rotations.rotate(rotations[0], rotations[1]);
             }
         }
-        int slot = data.getSlot();
-        boolean canSwap = slot != -1 && slot != mc.player.getInventory().selectedSlot;
-        if (canSwap) {
-            swapTo(slot);
+
+        int bestSlot = data.getSlot();
+        int currentSlot = mc.player.getInventory().selectedSlot;
+        boolean needsSwap = bestSlot != -1 && bestSlot != currentSlot;
+
+        // Track original slot if this is the first swap
+        if (needsSwap && swappedToSlot == -1) {
+            originalSlot = currentSlot;
         }
+
+        // Swap to the best tool if needed
+        if (needsSwap) {
+            swapTo(bestSlot);
+            swappedToSlot = bestSlot;
+            // Delay swap back by 3 ticks to ensure both blocks in dual-break get the tool
+            swapBackTicks = 3;
+        } else if (swappedToSlot != -1) {
+            // We're already holding the right tool from a previous swap, just reset the timer
+            swapBackTicks = 3;
+        }
+
         stopMiningInternal(data);
         lastBreak = System.currentTimeMillis();
-        if (canSwap) {
-            swapSync(slot);
-        }
     }
 
     private void swapTo(int slot) {
@@ -571,15 +612,21 @@ public class BepMine extends Module {
                 mc.player.getInventory().selectedSlot = slot;
                 mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(slot));
             }
-            case SILENT -> InvUtils.swap(slot, false);
-            case SILENT_ALT -> InvUtils.swap(slot, false); // Meteor doesn't have ALT mode
+            case SILENT -> {
+                mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+            }
         }
     }
 
-    private void swapSync(int slot) {
+    private void swapBack(int originalSlot) {
         switch (swapConfig.get()) {
-            case SILENT -> InvUtils.swapBack();
-            case SILENT_ALT -> InvUtils.swap(slot, false);
+            case NORMAL -> {
+                mc.player.getInventory().selectedSlot = originalSlot;
+                mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
+            }
+            case SILENT -> {
+                mc.getNetworkHandler().sendPacket(new UpdateSelectedSlotC2SPacket(originalSlot));
+            }
         }
     }
 
@@ -887,7 +934,6 @@ public class BepMine extends Module {
     public enum Swap {
         NORMAL,
         SILENT,
-        SILENT_ALT,
         OFF
     }
 }

@@ -45,7 +45,7 @@ public class DisconnectSound extends Module {
     );
 
     public DisconnectSound() {
-        super(Bep.CATEGORY, "disconnect-sound", "Plays a sound when the Disconnected Screen appears (e.g., when kicked). by Meteorist Addon");
+        super(Bep.STASH, "disconnect-sound", "Plays a sound when the Disconnected Screen appears (e.g., when kicked). by Meteorist Addon");
         MeteorClient.EVENT_BUS.subscribe(this);
     }
 

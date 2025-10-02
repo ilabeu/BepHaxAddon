@@ -2,6 +2,7 @@ package bep.hax.modules;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Random;
 import bep.hax.Bep;
 import net.minecraft.text.Text;
 import javax.annotation.Nullable;
@@ -12,7 +13,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.MinecraftClient;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.sound.MusicInstance;
-import io.netty.util.internal.ThreadLocalRandom;
 import net.minecraft.client.sound.SoundInstance;
 import meteordevelopment.meteorclient.settings.*;
 import bep.hax.mixin.accessor.MusicTrackerAccessor;
@@ -26,6 +26,8 @@ import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
  * @author Tas [0xTas] <root@0xTas.dev>
  **/
 public class MusicTweaks extends Module {
+    private static final Random RANDOM = new Random();
+
     public MusicTweaks() {
         super(Bep.STARDUST, "MusicTweaks", "Allows you to fuck with the background music.");
         runInMainMenu = true;
@@ -781,7 +783,7 @@ public class MusicTweaks extends Module {
 
         // It doesn't matter which SoundEvents.MUSIC_??? we return since the WeightedSoundSet is overwritten directly now.
         // actually I lied tho don't use the music disc events, or it won't work (see WeightedSoundSetMixin.java)
-        MusicSound type = new MusicSound(SoundEvents.MUSIC_GAME, min, ThreadLocalRandom.current().nextInt(min, max), false);
+        MusicSound type = new MusicSound(SoundEvents.MUSIC_GAME, min, RANDOM.nextInt(min, max), false);
 
         currentType = type;
         return type;
@@ -983,7 +985,7 @@ public class MusicTweaks extends Module {
 
         switch (lastDirection) { // Lmao
             case Ascending -> {
-                float weightedChance = ThreadLocalRandom.current().nextFloat(0, 1);
+                float weightedChance = RANDOM.nextFloat(0, 1);
 
                 float intensity;
                 if (weightedChance <= (weightedChanceSetting.get() / 100f)) {
@@ -995,7 +997,7 @@ public class MusicTweaks extends Module {
                 return MathHelper.clamp(currentPitch + (currentPitch * intensity), -5f, 5f);
             }
             case Descending -> {
-                float weightedChance = ThreadLocalRandom.current().nextFloat(0, 1);
+                float weightedChance = RANDOM.nextFloat(0, 1);
 
                 float intensity;
                 if (weightedChance <= (weightedChanceSetting.get() / 100f)) {
@@ -1037,7 +1039,7 @@ public class MusicTweaks extends Module {
     public int getTimeUntilNextSong() { return timeUntilNextSong.get() * 20; }
     public float getPitchAdjustment() { return pitchAdjustment.get() / 1000f; }
     public boolean shouldDisplayNowPlaying() { return displayNowPlaying.get(); }
-    public float getRandomPitch() { return ThreadLocalRandom.current().nextFloat(-pitchRange.get() / 1000f, pitchRange.get() / 1000f); }
+    public float getRandomPitch() { return RANDOM.nextFloat(-pitchRange.get() / 1000f, pitchRange.get() / 1000f); }
 
     private enum PitchDirection {
         Ascending, Descending

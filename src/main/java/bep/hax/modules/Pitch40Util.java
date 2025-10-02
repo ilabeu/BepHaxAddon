@@ -19,14 +19,14 @@ public class Pitch40Util extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
     public final Setting<Boolean> autoBoundAdjust = sgGeneral.add(new BoolSetting.Builder()
-        .name("Auto Adjust Bounds")
+        .name("auto-adjust-bounds")
         .description("Adjusts your bounds to make you continue to gain height. Good for fixing falling on reconnect or lag, etc.")
         .defaultValue(true)
         .build()
     );
 
     public final Setting<Double> boundGap = sgGeneral.add(new DoubleSetting.Builder()
-        .name("Bound Gap")
+        .name("bound-gap")
         .description("The gap between the upper and lower bounds. Used when reconnecting, or when at max height if Auto Adjust Bounds is enabled.")
         .defaultValue(60)
         .sliderRange(50, 100)
@@ -34,14 +34,14 @@ public class Pitch40Util extends Module {
     );
 
     public final Setting<Boolean> autoFirework = sgGeneral.add(new BoolSetting.Builder()
-        .name("Auto Firework")
+        .name("auto-firework")
         .description("Uses a firework automatically if your velocity is too low.")
         .defaultValue(true)
         .build()
     );
 
     public final Setting<Double> velocityThreshold = sgGeneral.add(new DoubleSetting.Builder()
-        .name("Auto Firework Velocity Threshold")
+        .name("velocity-threshold")
         .description("Velocity must be below this value when going up for firework to activate.")
         .defaultValue(-0.05)
         .sliderRange(-0.5, 1)
@@ -50,7 +50,7 @@ public class Pitch40Util extends Module {
     );
 
     public final Setting<Integer> fireworkCooldownTicks = sgGeneral.add(new IntSetting.Builder()
-        .name("Auto Firework Cooldown (ticks)")
+        .name("cooldown-ticks")
         .description("Cooldown after using a firework in ticks.")
         .defaultValue(10)
         .sliderRange(0, 100)
