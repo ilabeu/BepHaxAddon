@@ -45,6 +45,10 @@ public abstract class TimerMixin extends Module {
     @Unique
     private Setting<Boolean> autoAdjust;
     @Unique
+    private Setting<Boolean> onlyWhenTraveling;
+    @Unique
+    private Setting<Double> travelSpeedThreshold;
+    @Unique
     private Setting<Double> minSpeed;
     @Unique
     private Setting<Double> maxSpeed;
@@ -65,6 +69,12 @@ public abstract class TimerMixin extends Module {
     private int tickCounter = 0;
     @Unique
     private int lastUnloadedCount = 0;
+    @Unique
+    private net.minecraft.util.math.Vec3d lastPlayerPos = null;
+    @Unique
+    private int speedCheckTicks = 0;
+    @Unique
+    private double currentSpeed = 0;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onInit(CallbackInfo ci) {
@@ -72,6 +82,24 @@ public abstract class TimerMixin extends Module {
             .name("auto-adjust")
             .description("Automatically adjust timer speed based on chunk loading (for 2b2t).")
             .defaultValue(false)
+            .build()
+        );
+
+        onlyWhenTraveling = sgGeneral.add(new BoolSetting.Builder()
+            .name("only-when-traveling")
+            .description("Only use auto-adjust when moving faster than threshold speed. Sets timer to 1.0 when slower.")
+            .defaultValue(true)
+            .visible(autoAdjust::get)
+            .build()
+        );
+
+        travelSpeedThreshold = sgGeneral.add(new DoubleSetting.Builder()
+            .name("travel-speed-threshold")
+            .description("Minimum speed (km/h) required for auto-adjust to activate.")
+            .defaultValue(10.0)
+            .min(1.0)
+            .sliderRange(1.0, 100.0)
+            .visible(() -> autoAdjust.get() && onlyWhenTraveling.get())
             .build()
         );
 
@@ -142,32 +170,47 @@ public abstract class TimerMixin extends Module {
         targetSpeed = multiplier.get();
         tickCounter = 0;
         lastUnloadedCount = 0;
+        lastPlayerPos = null;
+        speedCheckTicks = 0;
+        currentSpeed = 0;
     }
 
     @Unique
     @EventHandler
     private void onTick(TickEvent.Pre event) {
-        if (!Utils.canUpdate() || !autoAdjust.get()) return;
+        if (!Utils.canUpdate() || !autoAdjust.get() || mc.player == null) return;
+
+        if (lastPlayerPos != null) {
+            net.minecraft.util.math.Vec3d currentPos = mc.player.getPos();
+            double distanceTraveled = currentPos.subtract(lastPlayerPos).multiply(1, 0, 1).length();
+            double speedBPS = distanceTraveled * 20.0;
+            currentSpeed = speedBPS * 3.6;
+        }
+        lastPlayerPos = mc.player.getPos();
 
         tickCounter++;
         if (tickCounter < checkInterval.get()) return;
         tickCounter = 0;
 
-        // Check chunk loading status
+        if (onlyWhenTraveling.get()) {
+            if (currentSpeed < travelSpeedThreshold.get()) {
+                targetSpeed = 1.0;
+                currentAutoSpeed = 1.0;
+                multiplier.set(1.0);
+                lastUnloadedCount = 0;
+                return;
+            }
+        }
+
         int unloadedChunks = countUnloadedChunks();
 
-        // Determine target speed based on chunk loading
-        // Lower timer value = slower time = gives chunks more real-world time to load
         if (unloadedChunks > unloadedThreshold.get()) {
-            // Too many unloaded chunks - slow down time (lower timer value)
             double severity = Math.min(1.0, (double) unloadedChunks / (unloadedThreshold.get() * 2.0));
             targetSpeed = minSpeed.get() + (maxSpeed.get() - minSpeed.get()) * (1.0 - severity);
         } else {
-            // Chunks loading fine - run at max speed (default 1.0 = vanilla)
             targetSpeed = maxSpeed.get();
         }
 
-        // Smooth transition to target speed
         double diff = targetSpeed - currentAutoSpeed;
         if (Math.abs(diff) > 0.01) {
             currentAutoSpeed += diff * adjustSpeed.get();

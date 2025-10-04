@@ -28,8 +28,14 @@ public abstract class EntityMixin2 {
         Entity entity = (Entity) (Object) this;
 
         if (entity instanceof PlayerEntity player) {
-            if (CapeManager.getInstance().shouldGlow(player)) {
-                cir.setReturnValue(Formatting.AQUA.getColorValue());
+            CapeManager manager = CapeManager.getInstance();
+            if (manager.shouldGlow(player)) {
+                // Friend capes get red glow, regular capes get aqua
+                if (manager.hasFriendCape(player)) {
+                    cir.setReturnValue(Formatting.RED.getColorValue());
+                } else {
+                    cir.setReturnValue(Formatting.AQUA.getColorValue());
+                }
             }
         }
     }

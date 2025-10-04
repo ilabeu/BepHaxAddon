@@ -15,13 +15,25 @@ public abstract class AbstractClientPlayerEntityMixin {
     @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true)
     private void onGetSkinTextures(CallbackInfoReturnable<SkinTextures> cir) {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
+        CapeManager manager = CapeManager.getInstance();
 
-        if (CapeManager.getInstance().hasCape(player)) {
+        Identifier capeTexture = null;
+
+        // Check for friend cape first
+        if (manager.hasFriendCape(player)) {
+            capeTexture = CapeManager.FRIEND_CAPE_TEXTURE;
+        }
+        // Then check for regular cape
+        else if (manager.hasCape(player)) {
+            capeTexture = CapeManager.CAPE_TEXTURE;
+        }
+
+        if (capeTexture != null) {
             SkinTextures original = cir.getReturnValue();
             SkinTextures modified = new SkinTextures(
                 original.texture(),
                 original.textureUrl(),
-                CapeManager.CAPE_TEXTURE,
+                capeTexture,
                 original.elytraTexture(),
                 original.model(),
                 original.secure()

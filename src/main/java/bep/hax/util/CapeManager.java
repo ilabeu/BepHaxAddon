@@ -15,8 +15,10 @@ public class CapeManager {
     private static final CapeManager INSTANCE = new CapeManager();
 
     public static final Identifier CAPE_TEXTURE = Identifier.of("bephax", "textures/cape/cape.png");
+    public static final Identifier FRIEND_CAPE_TEXTURE = Identifier.of("bephax", "textures/cape/bephax.png");
 
     private static final Set<UUID> CAPE_UUIDS = new HashSet<>();
+    private static final Set<UUID> FRIEND_CAPE_UUIDS = new HashSet<>();
 
     private final Set<UUID> glowingPlayers = Collections.synchronizedSet(new HashSet<>());
 
@@ -33,7 +35,6 @@ public class CapeManager {
         CAPE_UUIDS.add(UUID.fromString("dced3c5a-8ac7-4766-bf4a-ec8b646e0ac1"));
         CAPE_UUIDS.add(UUID.fromString("5b1de9b3-b867-4a42-b21e-5fcc78d01c26"));
         CAPE_UUIDS.add(UUID.fromString("effe2d70-4171-42a1-aedb-fc43ecf14b87"));
-        CAPE_UUIDS.add(UUID.fromString("0efe3c27-d239-4bca-926f-e85d7527b37b"));
         CAPE_UUIDS.add(UUID.fromString("8ac72a70-1334-4841-a9fe-a62e9abb1cdd"));
         CAPE_UUIDS.add(UUID.fromString("2bf5a8f8-ccdf-4841-a781-0ff69bf0b41c"));
         CAPE_UUIDS.add(UUID.fromString("290bcd4a-edd3-4b13-bfce-81121f5f5432"));
@@ -53,6 +54,34 @@ public class CapeManager {
         CAPE_UUIDS.add(UUID.fromString("11b822dc-fa0d-4b22-b123-30a6a5b6e781"));
         CAPE_UUIDS.add(UUID.fromString("20a9929a-0833-4103-8a76-3365eb25b089"));
         CAPE_UUIDS.add(UUID.fromString("9ca029bb-2e4c-4d79-95f8-465c2c336e44"));
+        CAPE_UUIDS.add(UUID.fromString("0bf55022-5e58-44ec-be17-6d12d6bbb918"));
+        CAPE_UUIDS.add(UUID.fromString("6c623aee-e635-410b-b052-ceb4f1e1d914"));
+        CAPE_UUIDS.add(UUID.fromString("b95aaeab-a70e-44d1-a363-1f2dd4e1cc57"));
+        CAPE_UUIDS.add(UUID.fromString("de8bf2dc-01ab-4859-bfd7-4fd820686522"));
+        CAPE_UUIDS.add(UUID.fromString("ecc6ad17-611f-46cc-aa1f-99f5742e8cbc"));
+        CAPE_UUIDS.add(UUID.fromString("7e4d4671-eb0b-427c-b94a-64a020daf1fa"));
+        CAPE_UUIDS.add(UUID.fromString("faea9d8b-b6de-4855-91ac-9a884fee8836"));
+        CAPE_UUIDS.add(UUID.fromString("c941216d-e16b-4019-b965-3570dead2ea3"));
+
+
+
+
+        // Friend capes with red glow
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("f5c4da20-b770-4073-a50f-e9d2cd69ae3c"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("7cbdb0a3-a141-4a2c-a4cc-f9637d392b56"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("91bdb7ca-ad68-4b92-a78e-898c761aed42"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("1f68fc6c-b180-41e3-96bf-62e15756d290"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("2ba6f46e-ef30-4060-a019-5832045e2110"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("2d3e440e-b764-41b4-9aa5-ebcf1cd87ac4"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("3062e6ee-e4b3-41af-bf41-ae29921bda6a"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("e9bb2116-19f6-4998-90ac-352d128b06a1"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("bf775b81-1fae-40a1-b967-95ea5da0404e"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("ad3195a8-1888-44d7-9d61-5bddacfa8b8f"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("34a67d07-9afc-4620-9708-24254ae0e362"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("3186e3aa-0030-4ad0-a61e-2ffacb425b86"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("c52a9f8b-22e0-4cd6-93c3-2c664f2f89b8"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("c1dad6ec-2454-47fc-b23f-64a6315055e1"));
+        FRIEND_CAPE_UUIDS.add(UUID.fromString("0efe3c27-d239-4bca-926f-e85d7527b37b"));
     }
 
     private CapeManager() {
@@ -66,7 +95,11 @@ public class CapeManager {
         glowingPlayers.clear();
         for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
             if (entry.getProfile() != null && entry.getProfile().getId() != null) {
-                glowingPlayers.add(entry.getProfile().getId());
+                UUID uuid = entry.getProfile().getId();
+                // Only add players who actually have capes (regular or friend)
+                if (CAPE_UUIDS.contains(uuid) || FRIEND_CAPE_UUIDS.contains(uuid)) {
+                    glowingPlayers.add(uuid);
+                }
             }
         }
     }
@@ -81,6 +114,22 @@ public class CapeManager {
 
     public boolean hasCape(PlayerEntity player) {
         return player != null && hasCape(player.getUuid());
+    }
+
+    public boolean hasFriendCape(UUID uuid) {
+        return FRIEND_CAPE_UUIDS.contains(uuid);
+    }
+
+    public boolean hasFriendCape(PlayerEntity player) {
+        return player != null && hasFriendCape(player.getUuid());
+    }
+
+    public boolean hasAnyCape(UUID uuid) {
+        return hasCape(uuid) || hasFriendCape(uuid);
+    }
+
+    public boolean hasAnyCape(PlayerEntity player) {
+        return player != null && hasAnyCape(player.getUuid());
     }
 
     public void addGlowingPlayer(UUID uuid) {
@@ -120,5 +169,20 @@ public class CapeManager {
 
     public static Set<UUID> getCapeUUIDs() {
         return Collections.unmodifiableSet(CAPE_UUIDS);
+    }
+
+    public static void addFriendCapeUUID(UUID uuid) {
+        FRIEND_CAPE_UUIDS.add(uuid);
+    }
+
+    public static void addFriendCapeUUID(String uuidString) {
+        try {
+            FRIEND_CAPE_UUIDS.add(UUID.fromString(uuidString));
+        } catch (IllegalArgumentException e) {
+        }
+    }
+
+    public static Set<UUID> getFriendCapeUUIDs() {
+        return Collections.unmodifiableSet(FRIEND_CAPE_UUIDS);
     }
 }

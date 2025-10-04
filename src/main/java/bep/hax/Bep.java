@@ -64,6 +64,7 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new WebChat());
         Modules.get().add(new Replenish());
         Modules.get().add(new GhostMode());
+        Modules.get().add(new AutoBreed());
 
         bep.hax.util.CapeManager.getInstance();
 

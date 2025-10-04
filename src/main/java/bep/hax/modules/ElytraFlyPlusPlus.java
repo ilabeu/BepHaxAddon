@@ -44,6 +44,11 @@ public class ElytraFlyPlusPlus extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgObstaclePasser = settings.createGroup("Obstacle Passer");
 
+    public enum ObstaclePasserMode {
+        CenterPath,
+        WallHug
+    }
+
     private final Setting<Boolean> bounce = sgGeneral.add(new BoolSetting.Builder()
         .name("bounce")
         .description("Automatically does bounce efly.")
@@ -136,6 +141,22 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+    private final Setting<ObstaclePasserMode> obstaclePasserMode = sgObstaclePasser.add(new EnumSetting.Builder<ObstaclePasserMode>()
+        .name("passer-mode")
+        .description("Center Path: Returns to highway center (original). Wall Hug: Maintains wall offset for Y-level boost exploit.")
+        .defaultValue(ObstaclePasserMode.CenterPath)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get())
+        .build()
+    );
+
+    private final Setting<Boolean> autoYawFix = sgObstaclePasser.add(new BoolSetting.Builder()
+        .name("auto-yaw-fix")
+        .description("Automatically adjusts yaw 0.1-1 degree toward the wall being hugged. Required for Y-level boost exploit.")
+        .defaultValue(false)
+        .visible(() -> bounce.get() && highwayObstaclePasser.get() && isWallHugMode())
+        .build()
+    );
+
     private final Setting<Boolean> useCustomStartPos = sgObstaclePasser.add(new BoolSetting.Builder()
         .name("use-custom-start-position")
         .description("Enable and set this ONLY if you are on a ringroad or don't want to be locked to a highway. Otherwise (0, 0) is the start position and will be automatically used.")
@@ -149,7 +170,6 @@ public class ElytraFlyPlusPlus extends Module {
         .description("The start position to use when using a custom start position.")
         .defaultValue(new BlockPos(0,0,0))
         .visible(() -> bounce.get() && highwayObstaclePasser.get() && useCustomStartPos.get())
-        .onChanged(pos -> this.targetY.set(pos.getY()))
         .build()
     );
 
@@ -205,6 +225,7 @@ public class ElytraFlyPlusPlus extends Module {
         .build()
     );
 
+
     private final Setting<Boolean> fakeFly = sgGeneral.add(new BoolSetting.Builder()
         .name("chestplate-fakefly")
         .description("Lets you fly using a chestplate to use almost 0 elytra durability. Must have elytra in hotbar.")
@@ -237,6 +258,15 @@ public class ElytraFlyPlusPlus extends Module {
     private Vec3d lastUnstuckPos;
     private int stuckTimer = 0;
 
+    // Auto yaw fix for wall hugging
+    private double currentYawVariation = 0.0;
+    private int yawVariationTicks = 0;
+    private static final int YAW_CHANGE_INTERVAL = 20; // Change yaw every second (20 ticks)
+
+    // Wall hug mode: bind to initial flight line position (for ringroads and any highway)
+    private Vec3d boundHighwayLine = null;
+
+
     @EventHandler
     private void onReceivePacket(PacketEvent.Receive event)
     {
@@ -264,6 +294,13 @@ public class ElytraFlyPlusPlus extends Module {
         lastPos = mc.player.getPos();
         lastUnstuckPos = mc.player.getPos();
         stuckTimer = 0;
+
+        // Reset yaw variation tracking
+        currentYawVariation = 0.0;
+        yawVariationTicks = 0;
+
+        // Wall Hug mode: reset bound line (will be set on first wall collision)
+        boundHighwayLine = null;
 
         // I don't know any other way to fix this stupid shit
         if (bounce.get() && mc.player.getPos().multiply(1, 0, 1).length() >= 100)
@@ -310,6 +347,21 @@ public class ElytraFlyPlusPlus extends Module {
         if (mc.player == null || event.type != MovementType.SELF || !enabled() || !motionYBoost.get() || !bounce.get()) return;
 
         if (onlyWhileColliding.get() && !mc.player.horizontalCollision) return;
+
+        if (isWallHugMode() && boundHighwayLine == null && mc.player.horizontalCollision) {
+            Vec3d playerPos = mc.player.getPos();
+            double playerYaw = mc.player.getYaw();
+            while (playerYaw < 0) playerYaw += 360;
+            while (playerYaw >= 360) playerYaw -= 360;
+
+            double closestCardinal = Math.round(playerYaw / 90.0) * 90.0;
+            if (closestCardinal >= 360) closestCardinal = 0;
+
+            boundHighwayLine = playerPos;
+            yaw.set(closestCardinal);
+
+            info("Wall detected");
+        }
 
         if (lastPos != null)
         {
@@ -384,6 +436,15 @@ public class ElytraFlyPlusPlus extends Module {
 
         if (enabled()) mc.player.setSprinting(true);
 
+        if (isWallHugMode() && autoYawFix.get() && boundHighwayLine != null && enabled())
+        {
+            double targetYaw = calculateTargetYaw();
+
+            if (targetYaw >= 0) {
+                mc.player.setYaw((float) targetYaw);
+            }
+        }
+
         if (bounce.get())
         {
             if (tempPath != null && mc.player.getBlockPos().getSquaredDistance(tempPath) < 500)
@@ -413,59 +474,47 @@ public class ElytraFlyPlusPlus extends Module {
                 lastUnstuckPos = mc.player.getPos();
             }
 
-            if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100 && // > 100 check needed bc server sends queue coordinates when joining in first tick causing goal coordinates to be set to (0, 0)
-                (mc.player.getY() < targetY.get() || mc.player.getY() > targetY.get() + 2 || (mc.player.horizontalCollision && !mc.player.collidedSoftly) // collisions / out of highway
-                    || (portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get()) // portal trap detection
-                    || waitingForChunksToLoad // waiting for chunks to load
-                    || stuckTimer > 50))
+            boolean shouldActivatePasser = false;
+
+            if (highwayObstaclePasser.get() && mc.player.getPos().length() > 100) {
+                boolean wrongYLevel = mc.player.getY() < targetY.get() || mc.player.getY() > targetY.get() + 2;
+                boolean portalTrapDetected = portalTrap != null && portalTrap.getSquaredDistance(mc.player.getBlockPos()) < portalAvoidDistance.get() * portalAvoidDistance.get();
+                boolean stuck = stuckTimer > 50;
+
+                if (isWallHugMode()) {
+                    boolean drifted = false;
+                    if (boundHighwayLine != null) {
+                        Vec3d playerPos = mc.player.getPos();
+                        double travelDir = yaw.get();
+
+                        double lineCoord, playerCoord;
+                        if (travelDir == 0 || travelDir == 180) {
+                            lineCoord = boundHighwayLine.x;
+                            playerCoord = playerPos.x;
+                        } else {
+                            lineCoord = boundHighwayLine.z;
+                            playerCoord = playerPos.z;
+                        }
+
+                        drifted = Math.abs(playerCoord - lineCoord) > 1.5;
+                    }
+                    shouldActivatePasser = wrongYLevel || portalTrapDetected || waitingForChunksToLoad || stuck || drifted;
+                } else {
+                    boolean collision = mc.player.horizontalCollision && !mc.player.collidedSoftly;
+                    shouldActivatePasser = wrongYLevel || collision || portalTrapDetected || waitingForChunksToLoad || stuck;
+                }
+            }
+
+            if (shouldActivatePasser)
             {
-                waitingForChunksToLoad = false;
-                paused = true;
-                BlockPos goal = mc.player.getBlockPos();
-                double currDistance = distance.get(); // Keep checking farther distances until a goal is found that has a block beneath it
-
-                if (portalTrap != null) {
-                    currDistance += mc.player.getPos().distanceTo(portalTrap.toCenterPos());
-                    portalTrap = null;
-                    info("Pathing around portal.");
+                if (isWallHugMode()) {
+                    handleWallHugObstaclePasser();
+                } else {
+                    handleCenterPathObstaclePasser();
                 }
-
-                do
-                {
-                    if (currDistance > maxDistance)
-                    {
-                        tempPath = goal;
-                        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
-                        return;
-                    }
-                    Vec3d unitYawVec = yawToDirection(yaw.get());
-                    Vec3d travelVec = mc.player.getPos().subtract(startPos.get().toCenterPos());
-
-                    double parallelCurrPosDot = travelVec.multiply(new Vec3d(1, 0, 1)).dotProduct(unitYawVec);
-                    Vec3d parallelCurrPosComponent = unitYawVec.multiply(parallelCurrPosDot);
-
-                    Vec3d pos = startPos.get().toCenterPos().add(parallelCurrPosComponent);
-                    pos = positionInDirection(pos, yaw.get(), currDistance);
-
-                    goal = new BlockPos((int)(Math.floor(pos.x)), targetY.get(), (int)Math.floor(pos.z));
-                    currDistance++;
-
-                    // Blocks in unloaded chunks are void air, for some reason checking if the chunk is loaded was always true, so I check this instead
-                    if (mc.world.getBlockState(goal).getBlock() == Blocks.VOID_AIR)
-                    {
-                        waitingForChunksToLoad = true;
-                        return;
-                    }
-                }
-                // avoid pathing on air cause baritone freaks out, and dont path into portals in case a mod is avoiding portals
-                while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
-                    mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
-                    !mc.world.getBlockState(goal).isAir());
-                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
             }
             else
             {
-                // keep jumping
                 paused = false;
                 if (!enabled()) return;
 
@@ -476,16 +525,21 @@ public class ElytraFlyPlusPlus extends Module {
                         mc.player.jump();
                     }
                 }
+            }
 
-                // set yaw and pitch
-                if (lockYaw.get())
-                {
-                    mc.player.setYaw(yaw.get().floatValue());
-                }
-                if (lockPitch.get())
-                {
-                    mc.player.setPitch(pitch.get().floatValue());
-                }
+            // Set yaw and pitch
+            if (!enabled()) return;
+
+            // Lock yaw ONLY if lockYaw is enabled AND not in WallHug mode
+            // WallHug uses AutoYawFix instead (0.1-1° adjustment into wall, NOT locking)
+            if (lockYaw.get() && !isWallHugMode())
+            {
+                mc.player.setYaw(yaw.get().floatValue());
+            }
+
+            if (lockPitch.get())
+            {
+                mc.player.setPitch(pitch.get().floatValue());
             }
         }
 
@@ -582,6 +636,163 @@ public class ElytraFlyPlusPlus extends Module {
             new ItemStack(Items.AIR),
             changedSlots
         ));
+    }
+
+    private boolean isWallHugMode() {
+        return obstaclePasserMode.get() == ObstaclePasserMode.WallHug;
+    }
+
+    private void handleCenterPathObstaclePasser() {
+        waitingForChunksToLoad = false;
+        paused = true;
+        BlockPos goal = mc.player.getBlockPos();
+        double currDistance = distance.get();
+
+        if (portalTrap != null) {
+            currDistance += mc.player.getPos().distanceTo(portalTrap.toCenterPos());
+            portalTrap = null;
+            info("Pathing around portal.");
+        }
+
+        do
+        {
+            if (currDistance > maxDistance)
+            {
+                tempPath = goal;
+                BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
+                return;
+            }
+
+            // Original logic: Project position onto highway center line
+            Vec3d unitYawVec = yawToDirection(yaw.get());
+            Vec3d travelVec = mc.player.getPos().subtract(startPos.get().toCenterPos());
+
+            double parallelCurrPosDot = travelVec.multiply(new Vec3d(1, 0, 1)).dotProduct(unitYawVec);
+            Vec3d parallelCurrPosComponent = unitYawVec.multiply(parallelCurrPosDot);
+
+            Vec3d pos = startPos.get().toCenterPos().add(parallelCurrPosComponent);
+            pos = positionInDirection(pos, yaw.get(), currDistance);
+
+            goal = new BlockPos((int)(Math.floor(pos.x)), targetY.get(), (int)Math.floor(pos.z));
+            currDistance++;
+
+            if (mc.world.getBlockState(goal).getBlock() == Blocks.VOID_AIR)
+            {
+                waitingForChunksToLoad = true;
+                return;
+            }
+        }
+        while (!mc.world.getBlockState(goal.down()).isSolidBlock(mc.world, goal.down()) ||
+            mc.world.getBlockState(goal).getBlock() == Blocks.NETHER_PORTAL ||
+            !mc.world.getBlockState(goal).isAir());
+
+        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
+    }
+
+    private void handleWallHugObstaclePasser() {
+        if (boundHighwayLine == null) {
+            return;
+        }
+
+        waitingForChunksToLoad = false;
+        paused = true;
+
+        Vec3d playerPos = mc.player.getPos();
+        double travelDirection = yaw.get();
+        double targetDistance = distance.get();
+
+        Vec3d travelVec = playerPos.subtract(boundHighwayLine).multiply(1, 0, 1);
+        Vec3d unitYawVec = yawToDirection(travelDirection);
+        double distanceTraveled = travelVec.dotProduct(unitYawVec);
+
+        if (portalTrap != null) {
+            Vec3d portalVec = portalTrap.toCenterPos().subtract(playerPos).multiply(1, 0, 1);
+            double portalDistance = portalVec.dotProduct(unitYawVec);
+            if (portalDistance > 0) {
+                targetDistance += portalDistance;
+            }
+            portalTrap = null;
+        }
+
+        BlockPos goal = null;
+        double searchStart = Math.max(0, distanceTraveled + targetDistance - 5);
+        double searchEnd = Math.min(maxDistance, distanceTraveled + targetDistance + 20);
+
+        for (double currDistance = searchStart; currDistance <= searchEnd; currDistance++) {
+            if (mc.world.getBlockState(new BlockPos((int)playerPos.x, targetY.get(), (int)playerPos.z)).getBlock() == Blocks.VOID_AIR) {
+                waitingForChunksToLoad = true;
+                return;
+            }
+
+            Vec3d forwardPos = positionInDirection(boundHighwayLine, travelDirection, currDistance);
+            BlockPos testGoal = new BlockPos((int)Math.floor(forwardPos.x), targetY.get(), (int)Math.floor(forwardPos.z));
+
+            if (mc.world.getBlockState(testGoal).getBlock() == Blocks.VOID_AIR) {
+                continue;
+            }
+
+            if (mc.world.getBlockState(testGoal.down()).isSolidBlock(mc.world, testGoal.down()) &&
+                mc.world.getBlockState(testGoal).getBlock() != Blocks.NETHER_PORTAL &&
+                mc.world.getBlockState(testGoal).isAir()) {
+                goal = testGoal;
+                break;
+            }
+        }
+
+        if (goal == null) {
+            Vec3d forwardPos = positionInDirection(boundHighwayLine, travelDirection, distanceTraveled + targetDistance);
+            goal = new BlockPos((int)Math.floor(forwardPos.x), targetY.get(), (int)Math.floor(forwardPos.z));
+        }
+
+        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalBlock(goal));
+    }
+
+    private double calculateTargetYaw() {
+        if (!isWallHugMode() || !autoYawFix.get() || mc.player == null || boundHighwayLine == null) {
+            return -1.0;
+        }
+
+        yawVariationTicks++;
+        if (yawVariationTicks >= YAW_CHANGE_INTERVAL) {
+            yawVariationTicks = 0;
+            currentYawVariation = 0.1 + (Math.random() * 0.9);
+        }
+
+        double travelDirection = yaw.get();
+        Vec3d playerPos = mc.player.getPos();
+
+        double playerCoord, wallCoord;
+        if (travelDirection == 0 || travelDirection == 180) {
+            playerCoord = playerPos.x;
+            double lineCoord = boundHighwayLine.x;
+            double decimal = lineCoord - Math.floor(lineCoord);
+            wallCoord = (decimal > 0.5) ? Math.ceil(lineCoord) : Math.floor(lineCoord);
+        } else {
+            playerCoord = playerPos.z;
+            double lineCoord = boundHighwayLine.z;
+            double decimal = lineCoord - Math.floor(lineCoord);
+            wallCoord = (decimal > 0.5) ? Math.ceil(lineCoord) : Math.floor(lineCoord);
+        }
+
+        double offsetFromWall = playerCoord - wallCoord;
+        double adjustment = 0;
+
+        if (travelDirection == 0) {
+            adjustment = offsetFromWall > 0 ? currentYawVariation : -currentYawVariation;
+        } else if (travelDirection == 90) {
+            adjustment = offsetFromWall > 0 ? currentYawVariation : -currentYawVariation;
+        } else if (travelDirection == 180) {
+            adjustment = offsetFromWall > 0 ? -currentYawVariation : currentYawVariation;
+        } else if (travelDirection == 270) {
+            adjustment = offsetFromWall > 0 ? -currentYawVariation : currentYawVariation;
+        }
+
+        double targetYaw = travelDirection + adjustment;
+
+        while (targetYaw < 0) targetYaw += 360;
+        while (targetYaw >= 360) targetYaw -= 360;
+
+        return targetYaw;
     }
 
     @EventHandler
