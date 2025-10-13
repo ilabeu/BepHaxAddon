@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
@@ -21,13 +20,8 @@ import meteordevelopment.meteorclient.mixininterface.IChatHud;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class MusicTweaks extends Module {
     private static final Random RANDOM = new Random();
-
     public MusicTweaks() {
         super(Bep.STARDUST, "MusicTweaks", "Allows you to fuck with the background music.");
         runInMainMenu = true;
@@ -39,11 +33,9 @@ public class MusicTweaks extends Module {
         sgRecordsSoundtrack.sectionExpanded = false;
         sgMenuSoundtrack.sectionExpanded = false;
     }
-
     public enum DisplayType {
         Chat, Record
     }
-
     private final SettingGroup sgPitch = settings.createGroup("Pitch");
     private final SettingGroup sgVolume = settings.createGroup("Volume");
     private final SettingGroup sgCooldown = settings.createGroup("Cooldown");
@@ -55,8 +47,6 @@ public class MusicTweaks extends Module {
     private final SettingGroup sgEndSoundtrack = settings.createGroup("End Soundtrack");
     private final SettingGroup sgRecordsSoundtrack = settings.createGroup("Music Discs");
     private final SettingGroup sgMenuSoundtrack = settings.createGroup("Menu Soundtrack");
-
-
     private final Setting<Boolean> startOnEnable = sgNowPlaying.add(
         new BoolSetting.Builder()
             .name("start-on-enable")
@@ -64,7 +54,6 @@ public class MusicTweaks extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> stopOnDisable = sgNowPlaying.add(
         new BoolSetting.Builder()
             .name("stop-on-disable")
@@ -72,7 +61,6 @@ public class MusicTweaks extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> displayNowPlaying = sgNowPlaying.add(
         new BoolSetting.Builder()
             .name("display-now-playing")
@@ -80,7 +68,6 @@ public class MusicTweaks extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> fadeOut = sgNowPlaying.add(
         new BoolSetting.Builder()
             .name("fade-out-display")
@@ -89,7 +76,6 @@ public class MusicTweaks extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<DisplayType> displayTypeSetting = sgNowPlaying.add(
         new EnumSetting.Builder<DisplayType>()
             .name("display-mode")
@@ -97,7 +83,6 @@ public class MusicTweaks extends Module {
             .visible(displayNowPlaying::get)
             .build()
     ) ;
-
     private final Setting<Boolean> overrideDelayMode = sgCooldown.add(
         new BoolSetting.Builder()
             .name("use-exact-delay")
@@ -105,7 +90,6 @@ public class MusicTweaks extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> timeUntilNextSong = sgCooldown.add(
         new IntSetting.Builder()
             .name("song-delay-seconds")
@@ -116,7 +100,6 @@ public class MusicTweaks extends Module {
             .visible(overrideDelayMode::get)
             .build()
     );
-
     private final Setting<Integer> minTimeUntilNextSong = sgCooldown.add(
         new IntSetting.Builder()
             .name("minimum-delay-seconds")
@@ -127,7 +110,6 @@ public class MusicTweaks extends Module {
             .visible(() -> !overrideDelayMode.get())
             .build()
     );
-
     private final Setting<Integer> maxTimeUntilNextSong = sgCooldown.add(
         new IntSetting.Builder()
             .name("maximum-delay-seconds")
@@ -138,7 +120,6 @@ public class MusicTweaks extends Module {
             .visible(() -> !overrideDelayMode.get())
             .build()
     );
-
     private final Setting<Boolean> randomPitch = sgPitch.add(
         new BoolSetting.Builder()
             .name("random-pitch")
@@ -146,7 +127,6 @@ public class MusicTweaks extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> trippyPitchSetting = sgPitch.add(
         new BoolSetting.Builder()
             .name("trippy-pitch")
@@ -155,7 +135,6 @@ public class MusicTweaks extends Module {
             .visible(randomPitch::get)
             .build()
     );
-
     private final Setting<Integer> pitchAdjustment = sgPitch.add(
         new IntSetting.Builder()
             .name("song-pitch-adjustment")
@@ -166,7 +145,6 @@ public class MusicTweaks extends Module {
             .visible(() -> !randomPitch.get())
             .build()
     );
-
     private final Setting<Integer> pitchRange = sgPitch.add(
         new IntSetting.Builder()
             .name("random-pitch-adjustment-range")
@@ -177,7 +155,6 @@ public class MusicTweaks extends Module {
             .visible(() -> randomPitch.get() && !trippyPitchSetting.get())
             .build()
     );
-
     private final Setting<Integer> pitchIntensity = sgPitch.add(
         new IntSetting.Builder()
             .name("intensity")
@@ -187,7 +164,6 @@ public class MusicTweaks extends Module {
             .visible(() -> randomPitch.get() && trippyPitchSetting.get())
             .build()
     );
-
     private final Setting<Integer> weightedChanceSetting = sgPitch.add(
         new IntSetting.Builder()
             .name("weighted-chance-%")
@@ -196,7 +172,6 @@ public class MusicTweaks extends Module {
             .visible(() -> randomPitch.get() && trippyPitchSetting.get())
             .build()
     );
-
     private final Setting<Integer> volume = sgVolume.add(
         new IntSetting.Builder()
             .name("volume-%-boost")
@@ -205,9 +180,6 @@ public class MusicTweaks extends Module {
             .defaultValue(0)
             .build()
     );
-
-
-    // Soundtracks
     private final Setting<Boolean> minecraft = sgOverworldSoundtrack.add(
         new BoolSetting.Builder()
             .name("C418-/-Minecraft")
@@ -761,12 +733,8 @@ public class MusicTweaks extends Module {
             .defaultValue(false)
             .build()
     );
-
-
-    // See MinecraftClientMixin.java
     public MusicSound getType() {
         if (currentType != null) return currentType;
-
         int min;
         int max;
         if (mc.player == null) {
@@ -780,16 +748,10 @@ public class MusicTweaks extends Module {
             max = maxTimeUntilNextSong.get() * 20;
         }
         if (max <= min) max = min + 1;
-
-        // It doesn't matter which SoundEvents.MUSIC_??? we return since the WeightedSoundSet is overwritten directly now.
-        // actually I lied tho don't use the music disc events, or it won't work (see WeightedSoundSetMixin.java)
         MusicSound type = new MusicSound(SoundEvents.MUSIC_GAME, min, RANDOM.nextInt(min, max), false);
-
         currentType = type;
         return type;
     }
-
-    // See SoundSystemMixin.java
     public String getSongName(String songID) {
         String songName;
         switch (songID) {
@@ -874,11 +836,8 @@ public class MusicTweaks extends Module {
             case "precipice.ogg" -> songName = "Aaron Cherof - Precipice";
             default -> songName = "Unknown Track";
         }
-
         return songName;
     }
-
-    // See WeightedSoundSetMixin.java
     public List<String> getSoundSet() {
         List<String> ids = new ArrayList<>();
         if (minecraft.get()) ids.add("minecraft:music/game/minecraft");
@@ -960,8 +919,6 @@ public class MusicTweaks extends Module {
         if (recordCreator.get()) ids.add("minecraft:records/creator");
         if (recordPrecipice.get()) ids.add("minecraft:records/precipice");
         if (recordCreatorMusicBox.get()) ids.add("minecraft:records/creator_music_box");
-
-        // Prevent duplicates
         if (currentSong != null && ids.size() > 1) {
             for (int n = 0; n < ids.size(); n++) {
                 if (currentSong.equals("Sound["+ids.get(n)+"]")) {
@@ -971,22 +928,17 @@ public class MusicTweaks extends Module {
                 }
             }
         }
-
         return ids;
     }
-
-    // See SoundSystemMixin.java
     public float getNextPitchStep(float currentPitch) {
         if (lastDirection == null) {
             lastDirection = PitchDirection.Descending;
             float intensity = -(pitchIntensity.get() / 10000f);
             return MathHelper.clamp(currentPitch + (currentPitch * intensity), -5f, 5f);
         }
-
-        switch (lastDirection) { // Lmao
+        switch (lastDirection) {
             case Ascending -> {
                 float weightedChance = RANDOM.nextFloat(0, 1);
-
                 float intensity;
                 if (weightedChance <= (weightedChanceSetting.get() / 100f)) {
                     intensity = pitchIntensity.get() / 10000f;
@@ -998,7 +950,6 @@ public class MusicTweaks extends Module {
             }
             case Descending -> {
                 float weightedChance = RANDOM.nextFloat(0, 1);
-
                 float intensity;
                 if (weightedChance <= (weightedChanceSetting.get() / 100f)) {
                     intensity = -(pitchIntensity.get() / 10000f);
@@ -1011,7 +962,6 @@ public class MusicTweaks extends Module {
         }
         return currentPitch;
     }
-
     public void sendNowPlayingMessage(String songName) {
         if (mc.player == null) return;
         String[] pieces = songName.split(" - ");
@@ -1020,14 +970,10 @@ public class MusicTweaks extends Module {
             songName.hashCode()
         );
     }
-
-    // See MusicTrackerMixin.java
     public void nullifyCurrentType() {
         currentType = null;
         rcc = StardustUtil.rCC();
     }
-
-    // See SoundSystemMixin.java
     public MinecraftClient getClient() { return mc; }
     public boolean shouldFadeOut() { return fadeOut.get(); }
     public boolean randomPitch() { return randomPitch.get(); }
@@ -1040,11 +986,9 @@ public class MusicTweaks extends Module {
     public float getPitchAdjustment() { return pitchAdjustment.get() / 1000f; }
     public boolean shouldDisplayNowPlaying() { return displayNowPlaying.get(); }
     public float getRandomPitch() { return RANDOM.nextFloat(-pitchRange.get() / 1000f, pitchRange.get() / 1000f); }
-
     private enum PitchDirection {
         Ascending, Descending
     }
-
     @Nullable
     private String lastDim = null;
     @Nullable
@@ -1053,23 +997,18 @@ public class MusicTweaks extends Module {
     private MusicSound currentType = null;
     @Nullable
     private PitchDirection lastDirection = null;
-
     private String rcc = StardustUtil.rCC();
-
     @Override
     public void onActivate() {
         if (!startOnEnable.get()) return;
-
         MusicSound type = getType();
         if (((MusicTrackerAccessor) mc.getMusicTracker()).getCurrent() == null) mc.getMusicTracker().play(new MusicInstance(type));
     }
-
     @Override
     public void onDeactivate() {
         if (stopOnDisable.get()) mc.getMusicTracker().stop();
         nullifyCurrentType();
     }
-
     @EventHandler
     private void onGameJoin(GameJoinedEvent event) {
         SoundInstance instance = ((MusicTrackerAccessor) mc.getMusicTracker()).getCurrent();
@@ -1080,22 +1019,18 @@ public class MusicTweaks extends Module {
                 mc.getMusicTracker().play(new MusicInstance(type));
             }
         }
-
         if (mc.world != null) {
             lastDim = mc.world.getDimensionEntry().getIdAsString();
         }
     }
-
     @EventHandler
     private void onDimensionChange(PacketEvent.Receive event) {
         if (mc.world == null) return;
         if (!(event.packet instanceof PlayerRespawnS2CPacket)) return;
-
         String dimensionType = mc.world.getDimensionEntry().getIdAsString();
         if (lastDim != null) {
             if (!dimensionType.equals(lastDim)) {
                 MusicSound type = getType();
-
                 mc.getMusicTracker().stop();
                 mc.getMusicTracker().play(new MusicInstance(type));
                 lastDim = dimensionType;

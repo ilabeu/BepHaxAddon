@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import net.minecraft.text.Text;
 import bep.hax.util.StardustUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,16 +12,11 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(GameMenuScreen.class)
 public class GameMenuScreenMixin extends Screen {
     protected GameMenuScreenMixin(Text title) {
         super(title);
     }
-
     @Inject(method = "initWidgets", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/widget/GridWidget;refreshPositions()V"))
     private void addIllegalDisconnectButton(CallbackInfo ci, @Local GridWidget.Adder adder) {
         if (StardustConfig.illegalDisconnectButtonSetting.get() && !mc.isInSingleplayer()) {

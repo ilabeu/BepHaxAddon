@@ -37,7 +37,7 @@ BepHax is a comprehensive Meteor Client addon specifically designed for 2b2t.org
 - [XaeroWorldMap](https://modrinth.com/mod/xaeros-world-map)
 - [XaeroPlus](https://github.com/rfresh2/XaeroPlus)
 
-**Important Note for 2b2t:** For modules with silent rotations (Aura, Velo, Phase, Criticals, Scaffold) to work properly, you must connect to 2b2t.org using **Minecraft protocol 1.20.4 - 1.20.6** through ViaFabricPlus. This ensures proper compatibility with the server's anti-cheat systems.
+**Important Note for 2b2t:** For modules with silent rotations (Phase, Criticals, Surround, GrimScaffold) and enhanced Meteor modules (CrystalAura, AutoTrap, KillAura via mixins) to work properly, you must connect to 2b2t.org using **Minecraft protocol 1.20.4 - 1.20.6** through ViaFabricPlus. This ensures proper compatibility with the server's anti-cheat systems.
 
 ---
 
@@ -45,13 +45,23 @@ BepHax is a comprehensive Meteor Client addon specifically designed for 2b2t.org
 
 BepHax organizes modules into custom categories optimized for different gameplay aspects:
 
-### 🎯 Original Modules 
+### 🎯 Original BepHax Modules (CATEGORY)
 
 #### Combat & PVP
-- **Aura** - Advanced kill aura with smart targeting and rotation management (requires ViaFabricPlus)
-- **Criticals** - Forces critical hits with multiple bypass modes (requires ViaFabricPlus)
-- **Velo** - Velocity/knockback control for better combat (requires ViaFabricPlus)
+- **Criticals** - Forces critical hits with multiple bypass modes (requires ViaFabricPlus with protocol 1.20.4-1.20.6)
+  - PACKET, GRIM, GRIM_V3 modes for anti-cheat bypass
+  - Jump height customization
+  - Silent rotations for server-side compatibility
 - **Phase** - Phase through blocks with anti-cheat bypass (requires ViaFabricPlus)
+  - Pearl phasing mode for teleporting through blocks
+  - Clip mode for precise positioning
+  - Normal, Sand, and Climb modes
+  - Self-fill and attack crystal options
+- **Surround** - Automatically surrounds feet with obsidian
+  - Head level and cover head options
+  - Mine extend for damaged blocks
+  - Attack crystals in the way
+  - GrimAirPlace exploit support
 - **PVPModule** - Base framework for PVP modules with centralized rotation management
 
 #### Mining & Resources
@@ -59,6 +69,7 @@ BepHax organizes modules into custom categories optimized for different gameplay
   - Toggleable instant mining keybind
   - Visual and chat notifications
   - Anti-cheat compatible timing
+  - Smart tool selection
 - **MineESP** - Highlights blocks being mined by other players
 
 #### Inventory & Items
@@ -69,12 +80,12 @@ BepHax organizes modules into custom categories optimized for different gameplay
 - **ItemSearchBar** - Search through inventories for specific items
 - **InvFix** - Fixes inventory issues specific to 2b2t server
 - **Replenish** - Auto-refills items from inventory
-
-#### Movement & Travel
-- **YawLock** - Locks player yaw for precise movement with jitter option
 - **ElytraSwap** - Auto-swaps elytras at low durability
-  - Remembers original item positions
   - Configurable durability threshold
+  - Only while flying option
+  - Combat protection mode (swap to chestplate when hit)
+  - Auto swap back after protection duration
+  - Remembers original item positions
 
 #### Automation & Utilities
 - **StashMover** - Advanced item transfer system with pearl loading
@@ -88,10 +99,18 @@ BepHax organizes modules into custom categories optimized for different gameplay
   - Commands: `.stashmover input`, `.stashmover output`, `.stashmover status`, `.stashmover clear`
 - **PearlLoader** - Manages ender pearl loading/unloading
 - **WheelPicker** - Random selection wheel for various actions
+- **AutoRegear** - Automated regearing system
+  - Automatically creates platform
+  - Restocks rockets and elytras from ender chest
+  - Smart inventory management
+- **AutoBreed** - Automated animal breeding
+- **Stripper** - Automatically strips logs
 
 #### Visual & ESP
 - **SignRender** - Renders sign text through walls with clustering
-- **PearlOwner** - Shows who threw ender pearls
+  - Wall rendering with opacity
+  - Sign clustering for performance
+  - Distance-based rendering
 
 #### Utilities
 - **GhostMode** - Continue playing after death
@@ -99,20 +118,30 @@ BepHax organizes modules into custom categories optimized for different gameplay
   - Blocks death packets option
   - Prevents phasing through world
 - **NoHurtCam** - Removes hurt camera shake
-- **UnfocusedFpsLimiter** - Limits FPS when window unfocused
 - **WebChat** - Displays chat in web browser
-- **IgnoreSync** - Advanced ignore list manager with command support
-- **Stripper** - Strips logs automatically
+
+#### From Other Addons (CATEGORY)
+- **KillEffects** - Visual and audio effects on entity death (from INDICA)
+- **MapDuplicator** - Automatically duplicates filled maps (from INDICA)
+- **RespawnPointBlocker** - Prevents setting respawn points (from INDICA)
+- **AutoCraft** - Automates crafting recipes (from Meteor Rejects)
+- **BookTools** - Advanced book editing tools (from Stardust)
+
 ---
 
-### 🔍 Stash Hunting Modules 
+### 🔍 Stash Hunting Modules (STASH)
 
-*Modules from [JEFF Stash Hunting](https://github.com/miles352/meteor-stashhunting-addon) by miles352*
+*Modules from [JEFF Stash Hunting](https://github.com/miles352/meteor-stashhunting-addon) by miles352 and BepHax originals*
 
 #### Search & Detection
 - **BetterStashFinder** - Improved stash location finder
 - **OldChunkNotifier** - Notifies when entering old chunks
 - **ChestIndex** - Indexes and searches chest contents
+- **SearchArea** - Automated chunk loading system for map scanning
+  - Rectangle and spiral modes
+  - Configurable path gaps
+  - Save/load support
+  - Position memory for resuming
 
 #### Movement & Navigation
 - **ElytraFlyPlusPlus** - Enhanced elytra flight controls
@@ -123,31 +152,28 @@ BepHax organizes modules into custom categories optimized for different gameplay
 - **GrimAirPlace** - Grim-compatible air placement
 - **TrailFollower** - Follows player trails
 - **TrailMaker** - Plot and follow chunk highlights on Xaero's map for navigation
-- 
+  - Record waypoints on map
+  - Automatic pathfinding between highlights
+  - Removes highlights as you reach them
+- **YawLock** - Locks player yaw for precise movement
+  - Jitter option for randomization
+  - Configurable lock angle
+- **GrimScaffold** - Advanced scaffold with Grim anti-cheat compatibility
+  - Tower mode for vertical building
+  - Customizable block placement
+  - Speed settings
+  - Rotation support
+
 #### Automation
-- **AutoLogPlus** - Auto-logout on low health or threats
 - **AutoPortal** - Automatic portal creation
 - **AutoEXPPlus** - Automates experience mending
+- **UnfocusedFpsLimiter** - Limits FPS when window unfocused
+  - Saves resources during AFK
+  - Configurable FPS limit
 
 #### Visual & ESP
 - **HighlightOldLava** - Highlights ancient lava sources
 - **VanityESP** - Custom entity ESP for vanity items
-
-
-### 🔧 BepHax Original Modules
-
-
-
-#### Navigation & Mapping
-- **GrimScaffold** - Advanced scaffold with Grim anti-cheat compatibility and tower mode
-  - Customizable block placement
-  - Smart tower mode
-  - Speed settings
-- **SearchArea** - Automated chunk loading system for map scanning
-  - Rectangle and spiral modes
-  - Configurable path gaps
-  - Save/load support
-
 
 #### Communication & Integration
 - **DiscordNotifs** - Discord webhook integration for game events
@@ -158,20 +184,21 @@ BepHax organizes modules into custom categories optimized for different gameplay
 
 ---
 
-### ⭐ Utility Modules (STARDUST Category)
+### ⭐ Utility Modules (STARDUST)
 
 *Modules from [Stardust](https://github.com/0xTas/stardust) by 0xTas*
 
 #### Commands
-- **Stats2b2t** - Display player stats on 2b2t
+- **Stats2b2t** - Display player stats on 2b2t.org
 - **LastSeen2b2t** - Check last seen date on 2b2t
 - **FirstSeen2b2t** - Check first seen date on 2b2t
 - **Playtime2b2t** - Check playtime on 2b2t
 - **Panorama** - Custom panorama utilities
 - **Loadout** - Manage equipment loadouts
+- **Center** - Center positioning command (from HIGTools)
+- **Coordinates** - Coordinate utilities (from HIGTools)
 
 #### Creative Tools
-- **BookTools** - Advanced book editing tools
 - **ChatSigns** - Create signs in chat
 - **SignHistorian** - Track sign history
 - **SignatureSign** - Sign signatures
@@ -180,20 +207,31 @@ BepHax organizes modules into custom categories optimized for different gameplay
 
 #### Automation & Crafting
 - **AutoSmith** - Automates smithing table upgrades
-- **AutoDoors** - Automatically interact with doors (Classic or Spammer mode)
-- **AutoMason** - Automates stonecutter/masonry operations with batch processing
-- **AutoDrawDistance** - Adjusts render distance automatically
+  - Automatic netherite upgrades
+  - Item filtering
+  - Batch processing support
+- **AutoDoors** - Automatically interact with doors
+  - Classic mode for single interactions
+  - Spammer mode for rapid opening/closing
+- **AutoMason** - Automates stonecutter/masonry operations
+  - Batch processing support
+  - Configurable item filters
+- **AutoDrawDistance** - Adjusts render distance automatically based on FPS
+  - FPS target configuration (30-240)
+  - Minimum/maximum render distance limits
+  - Sweet spot detection for optimal performance
+  - Verbose debug mode with FPS reporting
 - **AutoDyeShulkers** - Automatically dyes shulkers
 - **Loadouts** - Equipment loadout management
 
 #### Combat & Movement
-- **RocketJump** - Rocket jumping mechanics
+- **RocketJump** - Rocket jumping mechanics with fireworks
 - **RocketMan** - Rocket enhancements
-- **RapidFire** - Fast firing mechanics
+- **RapidFire** - Fast firing mechanics for projectiles
 - **Updraft** - Updraft flying mechanics
 
 #### Tools & Utilities
-- **Archaeology** - Archaeology automation
+- **Archaeology** - Archaeology automation for suspicious sand/gravel
 - **AxolotlTools** - Axolotl-related tools
 - **Grinder** - Automated grinding utilities
 - **LoreLocator** - Locates items with specific lore
@@ -205,26 +243,10 @@ BepHax organizes modules into custom categories optimized for different gameplay
 
 #### Fun & Misc
 - **Honker** - Custom honking sounds with goat horns
+  - Multiple sound options
+  - Configurable volume and pitch
 - **MusicTweaks** - Music system tweaks
-
----
-
-### 🎮 Additional Modules
-
-#### From INDICA by Faye-one
-- **KillEffects** - Visual and audio effects on entity death
-- **MapDuplicator** - Automatically duplicates filled maps
-- **RespawnPointBlocker** - Prevents setting respawn points
-
-#### From Meteor Rejects by AntiCope
-- **AutoCraft** - Automates crafting recipes
-
-#### From Meteorist by Zgoly
-- **DisconnectSound** - Plays sound on disconnect
-
-#### From HIGTools by RedCarlos26
-- **Center** - Center positioning command
-- **Coordinates** - Coordinate utilities
+- **DisconnectSound** - Plays sound on disconnect (from Meteorist)
 
 ---
 
@@ -244,22 +266,60 @@ BepHax organizes modules into custom categories optimized for different gameplay
 
 ## 🔧 Enhanced Meteor Client Integration
 
-BepHax includes custom mixins that enhance existing Meteor Client modules:
+BepHax includes custom mixins that enhance existing Meteor Client modules with advanced features.
 
 ### Meteor Module Enhancements
+
 The addon includes specialized mixins (`bep-meteor.mixins.json`) that improve functionality of core Meteor modules:
-- **AutoLog** - Enhanced disconnect handling with custom logging
-- **Freecam** - Extended features for camera manipulation
-- **AutoMend** - Improved experience management
-- **Velocity** - Enhanced anti-knockback features
-- **Timer** - Better game speed control
-- **BetterTooltips** - Enhanced item information
-- **Nametags** - Improved player name rendering
-- **NoRender** - Extended render blocking options
-- **Notifier** - Enhanced notification system
-- **ExpThrower** - Improved experience bottle mechanics
-- **PacketCanceller** - Advanced packet manipulation
-- **OnlinePlayers** - Better player list management
+
+#### Combat Enhancements
+- **CrystalAuraMixin** - Adds rotation system with yaw stepping for anti-cheat bypass
+  - Yaw stepping modes: OFF, SEMI, FULL
+  - Configurable yaw step limit (45-90° for GrimAC)
+  - Silent rotations using priority-based system
+  - Instant rotate option
+  - Coordinated with InventoryManager for silent swaps
+- **AutoTrapMixin** - Adds rotation system with yaw stepping
+  - Similar rotation features as CrystalAura
+  - Priority-based rotation coordination
+- **KillAuraMixin** - Enhanced kill aura functionality
+- **VelocityMixin** - Advanced velocity modes for anti-cheat bypass
+  - NORMAL, WALLS, GRIM, GRIM_V3 modes
+  - Configurable horizontal and vertical multipliers
+  - Advanced velocity modification patterns
+- **ClientPlayerEntityGrimV3Mixin** - GrimAC v3 compatibility layer
+
+#### Inventory & Items
+- **AutoEatMixin** - Enhanced eating coordination with InventoryManager
+  - Silent slot swapping during eating
+  - Server-side slot tracking
+- **ExpThrowerMixin** - Silent slot swapping for XP bottle throwing
+- **BetterTooltipsMixin** - Enhanced item information display
+
+#### Utilities
+- **AutoLogMixin** - Enhanced disconnect handling with custom logging
+- **FreecamMixin** - Extended features for camera manipulation
+- **AutoMendMixin** - Improved experience management
+- **TimerMixin** - Better game speed control
+- **NametagsMixin** - Improved player name rendering
+- **NoRenderMixin** - Extended render blocking options
+- **NotifierMixin** - Enhanced notification system
+- **PacketCancellerMixin** - Advanced packet manipulation
+- **OnlinePlayersMixin** - Better player list management
+- **NoSlowMixin** - Movement speed enhancements
+
+#### GUI Enhancements
+- **PeekScreenMixin** - Enhanced GUI peek functionality
+- **ModuleScreenMixin** - Module screen improvements
+- **ModulesScreenMixin** - Modules list improvements
+
+### Why Mixins Matter
+
+BepHax's mixin system allows seamless integration with Meteor Client without modifying the base mod. These enhancements:
+- Add rotation systems to combat modules for anti-cheat bypass
+- Integrate InventoryManager's silent slot swapping into existing modules
+- Add advanced velocity modes for better movement control
+- Are optional (`defaultRequire: 0`) - addon works even if mixins fail
 
 ---
 
@@ -275,7 +335,7 @@ The addon includes specialized mixins (`bep-meteor.mixins.json`) that improve fu
 6. Start the module to begin automated transfer
 ```
 
-### Ghost Mode
+### GhostMode
 ```
 1. Enable before dying or when death screen appears
 2. Adjust "health-value" to maintain specific health
@@ -317,8 +377,6 @@ The addon includes specialized mixins (`bep-meteor.mixins.json`) that improve fu
 4. Enable module to start sending notifications
 ```
 
-
-
 ---
 
 ## Credits & Attribution
@@ -330,7 +388,7 @@ BepHax is a community-driven project that aggregates and enhances modules from v
   - Stash hunting tools, navigation, ESP modules
 
 - **[Stardust](https://github.com/0xTas/stardust)** by [0xTas](https://github.com/0xTas)
-  - Utility modules, 2b2t commands, automation tools, Meteor enhancements
+  - Utility modules, 2b2t commands, automation tools
 
 - **[Meteor Rejects](https://github.com/AntiCope/meteor-rejects)** by [AntiCope](https://github.com/AntiCope)
   - AutoCraft module
@@ -338,6 +396,11 @@ BepHax is a community-driven project that aggregates and enhances modules from v
 - **[INDICA](https://github.com/Faye-one/INDICA)** by [Faye-one](https://github.com/Faye-one)
   - Kill effects, map duplicator, respawn blocker
 
+- **[Meteorist](https://github.com/Zgoly/Meteorist)** by [Zgoly](https://github.com/Zgoly)
+  - DisconnectSound module
+
+- **[HIGTools](https://github.com/RedCarlos26/HIGTools)** by [RedCarlos26](https://github.com/RedCarlos26)
+  - Center and Coordinates commands
 
 ### BepHax Development
 - **[dekrom](https://github.com/dekrom)** - Project maintainer, original modules, integration work
@@ -362,7 +425,6 @@ Everyone can request changes to make this addon better for the 2b2t community.
 - **Discord**: [Join our server](https://discord.gg/EGEhHNSkV8)
 - **Twitch**: [Watch dekrom stream](https://www.twitch.tv/dekrom)
 - **YouTube**: [dekrom's channel](https://www.youtube.com/@dekrom)
-
 
 ---
 

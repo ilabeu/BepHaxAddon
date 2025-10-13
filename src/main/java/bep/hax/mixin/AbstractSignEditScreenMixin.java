@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import java.util.List;
 import java.util.Arrays;
 import net.minecraft.text.Text;
@@ -19,13 +18,8 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.mixin.accessor.AbstractSignEditScreenAccessor;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(AbstractSignEditScreen.class)
 public abstract class AbstractSignEditScreenMixin extends Screen {
-
     @Shadow
     private int currentRow;
     @Shadow
@@ -37,20 +31,15 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
     private @Nullable SelectionManager selectionManager;
     @Shadow
     protected abstract void setCurrentRowMessage(String message);
-
     protected AbstractSignEditScreenMixin(Text title) { super(title); }
-
-    // See SignatureSign.java && SignHistorian.java
     @Inject(method = "init", at = @At("TAIL"))
     public void stardustMixinInit(CallbackInfo ci) {
         if (this.client == null) return;
         Modules modules = Modules.get();
-
         if (modules == null) return;
         SignHistorian signHistorian = modules.get(SignHistorian.class);
         SignatureSign signatureSign = modules.get(SignatureSign.class);
         if (!signatureSign.isActive() && !signHistorian.isActive()) return;
-
         if (signatureSign.getAutoConfirm()) return;
         SignText restoration = signHistorian.getRestoration(this.blockEntity);
         if ((!signHistorian.isActive() || restoration == null) && signatureSign.isActive()) {
@@ -58,11 +47,9 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
             List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Text::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
-
             ((AbstractSignEditScreenAccessor) this).setText(signature);
             ((AbstractSignEditScreenAccessor) this).setMessages(messages);
             if ((signatureSign.isActive() && signatureSign.signFreedom.get())) {
-                // bypass client-side length limits for sign text by using a truthy predicate in the SelectionManager
                 AbstractSignEditScreenAccessor accessor = ((AbstractSignEditScreenAccessor) this);
                 this.selectionManager = new SelectionManager(
                     () -> accessor.getMessages()[this.currentRow], this::setCurrentRowMessage,
@@ -70,7 +57,6 @@ public abstract class AbstractSignEditScreenMixin extends Screen {
                     string -> true
                 );
             }
-
             if (signatureSign.needsDisabling()) {
                 signatureSign.disable();
             }

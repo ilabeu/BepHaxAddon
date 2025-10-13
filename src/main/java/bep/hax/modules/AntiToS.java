@@ -1,12 +1,10 @@
 package bep.hax.modules;
-
 import java.io.File;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.nio.file.Files;
-
 import bep.hax.Bep;
 import bep.hax.Bep;
 import java.util.regex.Pattern;
@@ -32,26 +30,17 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import net.minecraft.network.packet.s2c.play.PlayerListS2CPacket;
 import bep.hax.mixin.accessor.EntityTrackerUpdateS2CPacketAccessor;
 import net.minecraft.network.packet.s2c.play.EntityTrackerUpdateS2CPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class AntiToS extends Module {
     public AntiToS() { super(Bep.STARDUST, "AntiToS", "Censor player-generated text sources according to a content blacklist."); }
-
     private final String BLACKLIST_FILE = "meteor-client/anti-tos.txt";
-
     private final SettingGroup sgSources = settings.createGroup("Source Settings");
     private final SettingGroup sgBlacklist = settings.createGroup("Content Settings");
-
     public enum SignMode {
         Censor, Replace, NoRender
     }
-
     public enum ChatMode {
         Censor, Remove
     }
-
     public final Setting<ChatMode> chatMode = sgSources.add(
         new EnumSetting.Builder<ChatMode>()
             .name("chat-mode")
@@ -110,7 +99,6 @@ public class AntiToS extends Module {
             .visible(() -> signMode.get() == SignMode.Replace)
             .build()
     );
-
     private final Setting<Boolean> openBlacklistFile = sgBlacklist.add(
         new BoolSetting.Builder()
             .name("open-blacklist-file")
@@ -124,14 +112,10 @@ public class AntiToS extends Module {
             })
             .build()
     );
-
     private final HashSet<String> blacklisted = new HashSet<>();
-
     private void resetBlacklistFileSetting() { openBlacklistFile.set(false); }
-
     private void initBlacklistText() {
         File blackListFile = FabricLoader.getInstance().getGameDir().resolve(BLACKLIST_FILE).toFile();
-
         try(Stream<String> lineStream = Files.lines(blackListFile.toPath())) {
             blacklisted.addAll(lineStream.toList());
             if (blacklisted.isEmpty()) {
@@ -144,25 +128,15 @@ public class AntiToS extends Module {
             LogUtil.error("Failed to read from " + blackListFile.getAbsolutePath() +"! - Why:\n"+err, this.name);
         }
     }
-
-    // See ChatHudMixin.java
-    // && ItemStackMixin.java
-    // && InGameHudMixin.java
-    // && BookScreenMixin.java
-    // && TextRendererMixin.java
-    // && EntityRendererMixin.java
-    // && AbstractSignBlockEntityRendererMixin.java
     public boolean containsBlacklistedText(String text) {
         return blacklisted.stream().anyMatch(line -> text.trim().toLowerCase().contains(line.trim().toLowerCase()));
     }
-
     public String censorText(String text) {
         for (String filter : blacklisted) {
             text = text.replaceAll("(?i)"+ Pattern.quote(filter), "*".repeat(filter.length()));
         }
         return text;
     }
-
     public SignText familyFriendlySignText(SignText original) {
         if (signMode.get() == SignMode.Censor) {
             Text[] lines = {
@@ -182,7 +156,6 @@ public class AntiToS extends Module {
             return new SignText(lines, lines, familyFriendlyColor.get(), familyFriendlyGlowing.get());
         }
     }
-
     @Override
     public void onActivate() {
         if (StardustUtil.checkOrCreateFile(mc, BLACKLIST_FILE)) initBlacklistText();
@@ -192,10 +165,8 @@ public class AntiToS extends Module {
             MsgUtil.sendModuleMsg("§4§lThis issue is fatal§8. §4§lPlease check latest.log for more info§8§l.", this.name);
         }
     }
-
     @Override
     public void onDeactivate() { blacklisted.clear(); }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReceivePacket(PacketEvent.Receive event) {
         if (!Utils.canUpdate()) return;
@@ -203,14 +174,12 @@ public class AntiToS extends Module {
             boolean modified = false;
             List<DataTracker.SerializedEntry<?>> entries = new ArrayList<>();
             for (DataTracker.SerializedEntry<?> entry : packet.trackedValues()) {
-                // https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Entity_Metadata
-                if (entry.id() == 2) { // Optional text component used for the entity's custom name
+                if (entry.id() == 2) {
                     @SuppressWarnings("unchecked")
                     DataTracker.Entry<Optional<Text>> e = new DataTracker.Entry<>(
                         (TrackedData<Optional<Text>>) entry.handler().create(entry.id()),
                         (Optional<Text>) entry.value()
                     );
-
                     if (e.get().isPresent()) {
                         Text data = e.get().get();
                         if (containsBlacklistedText(data.getString())) {
@@ -219,7 +188,6 @@ public class AntiToS extends Module {
                                     Text.literal(censorText(data.getString())).setStyle(data.getStyle())
                                 )
                             );
-
                             modified = true;
                             entries.add(e.toSerialized());
                         } else entries.add(entry);
@@ -228,13 +196,11 @@ public class AntiToS extends Module {
                     entries.add(entry);
                 }
             }
-
             if (modified) ((EntityTrackerUpdateS2CPacketAccessor)(Object) packet).setTrackedValues(entries);
         }
         else if ((event.packet instanceof PlayerListS2CPacket packet)) {
             for (PlayerListS2CPacket.Entry entry : packet.getEntries()) {
                 if (entry.profile() == null) continue;
-
                 GameProfile profile = entry.profile();
                 if (containsBlacklistedText(profile.getName())) {
                     ((GameProfileAccessor) profile).setName(censorText(profile.getName()));

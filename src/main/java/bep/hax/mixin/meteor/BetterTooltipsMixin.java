@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import net.minecraft.text.Text;
 import javax.annotation.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -17,24 +16,17 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.events.game.ItemStackTooltipEvent;
 import meteordevelopment.meteorclient.systems.modules.render.BetterTooltips;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(value = BetterTooltips.class, remap = false)
 public class BetterTooltipsMixin extends Module {
     @Shadow
     @Final
     private SettingGroup sgOther;
-
     @Shadow
     @Final
     private Setting<Boolean> middleClickOpen;
-
     public BetterTooltipsMixin(Category category, String name, String description, String... aliases) {
         super(category, name, description, aliases);
     }
-
     @Unique
     private @Nullable Setting<Boolean> rawDamageTag = null;
     @Unique
@@ -42,7 +34,6 @@ public class BetterTooltipsMixin extends Module {
     @Unique
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private @Nullable Setting<Boolean> peekGhostItems = null;
-
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/BetterTooltips;beehive:Lmeteordevelopment/meteorclient/settings/Setting;"))
     private void addTrueDurabilitySetting(CallbackInfo ci) {
         trueDurability = sgOther.add(new BoolSetting.Builder()
@@ -58,7 +49,6 @@ public class BetterTooltipsMixin extends Module {
                 .defaultValue(false)
                 .build()
         );
-        // See PeekScreenMixin.java
         peekGhostItems = sgOther.add(
             new BoolSetting.Builder()
                 .name("peek-ghost-items")
@@ -70,14 +60,11 @@ public class BetterTooltipsMixin extends Module {
                 .build()
         );
     }
-
     @Inject(method = "appendTooltip", at = @At("TAIL"))
     private void appendDurabilityTooltip(ItemStackTooltipEvent event, CallbackInfo ci) {
         if (!event.itemStack().isDamageable()) return;
-
         int maxDamage = event.itemStack().getMaxDamage();
         int damage = event.itemStack().getOrDefault(DataComponentTypes.DAMAGE, event.itemStack().getDamage());
-
         if (rawDamageTag != null && rawDamageTag.get()) {
             event.appendEnd(Text.literal("§7Damage§3: §a§o" + damage + " §8[§7Max§3: §a§o" + maxDamage + "§8]"));
         }

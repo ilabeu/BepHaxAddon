@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Unique;
@@ -12,16 +11,11 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.systems.modules.render.NoRender;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(value = NoRender.class, remap = false)
 public abstract class NoRenderMixin extends Module {
     public NoRenderMixin(Category category, String name, String description) {
         super(category, name, description);
     }
-
     @Unique
     private final SettingGroup sgCody = settings.createGroup("codysmile11");
     @Unique
@@ -30,10 +24,8 @@ public abstract class NoRenderMixin extends Module {
     private @Nullable Setting<Boolean> codyPlayer = null;
     @Unique
     private @Nullable Setting<Boolean> codyBanners = null;
-
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/NoRender;noSignText:Lmeteordevelopment/meteorclient/settings/Setting;"))
     private void addNoRenderSettings(CallbackInfo ci) {
-        // See EntityRendererMixin.java
         codyPlayer = sgCody.add(
             new BoolSetting.Builder()
                 .name("cody")

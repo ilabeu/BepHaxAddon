@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalXZ;
 import bep.hax.Bep;
@@ -29,18 +28,13 @@ import xaeroplus.event.ChunkDataEvent;
 import xaeroplus.module.ModuleManager;
 import xaeroplus.module.impl.OldChunks;
 import xaeroplus.module.impl.PaletteNewChunks;
-
 import java.time.Duration;
 import java.util.ArrayDeque;
-
 import static bep.hax.util.Utils.positionInDirection;
 import static bep.hax.util.Utils.sendWebhook;
-
 public class TrailFollower extends Module
 {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
-    // TODO: Set this automatically either by looking at the rate of chunk loads or by using yaw instead of block pos so size doesnt negatively effect result
     public final Setting<Integer> maxTrailLength = sgGeneral.add(new IntSetting.Builder()
         .name("max-trail-length")
         .description("The number of trail points to keep for the average. Adjust to change how quickly the average will change. More does not necessarily equal better because if the list is too long it will contain chunks behind you.")
@@ -48,7 +42,6 @@ public class TrailFollower extends Module
         .sliderRange(1, 100)
         .build()
     );
-
     public final Setting<Integer> chunksBeforeStarting = sgGeneral.add(new IntSetting.Builder()
         .name("chunks-before-starting")
         .description("Useful for afking looking for a trail. The amount of chunks before it gets detected as a trail.")
@@ -56,7 +49,6 @@ public class TrailFollower extends Module
         .sliderRange(1, 50)
         .build()
     );
-
     public final Setting<Integer> chunkConsiderationWindow = sgGeneral.add(new IntSetting.Builder()
         .name("chunk-timeframe")
         .description("The amount of time in seconds that the chunks must be found in before starting.")
@@ -64,14 +56,12 @@ public class TrailFollower extends Module
         .sliderRange(1, 20)
         .build()
     );
-
     public final Setting<TrailEndBehavior> trailEndBehavior = sgGeneral.add(new EnumSetting.Builder<TrailEndBehavior>()
         .name("trail-end-behavior")
         .description("What to do when the trail ends.")
         .defaultValue(TrailEndBehavior.DISABLE)
         .build()
     );
-
     public final Setting<Double> trailEndYaw = sgGeneral.add(new DoubleSetting.Builder()
         .name("trail-end-yaw")
         .description("The direction to go after the trail is abandoned.")
@@ -80,33 +70,27 @@ public class TrailFollower extends Module
         .visible(() -> trailEndBehavior.get() == TrailEndBehavior.FLY_TOWARDS_YAW)
         .build()
     );
-
-    // changed to an enum dropdown for fly selection
     public enum OverworldFlightMode {
         VANILLA,
         PITCH40,
         OTHER
     }
-
     public enum NetherPathMode {
         AVERAGE,
         OTHER
     }
-
     public final Setting<OverworldFlightMode> overworldFlightMode = sgGeneral.add(new EnumSetting.Builder<OverworldFlightMode>()
         .name("overworld-flight-mode")
         .description("Choose how TrailFollower flies in Overworld. If other is selected then nothing will be automatically enabled, instead just your yaw will be changed to point towards the trail.")
         .defaultValue(OverworldFlightMode.PITCH40)
         .build()
     );
-
     public final Setting<NetherPathMode> netherPathMode = sgGeneral.add(new EnumSetting.Builder<NetherPathMode>()
         .name("nether-path-mode")
         .description("Choose how TrailFollower does baritone pathing in Nether. If other is selected then nothing will be automatically enabled, instead just your yaw will be changed to point towards the trail.")
         .defaultValue(NetherPathMode.AVERAGE)
         .build()
     );
-
     public final Setting<Boolean> pitch40Firework = sgGeneral.add(new BoolSetting.Builder()
         .name("auto-firework")
         .description("Uses a firework automatically if your velocity is too low.")
@@ -114,7 +98,6 @@ public class TrailFollower extends Module
         .visible(() -> overworldFlightMode.get() == OverworldFlightMode.PITCH40)
         .build()
     );
-
     public final Setting<Double> rotateScaling = sgGeneral.add(new DoubleSetting.Builder()
         .name("rotate-scaling")
         .description("Scaling of how fast the yaw changes. 1 = instant, 0 = doesn't change")
@@ -122,23 +105,19 @@ public class TrailFollower extends Module
         .sliderRange(0.0, 1.0)
         .build()
     );
-
     public final Setting<Boolean> oppositeDimension = sgGeneral.add(new BoolSetting.Builder()
         .name("opposite-dimension")
         .description("Follows trails from the opposite dimension (Requires that you've already loaded the other dimension with XP).")
         .defaultValue(false)
         .build()
     );
-
     public final Setting<Boolean> autoElytra = sgGeneral.add(new BoolSetting.Builder()
         .name("auto-start-baritone-elytra")
         .description("Starts baritone elytra for you.")
         .defaultValue(false)
         .build()
     );
-
     private final SettingGroup sgAdvanced = settings.createGroup("Advanced", false);
-
     public final Setting<Double> pathDistance = sgAdvanced.add(new DoubleSetting.Builder()
         .name("path-distance")
         .description("The distance to add trail positions in the direction the player is facing. (Ignored when following overworld from nether)")
@@ -147,14 +126,12 @@ public class TrailFollower extends Module
         .onChanged(value -> pathDistanceActual = value)
         .build()
     );
-
     public final Setting<FollowMode> flightMethod = sgAdvanced.add(new EnumSetting.Builder<FollowMode>()
         .name("flight-method")
         .description("Decided how the goals will be used. Leave this on AUTO unless you want to use yaw lock in the nether for example.")
         .defaultValue(FollowMode.AUTO)
         .build()
     );
-
     public final Setting<Double> startDirectionWeighting = sgAdvanced.add(new DoubleSetting.Builder()
         .name("start-direction-weight")
         .description("The weighting of the direction the player is facing when starting the trail. 0 for no weighting (not recommended) 1 for max weighting (will take a bit for direction to change)")
@@ -163,14 +140,12 @@ public class TrailFollower extends Module
         .sliderMax(1)
         .build()
     );
-
     public final Setting<DirectionWeighting> directionWeighting = sgAdvanced.add(new EnumSetting.Builder<DirectionWeighting>()
         .name("direction-weighting")
         .description("How the chunks found should be weighted. Useful for path splits. Left will weight chunks to the left of the player higher, right will weigh chunks to the right higher, and none will be in the middle/random. ")
         .defaultValue(DirectionWeighting.NONE)
         .build()
     );
-
     public final Setting<Integer> directionWeightingMultiplier = sgAdvanced.add(new IntSetting.Builder()
         .name("direction-weighting-multiplier")
         .description("The multiplier for how much weight should be given to chunks in the direction specified. Values are capped to be in the range [2, maxTrailLength].")
@@ -180,14 +155,12 @@ public class TrailFollower extends Module
         .visible(() -> directionWeighting.get() != DirectionWeighting.NONE)
         .build()
     );
-
     public final Setting<Boolean> only112 = sgAdvanced.add(new BoolSetting.Builder()
         .name("follow-only-1.12")
         .description("Will only follow 1.12 chunks and will ignore other ones.")
         .defaultValue(false)
         .build()
     );
-
     public final Setting<Double> chunkFoundTimeout = sgAdvanced.add(new DoubleSetting.Builder()
         .name("chunk-found-timeout")
         .description("The amount of MS without a chunk found to trigger circling.")
@@ -196,7 +169,6 @@ public class TrailFollower extends Module
         .sliderMax(1000 * 10)
         .build()
     );
-
     public final Setting<Double> circlingDegPerTick = sgAdvanced.add(new DoubleSetting.Builder()
         .name("Circling-degrees-per-tick")
         .description("The amount of degrees to change per tick while circling.")
@@ -205,7 +177,6 @@ public class TrailFollower extends Module
         .sliderMax(20.0)
         .build()
     );
-
     public final Setting<Double> trailTimeout = sgAdvanced.add(new DoubleSetting.Builder()
         .name("trail-timeout")
         .description("The amount of MS without a chunk found to stop following the trail.")
@@ -214,7 +185,6 @@ public class TrailFollower extends Module
         .sliderMax(1000 * 60)
         .build()
     );
-    // added trail deviation slider now that baritone is locked to trail pathing
     public final Setting<Double> maxTrailDeviation = sgAdvanced.add(new DoubleSetting.Builder()
         .name("max-trail-deviation")
         .description("Maximum allowed angle (in degrees) from the original trail direction. Helps avoid switching to intersecting trails.")
@@ -223,7 +193,6 @@ public class TrailFollower extends Module
         .sliderMax(270.0)
         .build()
     );
-
     public final Setting<Integer> chunkCacheLength = sgAdvanced.add(new IntSetting.Builder()
         .name("chunk-cache-length")
         .description("The amount of chunks to keep in the cache. (Won't be applied until deactivating)")
@@ -231,57 +200,42 @@ public class TrailFollower extends Module
         .sliderRange(0, 10_000_000)
         .build()
     );
-
     public final Setting<String> webhookLink = sgGeneral.add(new StringSetting.Builder()
         .name("webhook-link")
         .description("Will send all updates to the webhook link. Leave blank to disable.")
         .defaultValue("")
         .build()
     );
-
     public final Setting<Integer> baritoneUpdateTicks = sgAdvanced.add(new IntSetting.Builder()
         .name("baritone-path-update-ticks")
         .description("The amount of ticks between updates to the baritone goal. Low values may cause high instability.")
-        .defaultValue(5 * 20) // 5 seconds
+        .defaultValue(5 * 20)
         .sliderRange(20, 30 * 20)
         .build()
     );
-
     public final Setting<Boolean> debug = sgAdvanced.add(new BoolSetting.Builder()
         .name("debug")
         .description("Debug mode.")
         .defaultValue(false)
         .build()
     );
-
-    // TODO: Auto disconnect at certain chunk load speed
-
     private boolean oldAutoFireworkValue;
-
+    private boolean oldAutoBoundAdjustValue;
     private FollowMode followMode;
-
     private boolean followingTrail = false;
-
     private ArrayDeque<Vec3d> trail = new ArrayDeque<>();
     private ArrayDeque<Vec3d> possibleTrail = new ArrayDeque<>();
-
     private long lastFoundTrailTime;
     private long lastFoundPossibleTrailTime;
-
     private double pathDistanceActual = pathDistance.get();
-
     private Cache<Long, Byte> seenChunksCache = Caffeine.newBuilder()
         .maximumSize(chunkCacheLength.get())
         .expireAfterWrite(Duration.ofMinutes(5))
         .build();
-
-    // Credit to WarriorLost: https://github.com/WarriorLost/meteor-client/tree/master
-
     public TrailFollower()
     {
         super(Bep.STASH, "TrailFollower", "Automatically follows trails in all dimensions.");
     }
-
     void resetTrail()
     {
         baritoneSetGoalTicks = 0;
@@ -289,7 +243,6 @@ public class TrailFollower extends Module
         trail = new ArrayDeque<>();
         possibleTrail = new ArrayDeque<>();
     }
-
     @Override
     public void onActivate()
     {
@@ -337,7 +290,6 @@ public class TrailFollower extends Module
                     }
                 }
             }
-
             if (followMode == FollowMode.YAWLOCK && !mc.world.getRegistryKey().equals(World.NETHER)) {
                 if (overworldFlightMode.get() == OverworldFlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
@@ -346,9 +298,16 @@ public class TrailFollower extends Module
                         pitch40UtilModule.toggle();
                         if (pitch40Firework.get()) {
                             Setting<Boolean> setting = ((Setting<Boolean>) pitch40UtilModule.settings.get("auto-firework"));
-                            info("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
-                            oldAutoFireworkValue = setting.get();
-                            setting.set(true);
+                            if (setting != null) {
+                                info("Auto Firework enabled, if you want to change the velocity threshold or the firework cooldown check the settings under Pitch40Util.");
+                                oldAutoFireworkValue = setting.get();
+                                setting.set(true);
+                            }
+                        }
+                        Setting<Boolean> autoBoundAdjustSetting = ((Setting<Boolean>) pitch40UtilModule.settings.get("auto-bound-adjust"));
+                        if (autoBoundAdjustSetting != null) {
+                            oldAutoBoundAdjustValue = autoBoundAdjustSetting.get();
+                            autoBoundAdjustSetting.set(false);
                         }
                     }
                 } else if (overworldFlightMode.get() == OverworldFlightMode.VANILLA) {
@@ -358,7 +317,6 @@ public class TrailFollower extends Module
                     }
                 }
             }
-            // set original pos to pathDistance blocks in the direction the player is facing
             Vec3d offset = (new Vec3d(Math.sin(-mc.player.getYaw() * Math.PI / 180), 0, Math.cos(-mc.player.getYaw() * Math.PI / 180)).normalize()).multiply(pathDistance.get());
             Vec3d targetPos = mc.player.getPos().add(offset);
             for (int i = 0; i < (maxTrailLength.get() * startDirectionWeighting.get()); i++)
@@ -372,18 +330,15 @@ public class TrailFollower extends Module
             this.toggle();
         }
     }
-
     @Override
     public void onDeactivate()
     {
-        // do this at the end to free memory
         seenChunksCache = Caffeine.newBuilder()
             .maximumSize(chunkCacheLength.get())
             .expireAfterWrite(Duration.ofMinutes(5))
             .build();
         XaeroPlus.EVENT_BUS.unregister(this);
         trail.clear();
-        // If follow mode was never set due to baritone not being present, etc.
         if (followMode == null) return;
         switch (followMode)
         {
@@ -403,20 +358,26 @@ public class TrailFollower extends Module
                 } else if (overworldFlightMode.get() == OverworldFlightMode.PITCH40) {
                     Class<? extends Module> pitch40Util = Pitch40Util.class;
                     Module pitch40UtilModule = Modules.get().get(pitch40Util);
-                    if (pitch40UtilModule.isActive()) {
-                        pitch40UtilModule.toggle();
+                    if (pitch40UtilModule != null) {
+                        if (pitch40UtilModule.isActive()) {
+                            pitch40UtilModule.toggle();
+                        }
+                        Setting<Boolean> autoFireworkSetting = ((Setting<Boolean>) pitch40UtilModule.settings.get("auto-firework"));
+                        if (autoFireworkSetting != null) {
+                            autoFireworkSetting.set(oldAutoFireworkValue);
+                        }
+                        Setting<Boolean> autoBoundAdjustSetting = ((Setting<Boolean>) pitch40UtilModule.settings.get("auto-bound-adjust"));
+                        if (autoBoundAdjustSetting != null) {
+                            autoBoundAdjustSetting.set(oldAutoBoundAdjustValue);
+                        }
                     }
-                    ((Setting<Boolean>) pitch40UtilModule.settings.get("auto-firework")).set(oldAutoFireworkValue);
                 }
                 break;
             }
         }
     }
-
     private double targetYaw;
-
     private int baritoneSetGoalTicks = 0;
-
     private void circle()
     {
         if (followMode == FollowMode.BARITONE) return;
@@ -426,7 +387,6 @@ public class TrailFollower extends Module
             log("Circling to look for new chunks, abandoning trail in " + (trailTimeout.get() - (System.currentTimeMillis() - lastFoundTrailTime)) / 1000 + " seconds.");
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event)
     {
@@ -469,36 +429,8 @@ public class TrailFollower extends Module
                 }
                 else if (baritoneSetGoalTicks == 0)
                 {
-                    // if following overworld from nether we need to wait to set the goal until we are close to the current goal
-                    // make sure targetPos is on an actual chunk
-//                    if (mc.world.getRegistryKey().equals(World.NETHER) && oppositeDimension.get())
-//                    {
-//                        if (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() != null
-//                            && !BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination().isWithinDistance(mc.player.getPos(), 200))
-//                        {
-//                            return;
-//                        }
-//                        else
-//                        {
-//                            boolean chunkFound = false;
-//                            for (int i = 1000; i >= 0; i--)
-//                            {
-//                                Vec3d nextPosition = positionInDirection(mc.player.getPos().multiply(8), targetYaw, 16 * i);
-//                                ChunkPos nextChunkPosition = new ChunkPos(new BlockPos((int)nextPosition.x, 0, (int)nextPosition.z));
-//                                if (isValidChunk(nextChunkPosition, World.OVERWORLD))
-//                                {
-//                                    pathDistanceActual = (double) (16 * i) / 8;
-//                                    chunkFound = true;
-//                                    break;
-//                                }
-//                            }
-//                            if (!chunkFound) return;
-//                        }
-//                    }
-                    //instead of flying to a calculated offset from the player using pathDistanceActual, will directly set the last trail chunk detected
                     baritoneSetGoalTicks = baritoneUpdateTicks.get();
                     if (mc.world.getRegistryKey().equals(World.NETHER)) {
-
                         if (!trail.isEmpty()) {
                             Vec3d baritoneTarget;
                             if (netherPathMode.get() == NetherPathMode.AVERAGE) {
@@ -511,16 +443,13 @@ public class TrailFollower extends Module
                                 Vec3d lastPos = trail.getLast();
                                 baritoneTarget = lastPos;
                             }
-
                             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
                                 .setGoalAndPath(new GoalXZ((int) baritoneTarget.x, (int) baritoneTarget.z));
                         }
                     } else {
-                        // use average path for overworld
                         Vec3d targetPos = positionInDirection(mc.player.getPos(), targetYaw, pathDistanceActual);
                         BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(new GoalXZ((int) targetPos.x, (int) targetPos.z));
-
-                        targetYaw = Rotations.getYaw(targetPos); // smooth rotation target
+                        targetYaw = Rotations.getYaw(targetPos);
                     }
                     if (autoElytra.get() && (BaritoneAPI.getProvider().getPrimaryBaritone().getElytraProcess().currentDestination() == null))
                     {
@@ -535,22 +464,16 @@ public class TrailFollower extends Module
                 break;
             }
         }
-
     }
-
     Vec3d posDebug;
-
     @EventHandler
     private void onRender(Render3DEvent event)
     {
         if (!debug.get()) return;
         Vec3d targetPos = positionInDirection(mc.player.getPos(), targetYaw, 10);
-        // target line
         event.renderer.line(mc.player.getX(), mc.player.getY(), mc.player.getZ(), targetPos.x, targetPos.y, targetPos.z, new Color(255, 0, 0));
-        // chunk
         if (posDebug != null) event.renderer.line(mc.player.getX(), mc.player.getY(), mc.player.getZ(), posDebug.x, targetPos.y, posDebug.z, new Color(0, 0, 255));
     }
-
     @net.lenni0451.lambdaevents.EventHandler(priority = -1)
     public void onChunkData(ChunkDataEvent event)
     {
@@ -559,12 +482,8 @@ public class TrailFollower extends Module
         WorldChunk chunk = event.chunk();
         ChunkPos chunkPos = chunk.getPos();
         long chunkLong = chunkPos.toLong();
-
-        // if found in the cache then ignore the chunk
         if (seenChunksCache.getIfPresent(chunkLong) != null) return;
-
         ChunkPos chunkDelta = new ChunkPos(chunkPos.x - mc.player.getChunkPos().x, chunkPos.z - mc.player.getChunkPos().z);
-
         if (oppositeDimension.get())
         {
             if (currentDimension.equals(World.OVERWORLD))
@@ -575,24 +494,13 @@ public class TrailFollower extends Module
             else if (currentDimension.equals(World.NETHER))
             {
                 chunkPos = new ChunkPos(mc.player.getChunkPos().x * 8 + chunkDelta.x, mc.player.getChunkPos().z * 8 + chunkDelta.z);
-//                log("ChunkPos: " + chunkPos.x + ", " + chunkPos.z);
                 currentDimension = World.OVERWORLD;
             }
         }
-        // Check that the chunk is actually mapped, and that it is an old chunk
         if (!isValidChunk(chunkPos, currentDimension)) return;
-
         seenChunksCache.put(chunkLong, Byte.MAX_VALUE);
-
-        // nether will get out of chunk render distance range of overworld. needs fix.
-        // possible fix:
-        // make sure baritone markers are on the trail, only look for new chunks when player is near the waypoint
-
-
-        // use chunk.getPos() here instead of the dimension specific chunkPos because we have to path to blocks in our dimension
         Vec3d pos = chunk.getPos().getCenterAtY(0).toCenterPos();
         posDebug = pos;
-
         if (!followingTrail)
         {
             if (System.currentTimeMillis() - lastFoundPossibleTrailTime > chunkConsiderationWindow.get() * 1000)
@@ -611,13 +519,8 @@ public class TrailFollower extends Module
             }
             return;
         }
-
-
-        // add chunks to the list
-
         double chunkAngle = Rotations.getYaw(pos);
         double angleDiff = Utils.angleDifference(targetYaw, chunkAngle);
-        // was not able to add this before, but now can successfully filter out most other trails using the most recent chunk for pathing
         if (followingTrail && Math.abs(angleDiff) > maxTrailDeviation.get())
         {
             return;
@@ -627,11 +530,8 @@ public class TrailFollower extends Module
         {
             trail.pollFirst();
         }
-
         if (angleDiff > 0 && angleDiff < 90 && directionWeighting.get() == DirectionWeighting.LEFT)
         {
-            // add extra chunks to increase the weighting
-            // TODO: Maybe redo this to use a map of chunk pos to weights
             for (int i = 0; i < directionWeightingMultiplier.get() - 1; i++)
             {
                 trail.pollFirst();
@@ -652,10 +552,6 @@ public class TrailFollower extends Module
         {
             trail.add(pos);
         }
-
-
-        // instead of a calculated average coordinate, will use latest chunk added to trail
-        // *fix for overworld smoothing
         if (!trail.isEmpty()) {
             if (followMode == FollowMode.YAWLOCK) {
                 Vec3d averagePos = calculateAveragePosition(trail);
@@ -668,7 +564,6 @@ public class TrailFollower extends Module
             }
         }
     }
-
     private boolean isValidChunk(ChunkPos chunkPos, RegistryKey<World> currentDimension)
     {
         PaletteNewChunks paletteNewChunks = ModuleManager.getModule(PaletteNewChunks.class);
@@ -678,25 +573,20 @@ public class TrailFollower extends Module
                 chunkPos.z,
                 currentDimension
             );
-
         boolean is112OldChunk = ModuleManager.getModule(OldChunks.class)
             .isOldChunk(
                 chunkPos.x,
                 chunkPos.z,
                 currentDimension
             );
-
         boolean isHighlighted = is119NewChunk || paletteNewChunks
             .isInverseNewChunk(
                 chunkPos.x,
                 chunkPos.z,
                 currentDimension
             );
-
         return isHighlighted && ((!is119NewChunk && !only112.get()) || is112OldChunk);
     }
-
-    // not using this method now but will keep it in case
     private Vec3d calculateAveragePosition(ArrayDeque<Vec3d> positions)
     {
         double sumX = 0, sumZ = 0;
@@ -706,12 +596,10 @@ public class TrailFollower extends Module
         }
         return new Vec3d(sumX / positions.size(), 0, sumZ / positions.size());
     }
-
     private float getActualYaw(float yaw)
     {
         return (yaw % 360 + 360) % 360;
     }
-
     private void log(String message)
     {
         info(message);
@@ -720,29 +608,18 @@ public class TrailFollower extends Module
             sendWebhook(webhookLink.get(), "TrailFollower", message, null, mc.player.getGameProfile().getName());
         }
     }
-
     public enum FollowMode
     {
         AUTO,
         BARITONE,
         YAWLOCK
     }
-
     public enum DirectionWeighting
     {
         LEFT,
         NONE,
         RIGHT
     }
-
-//    public enum ChunkTypes
-//    {
-//        ONLY_OLD, // only 1.12 chunks that are not 1.19 chunks
-//        OLD_AND_LOADED_IN_119, // 1.12 chunks that are loaded in 1.19
-//        ONLY_NEW, // only 1.19 chunks that are not 1.12 chunks
-//        ALL // all chunks
-//    }
-
     public enum TrailEndBehavior
     {
         DISABLE,

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import net.minecraft.util.Hand;
 import net.minecraft.item.Items;
@@ -17,15 +16,8 @@ import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.meteor.KeyEvent;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- *     Paper seems to cuck the hell out of wind charges so probably don't even bother with this. Fun in vanilla, though.
- **/
 public class Updraft extends Module {
     public Updraft() { super(Bep.STARDUST, "Updraft", "Automatically enhances your jumps with wind charges.");}
-
     private final Setting<Boolean> swapSetting = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("swap")
@@ -33,7 +25,6 @@ public class Updraft extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> swapBackSetting = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("swap-back")
@@ -41,7 +32,6 @@ public class Updraft extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> hotBarSetting = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("hotbar-only")
@@ -49,7 +39,6 @@ public class Updraft extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> cooldownSetting = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("cooldown-ticks")
@@ -59,7 +48,6 @@ public class Updraft extends Module {
             .sliderRange(10, 500)
             .build()
     );
-
     private final Setting<Double> pitchSpoofSetting = settings.getDefaultGroup().add(
         new DoubleSetting.Builder()
             .name("pitch-spoof")
@@ -69,7 +57,6 @@ public class Updraft extends Module {
             .defaultValue(90)
             .build()
     );
-
     private final Setting<Integer> tickDelay = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-delay")
@@ -79,14 +66,12 @@ public class Updraft extends Module {
             .sliderRange(0, 100)
             .build()
     );
-
     private int timer = 0;
     private int notify = 0;
     private int returnSlot = -1;
     private int rotPriority = 69420;
     private boolean offhand = false;
     private State currentState = State.Idle;
-
     private void useWindCharge() {
         if (mc.interactionManager == null || mc.player == null || mc.player.isGliding()) {
             currentState = State.Idle;
@@ -112,7 +97,6 @@ public class Updraft extends Module {
         }
         currentState = State.Idle;
     }
-
     private void swapToWindCharge() {
         ItemStack current = mc.player.getMainHandStack();
         ItemStack offhandStack = mc.player.getOffHandStack();
@@ -122,7 +106,6 @@ public class Updraft extends Module {
             useWindCharge();
             return;
         }
-
         for (int n = 0; n < (hotBarSetting.get() ? 9 : mc.player.getInventory().main.size()); n++) {
             ItemStack stack = mc.player.getInventory().getStack(n);
             if (stack.getItem() == Items.WIND_CHARGE) {
@@ -142,17 +125,14 @@ public class Updraft extends Module {
             timer = tickDelay.get();
         }
     }
-
     private void swapFromWindCharge() {
         if (returnSlot == -1) InvUtils.swapBack();
         else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(returnSlot);
-
         returnSlot = -1;
         offhand = false;
         currentState = State.Idle;
         timer = cooldownSetting.get();
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -162,7 +142,6 @@ public class Updraft extends Module {
         rotPriority = 69420;
         currentState = State.Idle;
     }
-
     @EventHandler
     private void onKey(KeyEvent event) {
         if (mc.world == null || mc.player == null) return;
@@ -173,11 +152,9 @@ public class Updraft extends Module {
             }
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
-
         --timer;
         --notify;
         if (mc.player.isGliding()) return;
@@ -189,14 +166,13 @@ public class Updraft extends Module {
         }
         if (timer <= 0) {
             switch (currentState) {
-                case Idle -> {} // defer to onKey
+                case Idle -> {}
                 case Using -> useWindCharge();
                 case SwappingTo -> swapToWindCharge();
                 case SwappingFrom -> swapFromWindCharge();
             }
         }
     }
-
     private enum State {
         Idle, SwappingTo, Using, SwappingFrom
     }

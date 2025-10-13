@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.*;
 import java.io.File;
 import java.util.List;
@@ -42,27 +41,20 @@ import net.minecraft.network.packet.c2s.play.UpdateSignC2SPacket;
 import bep.hax.mixin.accessor.AbstractSignEditScreenAccessor;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import net.minecraft.client.gui.screen.ingame.AbstractSignEditScreen;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class SignatureSign extends Module {
     public SignatureSign() { super(Bep.STARDUST, "SignatureSign", "Autofill signs with custom text."); }
-
     public static final String[] lineModes = {"Custom", "Empty", "File", "Username",
         "Username was here", "Timestamp", "Stardust", "Oasis", "Base64", "Hex", "0xHex", "ROT13", "Player UUID", "Random UUID", "Hashed UUID"};
     public static final String[] timestampTypes = {"MM/DD/YY", "MM/DD/YYYY", "DD/MM/YY", "DD/MM/YYYY",
         "YYYY/MM/DD", "YYYY/DD/MM", "Day Month Year", "Month Day Year", "Month Year", "Year", "Day Month", "Month Day",
         "Unix Epoch"};
     public static final String[] timestampDelimiters = {"/", "//", "\\", "\\\\", "|", "||", "-", "_", "~", ".", ",", "x", "•", "✨"};
-
     private final SettingGroup sgMode = settings.createGroup("Module Mode");
     private final SettingGroup sgSignsOpts = settings.createGroup("Sign Options");
     private final SettingGroup sgLine1Front = settings.createGroup("Front Line 1");
     private final SettingGroup sgLine2Front = settings.createGroup("Front Line 2");
     private final SettingGroup sgLine3Front = settings.createGroup("Front Line 3");
     private final SettingGroup sgLine4Front = settings.createGroup("Front Line 4");
-
     private final Setting<Boolean> storyMode = sgMode.add(
         new BoolSetting.Builder()
             .name("story-mode")
@@ -70,7 +62,6 @@ public class SignatureSign extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> secretSign = sgMode.add(
         new BoolSetting.Builder()
             .name("secret-signs")
@@ -78,7 +69,6 @@ public class SignatureSign extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> protectSigns = sgSignsOpts.add(
         new BoolSetting.Builder()
             .name("wax-signs")
@@ -86,7 +76,6 @@ public class SignatureSign extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> glowSigns = sgSignsOpts.add(
         new BoolSetting.Builder()
             .name("glow-signs")
@@ -94,7 +83,6 @@ public class SignatureSign extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<DyeColor> signColor = sgSignsOpts.add(
         new EnumSetting.Builder<DyeColor>()
             .name("sign-color")
@@ -102,7 +90,6 @@ public class SignatureSign extends Module {
             .defaultValue(DyeColor.BLACK)
             .build()
     );
-
     public final Setting<Boolean> signFreedom = sgSignsOpts.add(
         new BoolSetting.Builder()
             .name("bypass-length-limits")
@@ -111,7 +98,6 @@ public class SignatureSign extends Module {
             .visible(() -> !secretSign.get())
             .build()
     );
-
     private final Setting<String> line1ModeFront = sgLine1Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-1-mode")
@@ -121,7 +107,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get())
             .build()
     );
-
     private final Setting<String> line1TextFront = sgLine1Front.add(
         new StringSetting.Builder()
             .name("line-1-text")
@@ -137,7 +122,6 @@ public class SignatureSign extends Module {
             })
             .build()
     );
-
     private final Setting<Integer> line1FileLineFront = sgLine1Front.add(
         new IntSetting.Builder()
             .name("line-1-file-line")
@@ -148,7 +132,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line1ModeFront.get().equals("File"))
             .build()
     );
-
     private final Setting<String> line1TimestampTypeFront = sgLine1Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-1-timestamp-type")
@@ -157,7 +140,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line1ModeFront.get().equals("Timestamp"))
             .build()
     );
-
     private final Setting<String> line1TimestampDelimFront = sgLine1Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-1-timestamp-delimiter")
@@ -166,7 +148,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line1ModeFront.get().equals("Timestamp") && line1TimestampTypeFront.get().contains("/"))
             .build()
     );
-
     private final Setting<String> line2ModeFront = sgLine2Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-2-mode")
@@ -176,7 +157,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get())
             .build()
     );
-
     private final Setting<String> line2TextFront = sgLine2Front.add(
         new StringSetting.Builder()
             .name("line-2-text")
@@ -192,7 +172,6 @@ public class SignatureSign extends Module {
             })
             .build()
     );
-
     private final Setting<Integer> line2FileLineFront = sgLine2Front.add(
         new IntSetting.Builder()
             .name("line-2-file-line")
@@ -203,7 +182,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line2ModeFront.get().equals("File"))
             .build()
     );
-
     private final Setting<String> line2TimestampTypeFront = sgLine2Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-2-timestamp-type")
@@ -212,7 +190,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line2ModeFront.get().equals("Timestamp"))
             .build()
     );
-
     private final Setting<String> line2TimestampDelimFront = sgLine2Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-2-timestamp-delimiter")
@@ -221,7 +198,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line2ModeFront.get().equals("Timestamp") && line2TimestampTypeFront.get().contains("/"))
             .build()
     );
-
     private final Setting<String> line3ModeFront = sgLine3Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-3-mode")
@@ -231,7 +207,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get())
             .build()
     );
-
     private final Setting<String> line3TextFront = sgLine3Front.add(
         new StringSetting.Builder()
             .name("line-3-text")
@@ -247,7 +222,6 @@ public class SignatureSign extends Module {
             })
             .build()
     );
-
     private final Setting<Integer> line3FileLineFront = sgLine3Front.add(
         new IntSetting.Builder()
             .name("line-3-file-line")
@@ -258,7 +232,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line3ModeFront.get().equals("File"))
             .build()
     );
-
     private final Setting<String> line3TimestampTypeFront = sgLine3Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-3-timestamp-type")
@@ -267,7 +240,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line3ModeFront.get().equals("Timestamp"))
             .build()
     );
-
     private final Setting<String> line3TimestampDelimFront = sgLine3Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-3-timestamp-delimiter")
@@ -276,7 +248,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line3ModeFront.get().equals("Timestamp") && line3TimestampTypeFront.get().contains("/"))
             .build()
     );
-
     private final Setting<String> line4ModeFront = sgLine4Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-4-mode")
@@ -286,7 +257,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get())
             .build()
     );
-
     private final Setting<String> line4TextFront = sgLine4Front.add(
         new StringSetting.Builder()
             .name("line-4-text")
@@ -302,7 +272,6 @@ public class SignatureSign extends Module {
             })
             .build()
     );
-
     private final Setting<Integer> line4FileLineFront = sgLine4Front.add(
         new IntSetting.Builder()
             .name("line-4-file-line")
@@ -313,7 +282,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line4ModeFront.get().equals("File"))
             .build()
     );
-
     private final Setting<String> line4TimestampTypeFront = sgLine4Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-4-timestamp-type")
@@ -322,7 +290,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line4ModeFront.get().equals("Timestamp"))
             .build()
     );
-
     private final Setting<String> line4TimestampDelimFront = sgLine4Front.add(
         new ProvidedStringSetting.Builder()
             .name("line-4-timestamp-delimiter")
@@ -331,7 +298,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get() && line4ModeFront.get().equals("Timestamp") && line4TimestampTypeFront.get().contains("/"))
             .build()
     );
-
     private final Setting<Boolean> shortenedMonth = sgSignsOpts.add(
         new BoolSetting.Builder()
             .name("shortened-month")
@@ -339,7 +305,6 @@ public class SignatureSign extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> packetDelay = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("packet-delay")
@@ -347,7 +312,6 @@ public class SignatureSign extends Module {
             .range(0, 500).sliderRange(0, 50).defaultValue(20)
             .build()
     );
-
     private final Setting<Boolean> autoConfirm = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("auto-confirm")
@@ -355,7 +319,6 @@ public class SignatureSign extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> autoDisable = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("auto-disable")
@@ -364,7 +327,6 @@ public class SignatureSign extends Module {
             .visible(() -> !storyMode.get())
             .build()
     );
-
     private final Setting<Boolean> redo = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("redo-last-sign")
@@ -373,7 +335,6 @@ public class SignatureSign extends Module {
             .visible(storyMode::get)
             .build()
     );
-
     private final Setting<Boolean> openFolder = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("open-meteor-client-folder")
@@ -386,7 +347,6 @@ public class SignatureSign extends Module {
             })
             .build()
     );
-
     private int timer = 0;
     private int dyeSlot = -1;
     private int storyIndex = 0;
@@ -405,8 +365,6 @@ public class SignatureSign extends Module {
     private final HashSet<SignBlockEntity> signsToColor = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToGlowInk = new HashSet<>();
     private final ArrayDeque<UpdateSignC2SPacket> packetQueue = new ArrayDeque<>();
-
-
     @Override
     public void onActivate() {
         lastLine1TextFront = line1TextFront.get();
@@ -414,7 +372,6 @@ public class SignatureSign extends Module {
         lastLine3TextFront = line3TextFront.get();
         lastLine4TextFront = line4TextFront.get();
     }
-
     @Override
     public void onDeactivate() {
         storyText.clear();
@@ -422,7 +379,6 @@ public class SignatureSign extends Module {
         signsToWax.clear();
         signsToColor.clear();
         signsToGlowInk.clear();
-
         timer = 0;
         storyIndex = 0;
         packetTimer = 0;
@@ -430,42 +386,32 @@ public class SignatureSign extends Module {
         rotationPriority = 69420;
         didDisableWaxAura = false;
         needDelayedDeactivate = false;
-
         if (!packetQueue.isEmpty() && Utils.canUpdate()) {
             MeteorClient.EVENT_BUS.subscribe(this);
         }
     }
-
-
-    // See AbstractSignEditScreenMixin.java
     public SignText getSignature(SignBlockEntity sign) {
         Text[] signature = new Text[4];
         List<String> lines = getSignText();
         for (int i = 0; i < lines.size(); i++) {
             signature[i] = Text.of(lines.get(i));
         }
-
         if (protectSigns.get() && !sign.isWaxed()) {
             signsToWax.add(sign);
         }
         if (signColor.get() != sign.getFrontText().getColor()) signsToColor.add(sign);
         if (glowSigns.get() && !sign.getFrontText().isGlowing()) signsToGlowInk.add(sign);
-
         return new SignText(signature, signature, DyeColor.BLACK, false);
     }
-
     public void disable() {
         if (signsToWax.isEmpty() && signsToColor.isEmpty() && signsToGlowInk.isEmpty()) {
             toggle();
         } else needDelayedDeactivate = true;
     }
-
     public boolean needsDisabling() {
         return autoDisable.get() && !storyMode.get();
     }
-
     public boolean getAutoConfirm() { return autoConfirm.get(); }
-
     private boolean textLineVisibility(int line) {
         String md;
         md = switch (line) {
@@ -474,16 +420,12 @@ public class SignatureSign extends Module {
             case 3 -> line3ModeFront.get();
             default -> line4ModeFront.get();
         };
-
-
         return md.equals("Custom") || md.equals("Base64") || md.equals("Hex")
             || md.equals("0xHex") || md.equals("ROT13");
     }
-
     private boolean inputTooLong(String input) {
         return mc.textRenderer.getWidth(input) > 90;
     }
-
     private void restoreValidInput(int line) {
         switch (line) {
             case 1 -> line1TextFront.set(lastLine1TextFront);
@@ -492,7 +434,6 @@ public class SignatureSign extends Module {
             default -> line4TextFront.set(lastLine4TextFront);
         }
     }
-
     private String getUuid(boolean player, boolean hash) {
         String id;
         if (player && mc.player != null) {
@@ -500,15 +441,12 @@ public class SignatureSign extends Module {
         } else {
             id = UUID.randomUUID().toString();
         }
-
         if (!hash) {
             return id.substring(0, Math.min(8, id.length()));
         }
-
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
             byte[] hashBytes = digest.digest(id.getBytes(StandardCharsets.UTF_8));
-
             StringBuilder sb = new StringBuilder();
             for (byte b : hashBytes) {
                 sb.append(String.format("%02x", b));
@@ -519,11 +457,9 @@ public class SignatureSign extends Module {
             return mc.player.getUuidAsString().substring(0, mc.player.getUuidAsString().indexOf("-"));
         }
     }
-
     private List<String> getSignText() {
         List<String> signText = new ArrayList<>();
         if (mc.player == null) return signText;
-
         String username = mc.player.getName().getString();
         if (storyMode.get()) {
             if (storyText.isEmpty()) {
@@ -604,7 +540,6 @@ public class SignatureSign extends Module {
                 case "Hashed UUID" -> signText.add(getUuid(true, true));
             }
         }
-
         if (secretSign.get()) {
             signText = signText.stream().map(line -> {
                 StringBuilder secretSpaces = new StringBuilder();
@@ -617,7 +552,6 @@ public class SignatureSign extends Module {
             }).collect(Collectors.toList());
             return signText;
         }
-
         if (signFreedom.get()) return signText;
         for (int i = 0; i < signText.size(); i++) {
             if (inputTooLong(signText.get(i))) {
@@ -626,16 +560,12 @@ public class SignatureSign extends Module {
         }
         return signText;
     }
-
     private String getSignTextFromFile(int line) {
         Path meteorFolder = FabricLoader.getInstance().getGameDir().resolve("meteor-client");
-
         File file = meteorFolder.resolve("autosign.txt").toFile();
-
         if (file.exists()) {
             try(Stream<String> lineStream = Files.lines(file.toPath())) {
                 List<String> lines = lineStream.toList();
-
                 return line <= lines.size() ? lines.get(line) : lines.get(lines.size()-1);
             } catch (Exception err) {
                 LogUtil.error("Failed to read from " + file.getAbsolutePath() + "! - Why: " + err, this.name);
@@ -646,14 +576,12 @@ public class SignatureSign extends Module {
                     if (mc.player != null) {
                         MsgUtil.sendModuleMsg("Created autosign.txt in your meteor-client folder§a..!", this.name);
                         Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, meteorFolder.toFile().getAbsolutePath()));
-
                         MsgUtil.sendModuleMsg("Click §2§lhere §r§7to open the folder.", style, this.name);
                     }
                 }
             } catch (Exception err) {
                 LogUtil.error("Failed to create " + file.getAbsolutePath() + "! Why:\n" + err, this.name);
             }
-
             switch (line) {
                 case 1: return "File was empty";
                 case 2: return "Please use the";
@@ -663,11 +591,9 @@ public class SignatureSign extends Module {
         }
         return "File not found";
     }
-
     private void initStoryTextFromFile() {
         Path meteorFolder = FabricLoader.getInstance().getGameDir().resolve("meteor-client");
         File file = meteorFolder.resolve("storysign.txt").toFile();
-
         if (file.exists()) {
             try(Stream<String> lineStream = Files.lines(file.toPath())) {
                 storyText.addAll(Arrays.stream(lineStream.collect(Collectors.joining(" ")).split(" ")).toList());
@@ -680,7 +606,6 @@ public class SignatureSign extends Module {
                     if (mc.player != null) {
                         MsgUtil.sendModuleMsg("Created storysign.txt in your meteor-client folder§a..!", this.name);
                         Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, meteorFolder.toFile().getAbsolutePath()));
-
                         MsgUtil.sendModuleMsg("Click §2§lhere §r§7to open the folder.", style, this.name);
                     }
                 }
@@ -692,27 +617,22 @@ public class SignatureSign extends Module {
                 storyText.add("/meteor-client");
                 return;
             }
-
             storyText.add("File was empty.");
             storyText.add("Please use the");
             storyText.add("storysign.txt in");
             storyText.add("/meteor-client");
         }
     }
-
     private List<String> getNextLinesOfStory() {
         List<String> storyLines = new ArrayList<>();
-
         TextRenderer textRenderer = mc.textRenderer;
         if (redo.get()) {
             storyIndex -= lastIndexAmount;
             redo.set(false);
         }
-
         lastIndexAmount = 0;
         for (int n = 0; n < 4; n++) {
             StringBuilder line = new StringBuilder();
-
             for (int i = storyIndex; i < storyText.size(); i++) {
                 if (storyText.get(i).trim().isEmpty()) {
                     ++storyIndex;
@@ -720,27 +640,21 @@ public class SignatureSign extends Module {
                     continue;
                 }
                 if (textRenderer.getWidth(line.toString()) >= 87) break;
-
                 if (textRenderer.getWidth(storyText.get(i).trim()) > 87) {
                     if (!line.isEmpty()) break;
                     line.append(textRenderer.trimToWidth(storyText.get(i).trim(), 85));
-
                     ++storyIndex;
                     ++lastIndexAmount;
                     break;
                 }
-
                 if (textRenderer.getWidth(line + storyText.get(i).trim()) > 87) break;
-
                 if (line.isEmpty()) line.append(storyText.get(i).trim());
                 else line.append(" ").append(storyText.get(i).trim());
-
                 ++storyIndex;
                 ++lastIndexAmount;
             }
             storyLines.add(line.toString());
         }
-
         if (storyIndex >= storyText.size() - 1) {
             storyText.clear();
             storyIndex = 0;
@@ -751,10 +665,8 @@ public class SignatureSign extends Module {
                 mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.77f, 0.77f);
             }
         }
-
         return storyLines;
     }
-
     private String getTimestamp(int line) {
         LocalDate currentDate = LocalDate.now();
         DateTimeFormatter mmddyy = DateTimeFormatter.ofPattern("MM/dd/yy");
@@ -763,15 +675,13 @@ public class SignatureSign extends Module {
         DateTimeFormatter ddmmyyyy = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter yyyymmdd = DateTimeFormatter.ofPattern("yyyy/MM/dd");
         DateTimeFormatter yyyyddmm = DateTimeFormatter.ofPattern("yyyy/dd/MM");
-
         String currentMonth = "" + currentDate.getMonth().name().charAt(0);
         if (shortenedMonth.get()) {
-            currentMonth += currentDate.getMonth().name().toLowerCase().substring(1,3); // :3
+            currentMonth += currentDate.getMonth().name().toLowerCase().substring(1,3);
         }
         else{
             currentMonth += currentDate.getMonth().name().substring(1).toLowerCase();
         }
-
         switch (line) {
             case 1 -> {
                 return switch (line1TimestampTypeFront.get()) {
@@ -854,15 +764,12 @@ public class SignatureSign extends Module {
             }
         }
     }
-
     private void openMeteorFolder() {
         StardustUtil.openFile("meteor-client");
         openFolder.set(false);
     }
-
     private String dayOfMonthSuffix(int dom) {
         String day = String.valueOf(dom);
-
         if (!day.endsWith("11") && day.endsWith("1")) {
             return day+"st";
         } else if (!day.endsWith("12") && day.endsWith("2")) {
@@ -873,7 +780,6 @@ public class SignatureSign extends Module {
             return day+"th";
         }
     }
-
     private String rot13(String input) {
         StringBuilder rot = new StringBuilder();
         for (int i = 0; i < input.length(); i++) {
@@ -889,14 +795,11 @@ public class SignatureSign extends Module {
         }
         return rot.toString();
     }
-
     private void interactSign(SignBlockEntity sbe, Item dye) {
         if (mc.player == null || mc.interactionManager == null) return;
-
         BlockPos pos = sbe.getPos();
         Vec3d hitVec = Vec3d.ofCenter(pos);
         BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getHorizontalFacing().getOpposite(), pos, false);
-
         ItemStack current = mc.player.getInventory().getMainHandStack();
         if (current.getItem() != dye) {
             for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -905,7 +808,6 @@ public class SignatureSign extends Module {
                     if (current.getItem() instanceof SignItem && current.getCount() > 1) dyeSlot = n;
                     if (n < 9) InvUtils.swap(n, true);
                     else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
-
                     timer = 3;
                     return;
                 }
@@ -918,7 +820,6 @@ public class SignatureSign extends Module {
             );
             ++rotationPriority;
         }
-
         if (dye == Items.GLOW_INK_SAC) {
             signsToGlowInk.remove(sbe);
             if (!signsToWax.contains(sbe) && !signsToColor.contains(sbe)) timer = -1;
@@ -930,24 +831,20 @@ public class SignatureSign extends Module {
             if (!signsToGlowInk.contains(sbe) && !signsToWax.contains(sbe)) timer = -1;
         }
     }
-
     @EventHandler
     private void onScreenOpened(OpenScreenEvent event) {
         if (!(event.screen instanceof AbstractSignEditScreen editScreen)) return;
         SignBlockEntity sign = ((AbstractSignEditScreenAccessor) editScreen).getBlockEntity();
-
         Modules mods = Modules.get();
         if (mods == null) return;
         SignHistorian sh = mods.get(SignHistorian.class);
         if (sh.isActive() && sh.getRestoration(sign) != null) return;
-
         if (autoConfirm.get()) {
             event.cancel();
             SignText signature = getSignature(sign);
             List<String> msgs = Arrays.stream(signature.getMessages(false)).map(Text::getString).toList();
             String[] messages = new String[msgs.size()];
             messages = msgs.toArray(messages);
-
             if (packetQueue.isEmpty()) packetTimer = 0;
             packetQueue.addLast(new UpdateSignC2SPacket(
                 sign.getPos(), true, messages[0], messages[1], messages[2], messages[3]
@@ -958,13 +855,11 @@ public class SignatureSign extends Module {
             }
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
         if (!Utils.canUpdate()) return;
         if (mc.getNetworkHandler() == null) return;
-
         if (!packetQueue.isEmpty()) {
             ++packetTimer;
             if (packetTimer >= packetDelay.get()) {
@@ -977,9 +872,7 @@ public class SignatureSign extends Module {
             MeteorClient.EVENT_BUS.unsubscribe(this);
             return;
         }
-
         if (mc.currentScreen != null) return;
-
         if (timer == -1) {
             if (dyeSlot != -1) {
                 if (dyeSlot < 9) InvUtils.swapBack();
@@ -988,7 +881,6 @@ public class SignatureSign extends Module {
                 timer = 3;
             }
         }
-
         WaxAura waxAura = Modules.get().get(WaxAura.class);
         if (!signsToColor.isEmpty() || !signsToGlowInk.isEmpty() || !signsToWax.isEmpty()) {
             if (waxAura.isActive()) {
@@ -996,11 +888,9 @@ public class SignatureSign extends Module {
                 didDisableWaxAura = true;
             }
         }
-
         ++timer;
         if (timer >= 5) {
             timer = 0;
-
             signsToWax.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
             signsToColor.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
             signsToGlowInk.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
@@ -1011,7 +901,6 @@ public class SignatureSign extends Module {
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();
-
                 if (!signs.isEmpty()) {
                     SignBlockEntity sbe = signs.get(0);
                     interactSign(sbe, DyeItem.byColor(signColor.get()));
@@ -1025,7 +914,6 @@ public class SignatureSign extends Module {
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();
-
                 if (!signs.isEmpty()) {
                     SignBlockEntity sbe = signs.get(0);
                     interactSign(sbe, Items.GLOW_INK_SAC);
@@ -1039,7 +927,6 @@ public class SignatureSign extends Module {
                     .filter(sbe -> Arrays.stream(sbe.getFrontText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty())
                         || Arrays.stream(sbe.getBackText().getMessages(false)).anyMatch(msg -> !msg.getString().isEmpty()))
                     .toList();
-
                 if (!signs.isEmpty()) {
                     SignBlockEntity sbe = signs.get(0);
                     interactSign(sbe, Items.HONEYCOMB);

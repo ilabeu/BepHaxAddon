@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import bep.hax.config.StardustConfig;
@@ -17,27 +16,19 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.screen.SplashTextRenderer;
 import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
     @Unique
     private static final ServerInfo OLD_SERVER = new ServerInfo("2b2t", "2b2t.org", ServerInfo.ServerType.OTHER);
-
     @Shadow
     private @Nullable SplashTextRenderer splashText;
-
     protected TitleScreenMixin(Text title) {
         super(title);
     }
-
     @Unique
     private int timer = 0;
     @Unique
     private @Nullable MinecraftClient mc = null;
-
     @Unique
     private void onClick2b2tButton(ButtonWidget btn) {
         if (mc == null) mc = MinecraftClient.getInstance();
@@ -45,7 +36,6 @@ public abstract class TitleScreenMixin extends Screen {
             ServerAddress.parse(OLD_SERVER.address), OLD_SERVER, true, null
         );
     }
-
     @Inject(method = "init", at = @At("TAIL"))
     private void mixinInit(CallbackInfo ci) {
         if (StardustConfig.directConnectButtonSetting.get()) {
@@ -56,14 +46,12 @@ public abstract class TitleScreenMixin extends Screen {
             );
         }
     }
-
     @Inject(method = "tick", at = @At("HEAD"))
     private void mixinTick(CallbackInfo ci) {
         if (mc == null) {
             mc = MinecraftClient.getInstance();
             return;
         }
-
         ++timer;
         if (timer >= 420 && StardustConfig.rotateSplashTextSetting.get()) {
             timer = 0;

@@ -11,7 +11,11 @@
     "defaultRequire": 0
   },
   "mixins": [
+    "AutoEatMixin",
     "AutoLogMixin",
+    "AutoTrapMixin",
+    "CrystalAuraMixin",
+    "KillAuraMixin",
     "FreecamMixin",
     "WHeaderMixin",
     "WWindowMixin",
@@ -27,6 +31,8 @@
     "BetterTooltipsMixin",
     "MeteorGuiThemeMixin",
     "PacketCancellerMixin",
+    "NoSlowMixin",
+    "ClientPlayerEntityGrimV3Mixin",
     "accessor.SettingAccessor",
     "accessor.CategoryAccessor"
   ]

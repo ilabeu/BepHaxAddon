@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.modules.BepMine;
 import bep.hax.modules.RapidFire;
 import meteordevelopment.meteorclient.systems.modules.Modules;
@@ -12,12 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 @Mixin(ClientPlayerInteractionManager.class)
 public abstract class ClientPlayerInteractionManagerMixin {
-
     @Shadow private float currentBreakingProgress;
-
     @Inject(method = "stopUsingItem", at = @At("HEAD"), cancellable = true)
     private void preventCrossbowUseReset(CallbackInfo ci) {
         Modules mods = Modules.get();
@@ -26,7 +22,6 @@ public abstract class ClientPlayerInteractionManagerMixin {
         if (!rf.isActive() || !rf.charging) return;
         ci.cancel();
     }
-
     @Inject(method = "updateBlockBreakingProgress", at = @At("HEAD"), cancellable = true)
     private void onUpdateBlockBreakingProgress(BlockPos pos, Direction direction, CallbackInfoReturnable<Boolean> cir) {
         BepMine bepMine = Modules.get().get(BepMine.class);

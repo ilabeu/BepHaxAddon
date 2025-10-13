@@ -1,7 +1,5 @@
 package bep.hax.util;
-
 import bep.hax.Bep;
-
 public class LogUtil {
     public static void info(String msg) {
         Bep.LOG.info("{} {}", MsgUtil.getRawPrefix(), msg);

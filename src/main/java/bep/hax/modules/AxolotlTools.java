@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.*;
 import bep.hax.Bep;
 import net.minecraft.item.Item;
@@ -33,24 +32,17 @@ import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.render.WireframeEntityRenderer;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class AxolotlTools extends Module {
     public AxolotlTools() {
         super(Bep.STARDUST, "AxolotlTools", "Extrasensory perception for axolotl variants, auto-collector & auto-breeder.");
     }
-
     public enum InteractionMode { Full, Trigger }
     public enum EspMode { Sides, Lines, Both, None }
     public enum AxolotlMode { None, Breed, Catch, Release }
     public enum VariantBehavior { @SuppressWarnings("unused") Esp, Interact, Both, None }
-
     private final SettingGroup sgEsp = settings.createGroup("Esp Settings");
     private final SettingGroup sgAuto = settings.createGroup("AutoCatch/Breed Settings");
     private final SettingGroup sgVariantChoices = settings.createGroup("Variant Settings");
-
     private final Setting<Boolean> espVariants = sgEsp.add(
         new BoolSetting.Builder()
             .name("ESP")
@@ -58,7 +50,6 @@ public class AxolotlTools extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> espTracers = sgEsp.add(
         new BoolSetting.Builder()
             .name("tracers")
@@ -66,7 +57,6 @@ public class AxolotlTools extends Module {
             .visible(espVariants::get)
             .build()
     );
-
     private final Setting<EspMode> espMode = sgEsp.add(
         new EnumSetting.Builder<EspMode>()
             .name("wireframe-mode")
@@ -74,7 +64,6 @@ public class AxolotlTools extends Module {
             .visible(espVariants::get)
             .build()
     );
-
     private final Setting<Integer> sidesAlpha = sgEsp.add(
         new IntSetting.Builder()
             .name("sides-alpha")
@@ -84,7 +73,6 @@ public class AxolotlTools extends Module {
             .visible(espVariants::get)
             .build()
     );
-
     private final Setting<Integer> linesAlpha = sgEsp.add(
         new IntSetting.Builder()
             .name("lines-alpha")
@@ -94,7 +82,6 @@ public class AxolotlTools extends Module {
             .visible(espVariants::get)
             .build()
     );
-
     private final Setting<AxolotlMode> axolotlMode = sgAuto.add(
         new EnumSetting.Builder<AxolotlMode>()
             .name("axolotl-mode")
@@ -105,7 +92,6 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> catchBabies = sgAuto.add(
         new BoolSetting.Builder()
             .name("catch-baby-axolotls")
@@ -114,7 +100,6 @@ public class AxolotlTools extends Module {
             .visible(() -> axolotlMode.get().equals(AxolotlMode.Catch))
             .build()
     );
-
     private final Setting<Boolean> onlyCatchBabies = sgAuto.add(
         new BoolSetting.Builder()
             .name("only-catch-babies")
@@ -122,7 +107,6 @@ public class AxolotlTools extends Module {
             .visible(() -> catchBabies.get() && catchBabies.isVisible())
             .build()
     );
-
     private final Setting<Boolean> feedBabies = sgAuto.add(
         new BoolSetting.Builder()
             .name("feed-baby-axolotls")
@@ -131,7 +115,6 @@ public class AxolotlTools extends Module {
             .visible(() -> axolotlMode.get().equals(AxolotlMode.Breed))
             .build()
     );
-
     private final Setting<Boolean> onlyFeedBabies = sgAuto.add(
         new BoolSetting.Builder()
             .name("only-feed-babies")
@@ -140,7 +123,6 @@ public class AxolotlTools extends Module {
             .visible(() -> feedBabies.get() && feedBabies.isVisible())
             .build()
     );
-
     private final Setting<InteractionMode> interactionMode = sgAuto.add(
         new EnumSetting.Builder<InteractionMode>()
             .name("interaction-mode")
@@ -148,7 +130,6 @@ public class AxolotlTools extends Module {
             .defaultValue(InteractionMode.Trigger)
             .build()
     );
-
     private final Setting<Boolean> fillBuckets = sgAuto.add(
         new BoolSetting.Builder()
             .name("fill-buckets")
@@ -157,7 +138,6 @@ public class AxolotlTools extends Module {
             .visible(() -> interactionMode.get().equals(InteractionMode.Full))
             .build()
     );
-
     private final Setting<Boolean> emptyBuckets = sgAuto.add(
         new BoolSetting.Builder()
             .name("empty-buckets")
@@ -166,7 +146,6 @@ public class AxolotlTools extends Module {
             .visible(() -> interactionMode.get().equals(InteractionMode.Full))
             .build()
     );
-
     private final Setting<Boolean> catchFish = sgAuto.add(
         new BoolSetting.Builder()
             .name("catch-tropical-fish")
@@ -175,7 +154,6 @@ public class AxolotlTools extends Module {
             .visible(() -> axolotlMode.get().equals(AxolotlMode.None))
             .build()
     );
-
     private final Setting<Boolean> fishFarm = sgAuto.add(
         new BoolSetting.Builder()
             .name("farm-tropical-fish")
@@ -184,7 +162,6 @@ public class AxolotlTools extends Module {
             .visible(() -> catchFish.isVisible() && catchFish.get())
             .build()
     );
-
     private final Setting<Integer> tickRate = sgAuto.add(
         new IntSetting.Builder()
             .name("tick-rate")
@@ -194,7 +171,6 @@ public class AxolotlTools extends Module {
             .defaultValue(10)
             .build()
     );
-
     private final Setting<VariantBehavior> interactPink = sgVariantChoices.add(
         new EnumSetting.Builder<VariantBehavior>()
             .name("pink-variant")
@@ -207,7 +183,6 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private final Setting<VariantBehavior> interactWild = sgVariantChoices.add(
         new EnumSetting.Builder<VariantBehavior>()
             .name("brown-variant")
@@ -220,7 +195,6 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private final Setting<VariantBehavior> interactGold = sgVariantChoices.add(
         new EnumSetting.Builder<VariantBehavior>()
             .name("gold-variant")
@@ -233,7 +207,6 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private final Setting<VariantBehavior> interactCyan = sgVariantChoices.add(
         new EnumSetting.Builder<VariantBehavior>()
             .name("cyan-variant")
@@ -246,7 +219,6 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private final Setting<VariantBehavior> interactBlue = sgVariantChoices.add(
         new EnumSetting.Builder<VariantBehavior>()
             .name("blue-variant")
@@ -259,16 +231,13 @@ public class AxolotlTools extends Module {
             })
             .build()
     );
-
     private int timer = 0;
     private int rotPriority = 69420;
     private final Set<String> interactVariants = new HashSet<>();
-
     private void disableFishModes() {
         fishFarm.set(false);
         catchFish.set(false);
     }
-
     private boolean hasEmptySlots() {
         if (mc.player == null) return false;
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -276,7 +245,6 @@ public class AxolotlTools extends Module {
         }
         return false;
     }
-
     private boolean hasNoValidBucket(Item bucketType) {
         if (mc.player == null) return true;
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -284,7 +252,6 @@ public class AxolotlTools extends Module {
         }
         return true;
     }
-
     private boolean trySwapValidBucket(Item bucketType) {
         if (mc.player == null) return false;
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -297,7 +264,6 @@ public class AxolotlTools extends Module {
         }
         return false;
     }
-
     @Nullable
     private BlockPos getNearbyWaterSource(boolean toEmpty) {
         if (mc.world == null || mc.player == null) return null;
@@ -306,15 +272,12 @@ public class AxolotlTools extends Module {
         }
         return null;
     }
-
     private <T extends LivingEntity> boolean tryInteractMobFull(T entity, Item bucketType) {
         if (mc.interactionManager == null) return true;
         if (mc.player == null || mc.world == null) return true;
-
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
             ItemStack stack = mc.player.getInventory().getStack(n);
             if (!(stack.getItem() == bucketType)) continue;
-
             if (n != mc.player.getInventory().selectedSlot) {
                 if (n < 9) InvUtils.swap(n, false);
                 else InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
@@ -328,16 +291,12 @@ public class AxolotlTools extends Module {
             ++rotPriority;
             return result.get() == ActionResult.SUCCESS || result.get() == ActionResult.CONSUME;
         }
-
         MsgUtil.updateModuleMsg("No valid bucket types found in inventory§c..!", this.name, "noBucketFound".hashCode());
-
         return false;
     }
-
     private <T extends LivingEntity> boolean tryInteractMobTrigger(T entity, Item bucketType) {
         if (mc.interactionManager == null) return true;
         if (mc.player == null || mc.world == null) return true;
-
         ItemStack currentStack = mc.player.getMainHandStack();
         if (currentStack.getItem() != bucketType) {
             boolean foundBucket = false;
@@ -361,10 +320,8 @@ public class AxolotlTools extends Module {
             }
         }
         ActionResult result = mc.interactionManager.interactEntity(mc.player, entity, Hand.MAIN_HAND);
-
         return result == ActionResult.SUCCESS || result == ActionResult.CONSUME;
     }
-
     @Override
     public void onActivate() {
         switch (interactPink.get()) {
@@ -383,28 +340,23 @@ public class AxolotlTools extends Module {
             case Both, Interact -> interactVariants.add(AxolotlEntity.Variant.BLUE.toString());
         }
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
         rotPriority = 69420;
         interactVariants.clear();
     }
-
     @EventHandler private void onTick(TickEvent.Pre event) {
         if (mc.interactionManager == null) return;
         if (mc.player == null || mc.world == null) return;
         if (axolotlMode.get() == AxolotlMode.None && !catchFish.get()) return;
-
         ItemStack current = mc.player.getInventory().getMainHandStack();
         if ((current.contains(DataComponentTypes.FOOD) || Utils.isThrowable(current.getItem())) && mc.player.getItemUseTime() > 0) {
             ++timer;
             return;
         }
-
         if (timer >= tickRate.get()) {
             timer = 0;
-
             if (axolotlMode.get() != AxolotlMode.None) {
                 switch (interactionMode.get()) {
                     case Full -> {
@@ -425,7 +377,6 @@ public class AxolotlTools extends Module {
                                 return;
                             }
                         }
-
                         List<AxolotlEntity> nearby = mc.world.getEntitiesByClass(
                             AxolotlEntity.class,
                             mc.player.getBoundingBox().expand(mc.player.getEntityInteractionRange() * mc.player.getEntityInteractionRange()),
@@ -435,7 +386,6 @@ public class AxolotlTools extends Module {
                                 || (axolotlMode.get() == AxolotlMode.Breed
                                 && (feedBabies.get() ? !onlyFeedBabies.get() || ax.isBaby() : !ax.isBaby()))
                         );
-
                         double d = Double.MAX_VALUE;
                         AxolotlEntity target = null;
                         for (AxolotlEntity ax : nearby) {
@@ -444,7 +394,6 @@ public class AxolotlTools extends Module {
                                 d = mc.player.getEyePos().squaredDistanceTo(ax.getPos());
                             }
                         }
-
                         if (target != null) {
                             if (axolotlMode.get() == AxolotlMode.Catch) {
                                 if (fillBuckets.get() && hasNoValidBucket(Items.WATER_BUCKET) && current.getItem() != Items.BUCKET) {
@@ -501,7 +450,6 @@ public class AxolotlTools extends Module {
                                 if (axolotlMode.get() == AxolotlMode.Catch) {
                                     if (!catchBabies.get() && axolotl.isBaby()) return;
                                     else if (catchBabies.get() && onlyCatchBabies.get() && !axolotl.isBaby()) return;
-
                                     if (!interactVariants.contains(axolotl.getVariant().toString())) return;
                                     else if (tryInteractMobTrigger(axolotl, Items.WATER_BUCKET)) return;
                                 } else if (axolotlMode.get() == AxolotlMode.Breed) {
@@ -519,7 +467,6 @@ public class AxolotlTools extends Module {
                             }
                         } else if (axolotlMode.get() == AxolotlMode.Release) {
                             Entity camera = mc.cameraEntity;
-
                             if (camera == null) return;
                             HitResult result = camera.raycast(3, 0, true);
                             if (result.getType() == HitResult.Type.BLOCK) {
@@ -539,7 +486,6 @@ public class AxolotlTools extends Module {
                     }
                 }
             }
-
             if (catchFish.get()) {
                 switch (interactionMode.get()) {
                     case Full -> {
@@ -548,7 +494,6 @@ public class AxolotlTools extends Module {
                             mc.player.getBoundingBox().expand(mc.player.getEntityInteractionRange() * mc.player.getEntityInteractionRange()),
                             fishy -> fishy.getBlockPos().isWithinDistance(mc.player.getBlockPos(), 3)
                         );
-
                         double d = Double.MAX_VALUE;
                         TropicalFishEntity target = null;
                         for (TropicalFishEntity fish : nearby) {
@@ -557,25 +502,15 @@ public class AxolotlTools extends Module {
                                 d = mc.player.getEyePos().squaredDistanceTo(fish.getPos());
                             }
                         }
-
                         if (target != null) {
                             if (tryInteractMobFull(target, Items.WATER_BUCKET)) return;
                         }
                     }
                     case Trigger -> {
-                        // Original farm video: https://www.youtube.com/watch?v=pdDIrU4CdnU
-                        // Using this you can run a modified version of Rays Works' afk tropical fish farm on 2b2t.
-                        // Just skip the storage pool and build hoppers under your tracks and closest walls instead.
-                        // Then fill your inventory with stacks of empty buckets (but leave 1 hotbar slot empty.)
-                        // You can then run the farm without holding down RMB and the fish buckets will end up
-                        // in your hoppers, which you can hook up to a storage system below the minecart rails.
-                        // Make sure to align your crosshair so that you can't interact with anything but water & fish.
-                        // This code will keep the cycle going until your inventory runs out of empty buckets.
                         if (fishFarm.get()) {
                             if (current.getItem() != Items.BUCKET && hasNoValidBucket(Items.WATER_BUCKET)) {
                                 trySwapValidBucket(Items.BUCKET);
                             }
-
                             if (current.getItem() == Items.BUCKET && hasNoValidBucket(Items.WATER_BUCKET)) {
                                 if (hasEmptySlots() || current.getCount() == 1) {
                                     mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
@@ -588,7 +523,6 @@ public class AxolotlTools extends Module {
                                 ++timer;
                                 return;
                             }
-
                             if (!hasNoValidBucket(Items.TROPICAL_FISH_BUCKET)) {
                                 for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
                                     if (mc.player.getInventory().getStack(n).getItem() == Items.TROPICAL_FISH_BUCKET) {
@@ -599,7 +533,6 @@ public class AxolotlTools extends Module {
                                 }
                             }
                         }
-
                         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.ENTITY) {
                             EntityHitResult hit = (EntityHitResult) mc.crosshairTarget;
                             if (hit.getEntity() instanceof TropicalFishEntity fishy) {
@@ -612,17 +545,14 @@ public class AxolotlTools extends Module {
         }
         ++timer;
     }
-
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (!espVariants.get()) return;
         if (mc.player == null || mc.world == null) return;
-
         List<AxolotlEntity> axolotls = new ArrayList<>();
         for (Entity entity : mc.world.getEntities()) {
             if (entity instanceof AxolotlEntity axolotl) axolotls.add(axolotl);
         }
-
         axolotls = axolotls
             .stream()
             .filter(ax -> ax.getBlockPos()
@@ -631,7 +561,6 @@ public class AxolotlTools extends Module {
                     mc.options.getViewDistance().getValue() * 16
                 )
             ).toList();
-
         for (AxolotlEntity axolotl : axolotls) {
             SettingColor lineColor;
             SettingColor sideColor;
@@ -676,12 +605,11 @@ public class AxolotlTools extends Module {
                     lineColor = new SettingColor(77, 124, 103, linesAlpha.get());
                 }
             }
-
             switch (espMode.get()) {
                 case Lines -> WireframeEntityRenderer.render(event, axolotl, 1, sideColor, lineColor, ShapeMode.Lines);
                 case Sides -> WireframeEntityRenderer.render(event, axolotl, 1, sideColor, lineColor, ShapeMode.Sides);
                 case Both -> WireframeEntityRenderer.render(event, axolotl, 1, sideColor, lineColor, ShapeMode.Both);
-                case None -> {} // do nothing
+                case None -> {}
             }
             if (espTracers.get()) {
                 event.renderer.line(

@@ -1,8 +1,8 @@
 package bep.hax;
-
 import bep.hax.hud.*;
 import bep.hax.modules.*;
 import bep.hax.modules.searcharea.SearchArea;
+import bep.hax.config.StardustConfig;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.commands.Commands;
@@ -13,35 +13,24 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import bep.hax.managers.PacketManager;
-
-
+import net.minecraft.item.Items;
 public class Bep extends MeteorAddon {
     public static final Logger LOG = LoggerFactory.getLogger("BepHax");
-    public static final Category CATEGORY = new Category("Bephax");
-    public static final Category STASH = new Category("Stash Hunt");
-    public static final Category STARDUST= new Category("Stardust");
+    public static final Category CATEGORY = new Category("Bephax", Items.ENCHANTED_GOLDEN_APPLE.getDefaultStack());
+    public static final Category STASH = new Category("Stash Hunt", Items.ELYTRA.getDefaultStack());
+    public static final Category STARDUST = new Category("Stardust", Items.TRIDENT.getDefaultStack());
     public static final HudGroup HUD_GROUP = new HudGroup("Bephax");
-
     private PacketManager packetManager;
-
     @Override
     public void onInitialize() {
         LOG.info("BEPHAX LOADING.");
-
-        // Initialize StashMover selection handler
         bep.hax.modules.StashMoverSelectionHandler.init();
-
-        // HUD
         Hud.get().register(ItemCounterHud.INFO);
         Hud.get().register(EntityList.INFO);
         Hud.get().register(DimensionCoords.INFO);
         Hud.get().register(SpeedKMH.INFO);
         Hud.get().register(DubCounterHud.INFO);
         Hud.get().register(MobRateHud.INFO);
-        //Hud.get().register(BlockCounterHud.INFO);
-
-        Commands.add(new bep.hax.commands.IgnoreSyncCommand());
-
         Modules.get().add(new AutoSmith());
         Modules.get().add(new BepMine());
         Modules.get().add(new YawLock());
@@ -49,46 +38,32 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new ShulkerOverviewModule());
         Modules.get().add(new ItemSearchBar());
         Modules.get().add(new MineESP());
-        Modules.get().add(new Aura());
-        Modules.get().add(new Velo());
+        Modules.get().add(new Surround());
         Modules.get().add(new Phase());
         Modules.get().add(new Criticals());
-        Modules.get().add(new PearlOwner());
         Modules.get().add(new PearlLoader());
         Modules.get().add(new SignRender());
         Modules.get().add(new WheelPicker());
         Modules.get().add(new NoHurtCam());
         Modules.get().add(new ElytraSwap());
-        Modules.get().add(new IgnoreSync());
         Modules.get().add(new InvFix());
         Modules.get().add(new WebChat());
         Modules.get().add(new Replenish());
         Modules.get().add(new GhostMode());
         Modules.get().add(new AutoBreed());
-
         bep.hax.util.CapeManager.getInstance();
-
-
-        // StashMover - Automated shulker transfer system
         Modules.get().add(new StashMover());
         Commands.add(new bep.hax.commands.SetInput());
         Commands.add(new bep.hax.commands.SetOutput());
         Commands.add(new bep.hax.commands.StashStatus());
         Commands.add(new bep.hax.commands.SetClear());
-
-        // INDICA MOD https://github.com/Faye-one/INDICA
         Modules.get().add(new KillEffects());
         Modules.get().add(new RespawnPointBlocker());
         Modules.get().add(new MapDuplicator());
-
-
-        // JEFF STASH HUNTING https://github.com/miles352/meteor-stashhunting-addon
         Modules.get().add(new ElytraFlyPlusPlus());
-
         Modules.get().add(new AFKVanillaFly());
         Modules.get().add(new NoJumpDelay());
         Modules.get().add(new AutoEXPPlus());
-        Modules.get().add(new AutoLogPlus());
         Modules.get().add(new AutoPortal());
         Modules.get().add(new ChestIndex());
         Modules.get().add(new GotoPosition());
@@ -104,26 +79,15 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new SearchArea());
         Modules.get().add(new DiscordNotifs());
         Modules.get().add(new TrailMaker());
-
-
-        // HIGTools https://github.com/RedCarlos26/HIGTools
         Commands.add(new bep.hax.commands.Coordinates());
         Commands.add(new bep.hax.commands.Center());
-
-
-
-        // Meteor Rejects https://github.com/AntiCope
         Modules.get().add(new AutoCraft());
-
-        // Stardust https://github.com/0xTas/stardust
         Commands.add(new bep.hax.commands.FirstSeen2b2t());
         Commands.add(new bep.hax.commands.LastSeen2b2t());
         Commands.add(new bep.hax.commands.Playtime2b2t());
         Commands.add(new bep.hax.commands.Stats2b2t());
         Commands.add(new bep.hax.commands.Panorama());
         Commands.add(new bep.hax.commands.Loadout());
-
-        // Stardust Modules https://github.com/0xTas/stardust
         Modules.get().add(new AdBlocker());
         Modules.get().add(new Loadouts());
         Modules.get().add(new AntiToS());
@@ -150,31 +114,22 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Grinder());
         Modules.get().add(new AutoDoors());
         Modules.get().add(new AutoMason());
-
-
-        // Meteorist https://github.com/Zgoly/Meteorist/
         Modules.get().add(new DisconnectSound());
-
-
-
-
-
+        packetManager = new PacketManager();
+        StardustConfig.initialize();
     }
-
-
     @Override
     public void onRegisterCategories() {
         Modules.registerCategory(CATEGORY);
         Modules.registerCategory(STASH);
         Modules.registerCategory(STARDUST);
     }
-
-
+    @Override
+    public String getWebsite() { return "https://github.com/dekrom/BephaxAddon"; }
     @Override
     public String getPackage() {
         return "bep.hax";
     }
-
     @Override
     public GithubRepo getRepo() {
         return new GithubRepo("BepHaxAddon", "bephaxaddon");

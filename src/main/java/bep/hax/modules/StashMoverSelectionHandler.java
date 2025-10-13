@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import meteordevelopment.meteorclient.events.entity.player.InteractBlockEvent;
 import meteordevelopment.meteorclient.events.entity.player.StartBreakingBlockEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -14,23 +13,14 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
-/**
- * Static event handler for StashMover selection that works even when module is disabled
- */
 public class StashMoverSelectionHandler {
-
     private static StashMoverSelectionHandler INSTANCE;
-
     public static void init() {
         if (INSTANCE == null) {
             INSTANCE = new StashMoverSelectionHandler();
             meteordevelopment.meteorclient.MeteorClient.EVENT_BUS.subscribe(INSTANCE);
             System.out.println("[StashMover] Selection handler initialized and subscribed to events");
-
-            // Also print to game chat when loaded
             if (meteordevelopment.meteorclient.MeteorClient.mc != null && meteordevelopment.meteorclient.MeteorClient.mc.player != null) {
                 meteordevelopment.meteorclient.utils.player.ChatUtils.info("[StashMover] Selection handler ready");
             }
@@ -38,68 +28,41 @@ public class StashMoverSelectionHandler {
             System.out.println("[StashMover] Selection handler already initialized");
         }
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onInteractBlock(InteractBlockEvent event) {
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
-
-        // Check if we're in selection mode
         if (!module.isSelecting()) return;
         if (event.hand != Hand.MAIN_HAND) return;
-
-        // Cancel the interaction and handle selection
         event.cancel();
         module.handleBlockSelectionPublic(event.result.getBlockPos());
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onStartBreakingBlock(StartBreakingBlockEvent event) {
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
-
-        // Check if we're in selection mode (any selection mode, not just first click)
         if (!module.isSelecting()) return;
-
-        // ALWAYS cancel the block breaking when in selection mode
         event.cancel();
-
-        // Handle the selection
         module.handleBlockSelectionPublic(event.blockPos);
     }
-
     private boolean wasSelecting = false;
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.world == null) return;
-
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
-
-        // Check for left click on blocks while in selection mode
         if (module.isSelecting()) {
             if (!wasSelecting) {
-                // Just entered selection mode
                 wasSelecting = true;
             }
-
-            // ALWAYS prevent mining while in selection mode
-            // This is important to prevent accidental breaking of instant-mine blocks
             if (mc.options.attackKey.isPressed()) {
                 mc.options.attackKey.setPressed(false);
-
-                // Only handle selection if looking at a block
                 if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK) {
                     BlockHitResult hit = (BlockHitResult) mc.crosshairTarget;
                     BlockPos pos = hit.getBlockPos();
-
-                    // Handle the selection
                     module.handleBlockSelectionPublic(pos);
                 }
             }
-
-            // Check for ESC key to cancel selection
             if (mc.options.inventoryKey.wasPressed()) {
                 module.cancelSelection();
                 meteordevelopment.meteorclient.utils.player.ChatUtils.info("§cSelection cancelled");
@@ -109,20 +72,15 @@ public class StashMoverSelectionHandler {
             wasSelecting = false;
         }
     }
-
     @EventHandler
     private void onRender3D(Render3DEvent event) {
         StashMover module = Modules.get().get(StashMover.class);
         if (module == null) return;
-
-        // Render selection even when module is disabled
         if (module.getSelectionMode() != StashMover.SelectionMode.NONE) {
             BlockPos selectionPos1 = module.getSelectionPos1();
             if (selectionPos1 != null) {
-                // Get the block the player is looking at
                 BlockPos currentPos = mc.crosshairTarget != null && mc.crosshairTarget.getType() == HitResult.Type.BLOCK ?
                     ((BlockHitResult)mc.crosshairTarget).getBlockPos() : mc.player.getBlockPos();
-
                 Box selectionBox = new Box(
                     Math.min(selectionPos1.getX(), currentPos.getX()),
                     Math.min(selectionPos1.getY(), currentPos.getY()),
@@ -131,17 +89,12 @@ public class StashMoverSelectionHandler {
                     Math.max(selectionPos1.getY(), currentPos.getY()) + 1,
                     Math.max(selectionPos1.getZ(), currentPos.getZ()) + 1
                 );
-
                 boolean isInput = module.getSelectionMode() == StashMover.SelectionMode.INPUT_FIRST ||
                                  module.getSelectionMode() == StashMover.SelectionMode.INPUT_SECOND;
-
                 SettingColor color = isInput ?
                     new SettingColor(0, 255, 0, 100) :
                     new SettingColor(0, 100, 255, 100);
-
                 event.renderer.box(selectionBox, color, color, ShapeMode.Both, 0);
-
-                // Render corner marker
                 Box corner1 = new Box(
                     selectionPos1.getX(), selectionPos1.getY(), selectionPos1.getZ(),
                     selectionPos1.getX() + 1, selectionPos1.getY() + 1, selectionPos1.getZ() + 1
@@ -150,8 +103,6 @@ public class StashMoverSelectionHandler {
                                  new SettingColor(255, 255, 0, 100), ShapeMode.Both, 0);
             }
         }
-
-        // Render saved areas
         module.renderAreas(event);
     }
 }

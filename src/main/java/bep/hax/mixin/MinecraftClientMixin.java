@@ -1,10 +1,13 @@
 package bep.hax.mixin;
-
+import bep.hax.util.InventoryManager;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 import bep.hax.modules.RocketMan;
 import net.minecraft.sound.MusicSound;
 import bep.hax.modules.MusicTweaks;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.client.MinecraftClient;
@@ -16,15 +19,12 @@ import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(MinecraftClient.class)
 public class MinecraftClientMixin {
+    @Shadow
+    public ClientPlayerEntity player;
     @Unique
     private long lastFrameTime = System.nanoTime();
-
     @Unique
     private void changeLookDirection(ClientPlayerEntity player, double cursorDeltaX, double cursorDeltaY) {
         float f = (float) cursorDeltaY * 0.15F;
@@ -32,20 +32,15 @@ public class MinecraftClientMixin {
         player.setYaw(player.getYaw() + g);
         player.setPitch(MathHelper.clamp(player.getPitch() + f, -90.0F, 90.0F));
     }
-
-    // See RocketMan.java
     @Inject(method = "render", at = @At("HEAD"))
     private void mixinRender(CallbackInfo ci) {
         long currentTime = System.nanoTime();
         float deltaTime = (currentTime - lastFrameTime) / 10000000f;
-
         Modules modules = Modules.get();
         if (modules == null ) return;
         RocketMan rocketMan = modules.get(RocketMan.class);
         if (!rocketMan.isActive() || !rocketMan.shouldTickRotation()) return;
-
         MinecraftClient mc = rocketMan.getClientInstance();
-
         if (mc.player == null) return;
         if (!rocketMan.hoverMode.get().equals(RocketMan.HoverMode.Off)) {
             if (mc.player.input.playerInput.sneak() && !rocketMan.shouldLockYLevel() && !rocketMan.isHovering) {
@@ -60,7 +55,6 @@ public class MinecraftClientMixin {
         } else {
             boolean inverted = rocketMan.shouldInvertPitch();
             RocketMan.RocketMode mode = rocketMan.usageMode.get();
-
             switch (mode) {
                 case OnKey -> {
                     if (mc.player.input.playerInput.sneak()) {
@@ -98,7 +92,6 @@ public class MinecraftClientMixin {
                 }
             }
         }
-
         if (mc.player.input.playerInput.right() && !rocketMan.isHovering) {
             changeLookDirection(mc.player, rocketMan.getYawSpeed() * deltaTime, 0.0f);
         } else if (mc.player.input.playerInput.left() && !rocketMan.isHovering) {
@@ -108,20 +101,32 @@ public class MinecraftClientMixin {
         } else if (Input.isKeyPressed(GLFW.GLFW_KEY_LEFT)) {
             changeLookDirection(mc.player, -rocketMan.getYawSpeed() * deltaTime, 0.0f);
         }
-
         lastFrameTime = currentTime;
     }
-
-    // See MusicTweaks.java
+    @Inject(method = "doItemUse", at = @At("HEAD"))
+    private void onDoItemUse(CallbackInfo ci) {
+        if (player == null) return;
+        ItemStack mainHand = player.getMainHandStack();
+        ItemStack offHand = player.getOffHandStack();
+        boolean mainHandIsFood = !mainHand.isEmpty() && mainHand.get(DataComponentTypes.FOOD) != null;
+        boolean offHandIsFood = !offHand.isEmpty() && offHand.get(DataComponentTypes.FOOD) != null;
+        if (mainHandIsFood || offHandIsFood) {
+            InventoryManager invManager = InventoryManager.getInstance();
+            int currentSlot = player.getInventory().selectedSlot;
+            int serverSlot = invManager.getServerSlot();
+            if (serverSlot != currentSlot) {
+                invManager.setSlotForced(currentSlot);
+            }
+            invManager.setEating(true);
+        }
+    }
     @Inject(method = "getMusicInstance", at = @At("HEAD"), cancellable = true)
     public void mixinGetMusicType(CallbackInfoReturnable<MusicInstance> cir) {
         Modules modules = Modules.get();
         if (modules == null ) return;
         MusicTweaks tweaks = modules.get(MusicTweaks.class);
-
         if (tweaks == null || !tweaks.isActive()) return;
         MusicSound type = tweaks.getType();
-
         if (type != null) {
             cir.setReturnValue(new MusicInstance(type));
         }

@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.modules.ElytraFlyPlusPlus;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
@@ -11,22 +10,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import static meteordevelopment.meteorclient.utils.player.ChatUtils.info;
-
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin
 {
     @Shadow
     private int jumpingCooldown;
-
     @Shadow
     public abstract Brain<?> getBrain();
-
     Module noJumpDelay = Modules.get().get(bep.hax.modules.NoJumpDelay.class);
     ElytraFlyPlusPlus efly = Modules.get().get(ElytraFlyPlusPlus.class);
-
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;tickMovement()V")
     private void tickMovement(CallbackInfo ci)
     {
@@ -35,7 +29,6 @@ public abstract class LivingEntityMixin
             this.jumpingCooldown = 0;
         }
     }
-
     @Inject(at = @At("HEAD"), method = "Lnet/minecraft/entity/LivingEntity;isGliding()Z", cancellable = true)
     private void isGliding(CallbackInfoReturnable<Boolean> cir)
     {
@@ -44,7 +37,4 @@ public abstract class LivingEntityMixin
             cir.setReturnValue(true);
         }
     }
-
-    // We'll handle swing progress directly in the renderer instead of here
-    // This prevents conflicts with other mods and vanilla behavior
 }

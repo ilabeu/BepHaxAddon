@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import com.mojang.authlib.GameProfile;
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
@@ -14,54 +13,44 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
-
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
 import static bep.hax.util.Utils.sendWebhook;
-
-
 public class DiscordNotifs extends Module
 {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
     private final Setting<String> webhookURL = sgGeneral.add(new StringSetting.Builder()
         .name("webhook-link")
         .description("The discord webhook to use, looks like this: https://discord.com/api/webhooks/webhookUserId/webHookTokenOrSomething")
         .defaultValue("")
         .build()
     );
-
     private final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
         .name("message-delay")
         .description("The delay between messages in milliseconds.")
         .defaultValue(2000)
         .build()
     );
-
     private final Setting<Boolean> queueMessages = sgGeneral.add(new BoolSetting.Builder()
         .name("queue-messages")
         .description("Will queue messages if they are sent too quickly. This could result in a long delay between messages being logged if the queue gets too big.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> timestamp = sgGeneral.add(new BoolSetting.Builder()
         .name("timestamp")
         .description("If the message should have a timestamp.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> logAll = sgGeneral.add(new BoolSetting.Builder()
         .name("all-messages")
         .description("Logs all messages.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> connections = sgGeneral.add(new BoolSetting.Builder()
         .name("disconnect")
         .description("If a message should be logged when leaving.")
@@ -69,7 +58,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> playerRange = sgGeneral.add(new BoolSetting.Builder()
         .name("player-range")
         .description("If a message should be logged when players enter/exit your render distance.")
@@ -77,7 +65,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> queue = sgGeneral.add(new BoolSetting.Builder()
         .name("2b2t-queue")
         .description("If your position in queue should be logged.")
@@ -85,7 +72,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> whisper = sgGeneral.add(new BoolSetting.Builder()
         .name("whisper")
         .description("If whispers should be logged.")
@@ -93,7 +79,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> chat = sgGeneral.add(new BoolSetting.Builder()
         .name("chat-messages")
         .description("Logs chat messages")
@@ -101,7 +86,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> commands = sgGeneral.add(new BoolSetting.Builder()
         .name("commands-client-info")
         .description("Logs commands and most messages from clients.")
@@ -109,7 +93,6 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     private final Setting<Boolean> deathMessages = sgGeneral.add(new BoolSetting.Builder()
         .name("death-messages")
         .description("Logs death messages.")
@@ -117,12 +100,10 @@ public class DiscordNotifs extends Module
         .visible(() -> !logAll.get())
         .build()
     );
-
     public DiscordNotifs()
     {
         super(Bep.STASH, "discord-notifs", "Sends notifications to a discord webhook.");
     }
-
     @Override
     public void onActivate()
     {
@@ -130,12 +111,10 @@ public class DiscordNotifs extends Module
         playersInRange.clear();
         delayTimer = 0;
     }
-
     private long delayTimer = 0;
     private int lastQueuePos;
     private final Queue<String> messageQueue = new LinkedList<String>();
     private final Set<GameProfile> playersInRange = ConcurrentHashMap.newKeySet();
-
     @EventHandler
     private void onTick(TickEvent.Post event)
     {
@@ -147,10 +126,7 @@ public class DiscordNotifs extends Module
         {
             sendWebhookMessage(messageQueue.poll());
         }
-
         Set<UUID> uuidsCurrentlyInRange = new HashSet<>();
-
-        // Check for players entering range
         if (playerRange.get() && mc.world != null)
         {
             for (Entity entity : mc.world.getEntities())
@@ -167,8 +143,6 @@ public class DiscordNotifs extends Module
                 }
             }
         }
-
-        // Check for players leaving range
         for (GameProfile profile : playersInRange)
         {
             if (!uuidsCurrentlyInRange.contains(profile.getId()))
@@ -178,13 +152,10 @@ public class DiscordNotifs extends Module
             }
         }
     }
-
-    // For getting the queue position
     @EventHandler(priority = 999)
     private void onReceivePacket(PacketEvent.Receive event) {
         if (event.packet instanceof SubtitleS2CPacket) {
             SubtitleS2CPacket packet = (SubtitleS2CPacket) event.packet;
-            // Position in queue: 287
             String message = packet.text().getString();
             int queueIndex = message.indexOf("Position in queue: ");
             if (queueIndex != -1)
@@ -198,8 +169,6 @@ public class DiscordNotifs extends Module
             }
         }
     }
-
-    // do it first so we avoid mods altering the message, like meteors antispam
     @EventHandler(priority = 999)
     private void onMessageReceive(ReceiveMessageEvent event)
     {
@@ -215,11 +184,9 @@ public class DiscordNotifs extends Module
         }
         handleMessage(message.getString(), MessageType.NORMAL);
     }
-
     public void handleMessage(String message, MessageType messageType)
     {
         if (webhookURL.get().isBlank()) return;
-
         if (logAll.get())
         {
             sendWebhookMessage(message);
@@ -238,8 +205,8 @@ public class DiscordNotifs extends Module
         }
         else if (whisper.get()
             && !message.startsWith("<")
-            && message.contains("whispers: ") // from player
-            || message.startsWith("to ")) // to player
+            && message.contains("whispers: ")
+            || message.startsWith("to "))
         {
             sendWebhookMessage(message);
         }
@@ -258,13 +225,11 @@ public class DiscordNotifs extends Module
             sendWebhookMessage(message);
         }
     }
-
     @EventHandler
     private void onDisconnect(GameLeftEvent event)
     {
         handleMessage("Disconnected", MessageType.DISCONNECT);
     }
-
     private void sendWebhookMessage(String message)
     {
         if (delayTimer > 0)
@@ -284,10 +249,8 @@ public class DiscordNotifs extends Module
             "\"embeds\": [{" +
             "\"description\": \"" + message + "\"" +
             "}]}";
-        // use threads so the game doesnt lag when sending a ton of webhooks
         new Thread(() -> sendWebhook(webhookURL.get(), json, null)).start();
     }
-
     public enum MessageType
     {
         NORMAL,

@@ -19,9 +19,8 @@
     "DisconnectedScreenMixin",
     "DrawContextMixin",
     "ElytraSoundInstanceMixin",
-    "EntityMixin",
-    "EntityMixin2",
-    "EntityRendererMixin",
+    "EntityMixin$EntityHooks",
+    "EntityMixin$EntityRendererHooks",
     "GrimScaffoldMixin",
     "GameMenuScreenMixin",
     "GameRendererMixin",
@@ -62,6 +61,7 @@
     "accessor.PlayerMoveC2SPacketAccessor",
     "accessor.SourceManagerAccessor",
     "accessor.StyleAccessor",
+    "accessor.UpdateSelectedSlotS2CPacketAccessor",
     "XaeroDrawingMixin"
 
   ],
@@ -69,7 +69,6 @@
     "defaultRequire": 1
   },
   "mixins": [    "WorldMixin",
-    "EntityMixin",
     "ItemStackMixin",
     "DoorBlockMixin",
     "PlayerEntityMixin",

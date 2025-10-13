@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.io.*;
 import java.util.Map;
 import java.util.HashMap;
@@ -26,16 +25,9 @@ import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class Loadouts extends Module {
     public Loadouts() { super(Bep.STARDUST, "Loadouts", "Save and load inventory configurations."); }
-
     public static final String LOADOUTS_FILE = "meteor-client/loadouts.json";
-
-    // See InventoryScreenMixin.java
     public final Setting<Boolean> quickLoadout = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("quick-loadout-buttons")
@@ -43,7 +35,6 @@ public class Loadouts extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> chatNotify = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("chat-notify")
@@ -51,7 +42,6 @@ public class Loadouts extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> debug = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("debug")
@@ -59,7 +49,6 @@ public class Loadouts extends Module {
             .visible(() -> false)
             .build()
     );
-
     private final Setting<Integer> tickRateSetting = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-rate")
@@ -68,19 +57,16 @@ public class Loadouts extends Module {
             .defaultValue(3)
             .build()
     );
-
     private int ticks = 0;
     public boolean isSorted = true;
     private boolean doubleTap = false;
     private String activeLoadoutKey = "quicksave";
     private final ArrayDeque<Pair<Integer, Integer>> jobs = new ArrayDeque<>();
     private final HashMap<String, HashMap<Integer, Item>> loadouts = new HashMap<>();
-
     @Override
     public void onActivate() {
         loadLoadoutsFromFile();
     }
-
     @Override
     public void onDeactivate() {
         ticks = 0;
@@ -90,8 +76,6 @@ public class Loadouts extends Module {
         saveLoadoutsToFile();
         activeLoadoutKey = "quicksave";
     }
-
-    // See Loadout.java
     public void clearLoadouts() {
         loadouts.clear();
         saveLoadoutsToFile();
@@ -103,24 +87,20 @@ public class Loadouts extends Module {
     public boolean noLoadout(String name) {
         return !loadouts.containsKey(name);
     }
-
     private void loadLoadoutsFromFile() {
         if (!StardustUtil.checkOrCreateFile(mc, LOADOUTS_FILE)) {
             LogUtil.error("Error checking loadouts file for loading..!", this.name);
         }
-
         Gson gson = new Gson();
         try (Reader reader = new FileReader(LOADOUTS_FILE)) {
             Type type = new TypeToken<HashMap<String, HashMap<Integer, String>>>() {}.getType();
             HashMap<String, HashMap<Integer, String>> loaded = gson.fromJson(reader, type);
-
             loadouts.clear();
             for (Map.Entry<String, HashMap<Integer, String>> entry : loaded.entrySet()) {
                 HashMap<Integer, Item> itemMap = new HashMap<>();
                 for (Map.Entry<Integer, String> itemId : entry.getValue().entrySet()) {
                     itemMap.put(itemId.getKey(), Registries.ITEM.get(Identifier.of(itemId.getValue())));
                 }
-
                 loadouts.put(entry.getKey(), itemMap);
                 LogUtil.info("Successfully loaded loadouts from file..!", this.name);
             }
@@ -128,12 +108,10 @@ public class Loadouts extends Module {
             LogUtil.error("Error loading loadouts from file..! - Why: " + err, this.name);
         }
     }
-
     private void saveLoadoutsToFile() {
         if (!StardustUtil.checkOrCreateFile(mc, LOADOUTS_FILE)) {
             LogUtil.error("Error checking loadouts file for saving..!", this.name);
         }
-
         Gson gson = new Gson();
         try (Writer writer = new FileWriter(LOADOUTS_FILE)) {
             HashMap<String, HashMap<Integer, String>> itemNameMap = new HashMap<>();
@@ -142,37 +120,30 @@ public class Loadouts extends Module {
                 for (Map.Entry<Integer, Item> itemEntry : entry.getValue().entrySet()) {
                     nameMap.put(itemEntry.getKey(), Registries.ITEM.getId(itemEntry.getValue()).toString());
                 }
-
                 itemNameMap.put(entry.getKey(), nameMap);
             }
-
             gson.toJson(itemNameMap, writer);
             LogUtil.info("Successfully saved loadouts to file..!", this.name);
         } catch (Exception err) {
             LogUtil.error("Error saving loadouts to file..! - Why: " + err, this.name);
         }
     }
-
     private boolean isLoaded(String loadoutKey) {
         if (loadouts.isEmpty()) return true;
         if (mc.player == null) return true;
         if (!loadouts.containsKey(loadoutKey)) return true;
         if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler handler)) return true;
-
         HashMap<Integer, Item> loadout = loadouts.get(loadoutKey);
         for (int n = PlayerScreenHandler.EQUIPMENT_START; n < handler.slots.size(); n++) {
             if (!loadout.containsKey(n)) continue;
             ItemStack stack = handler.getSlot(n).getStack();
             if (!stack.isOf(loadout.get(n))) return false;
         }
-
         return true;
     }
-
     public void saveLoadout(String name) {
         if (mc.player == null) return;
         if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler handler)) return;
-
         HashMap<Integer, Item> loadout = new HashMap<>();
         for (int n = PlayerScreenHandler.EQUIPMENT_START; n < handler.slots.size(); n++) {
             ItemStack stack = handler.getSlot(n).getStack();
@@ -181,22 +152,18 @@ public class Loadouts extends Module {
             }
         }
         loadouts.put(name, loadout);
-
         saveLoadoutsToFile();
         if (chatNotify.get()) {
             MsgUtil.sendModuleMsg("§oLoadout \"§a§o" + name + "§7§o\" saved successfully§8§o.", this.name);
         }
     }
-
     public void loadLoadout(String name) {
         if (mc.player == null) return;
         if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler handler)) return;
-
         if (loadouts.isEmpty() || !loadouts.containsKey(name) || loadouts.get(name).isEmpty()) {
             MsgUtil.sendModuleMsg("§oNo loadout \"§3§o" + name + "§7§o\" saved§c§o..!", this.name);
             return;
         }
-
         jobs.clear();
         activeLoadoutKey = name;
         ArrayList<Integer> sorted = new ArrayList<>();
@@ -205,7 +172,6 @@ public class Loadouts extends Module {
         for (int to = PlayerScreenHandler.EQUIPMENT_START; to < handler.slots.size(); to++) {
             Item assigned = loadout.get(to);
             if (assigned == null) continue;
-
             ItemStack current = handler.getSlot(to).getStack();
             if (debug.get()) {
                 LogUtil.info(
@@ -213,13 +179,11 @@ public class Loadouts extends Module {
                         + " | Current: " + current.getName().getString(), this.name
                 );
             }
-
             if (current.isOf(assigned)) {
                 if (debug.get()) LogUtil.info("Slot already sorted..!", this.name);
                 sorted.add(to);
                 continue;
             }
-
             for (int from = PlayerScreenHandler.EQUIPMENT_START; from < handler.slots.size(); from++) {
                 if (to == from || sorted.contains(from)) continue;
                 ItemStack occupiedBy;
@@ -239,7 +203,6 @@ public class Loadouts extends Module {
                         sorted.add(from);
                         continue;
                     }
-
                     if (!current.isEmpty()) {
                         sorted.add(to);
                         changedSlots.put(from, current);
@@ -250,7 +213,6 @@ public class Loadouts extends Module {
                         changedSlots.remove(from);
                         jobs.addLast(new Pair<>(from, to));
                     }
-
                     if (debug.get()) {
                         LogUtil.info(
                             "Moving stack: " + occupiedBy.getName().getString()
@@ -262,13 +224,10 @@ public class Loadouts extends Module {
             }
         }
     }
-
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
         if (!(mc.player.currentScreenHandler instanceof PlayerScreenHandler)) return;
-
         ++ticks;
         if (ticks >= tickRateSetting.get()) {
             ticks = 0;
@@ -285,7 +244,6 @@ public class Loadouts extends Module {
                     isSorted = true;
                     doubleTap = false;
                 }
-
                 if (isSorted && chatNotify.get()) {
                     MsgUtil.sendModuleMsg(
                         "§oInventory sorted according to the loadout \"§a§o"

@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import net.minecraft.item.Items;
 import bep.hax.util.MsgUtil;
 import net.minecraft.item.ItemStack;
@@ -23,18 +22,11 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.systems.modules.player.AutoMend;
 import meteordevelopment.meteorclient.systems.modules.player.EXPThrower;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- *     Adds wearable elytra mending to Meteor's built-in AutoMend module.
- **/
 @Mixin(value = AutoMend.class, remap = false)
 public abstract class AutoMendMixin extends Module {
     public AutoMendMixin(Category category, String name, String description) {
         super(category, name, description);
     }
-
     @Shadow
     private boolean didMove;
     @Shadow
@@ -45,7 +37,6 @@ public abstract class AutoMendMixin extends Module {
     private Setting<Boolean> autoDisable;
     @Shadow
     protected abstract int getEmptySlot();
-
     @Unique
     private boolean notified = false;
     @Unique
@@ -62,10 +53,8 @@ public abstract class AutoMendMixin extends Module {
     @Unique
     @Nullable
     private Setting<Boolean> ignoreOffhand = null;
-
     @Unique
     private int timer = 0;
-
     @Unique
     private void replaceElytra() {
         if (mc.player == null) return;
@@ -79,7 +68,6 @@ public abstract class AutoMendMixin extends Module {
                 }
             }
         }
-
         if (!notified) {
             if (mendElytrasOnly != null && mendElytrasOnly.get()
                 && ignoreOffhand != null && ignoreOffhand.get() && autoDisable.get()) {
@@ -96,7 +84,6 @@ public abstract class AutoMendMixin extends Module {
             notified = true;
         }
     }
-
     @Unique
     private int getDamagedElytraSlot() {
         if (mc.player == null) return -1;
@@ -110,7 +97,6 @@ public abstract class AutoMendMixin extends Module {
         }
         return -1;
     }
-
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/player/AutoMend;autoDisable:Lmeteordevelopment/meteorclient/settings/Setting;"))
     private void addElytraMendSettings(CallbackInfo ci) {
         wearMendElytras = sgGeneral.add(
@@ -143,18 +129,15 @@ public abstract class AutoMendMixin extends Module {
                 .build()
         );
     }
-
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
     private void hijackOnTick(CallbackInfo ci) {
         if (mc.player == null) return;
         if (wearMendElytras == null || !wearMendElytras.get()) return;
         ItemStack chest = mc.player.getEquippedStack(EquipmentSlot.CHEST);
         if (chest.isEmpty() || chest.getItem() != Items.ELYTRA || !Utils.hasEnchantment(chest, Enchantments.MENDING) || chest.getDamage() <= 0) {
-            // momentarily pause EXPThrower to prevent inventory thrashing
             if (auto != null && auto.get() && Modules.get().isActive(EXPThrower.class)) Modules.get().get(EXPThrower.class).toggle();
             replaceElytra();
         }
-
         if (auto != null && auto.get() && !Modules.get().isActive(EXPThrower.class)) {
             ++timer;
             if (timer >= 20) {
@@ -162,7 +145,6 @@ public abstract class AutoMendMixin extends Module {
                 Modules.get().get(EXPThrower.class).toggle();
             }
         }
-
         if (ignoreOffhand != null && ignoreOffhand.get()) {
             ci.cancel();
         } else if (mendElytrasOnly != null && mendElytrasOnly.get()) {
@@ -191,7 +173,6 @@ public abstract class AutoMendMixin extends Module {
             }
         }
     }
-
     @Inject(method = "onActivate", at = @At("TAIL"))
     private void resetNotified(CallbackInfo ci) {
         notified = false;

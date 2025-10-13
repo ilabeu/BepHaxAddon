@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.*;
 import java.io.File;
 import java.util.List;
@@ -59,30 +58,22 @@ import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class ChatSigns extends Module {
     public ChatSigns() {
         super(Bep.STARDUST, "ChatSigns", "Read nearby signs in your chat.");
     }
-
     public enum ChatMode {
         ESP, Targeted, Both
     }
     public enum RepeatMode {
         Cooldown, Focus
     }
-
     private final String BLACKLIST_FILE = "meteor-client/chatsigns-blacklist.txt";
-
     private final SettingGroup modesGroup = settings.createGroup("Modes", true);
     private final SettingGroup formatGroup = settings.createGroup("Formatting", true);
     private final SettingGroup oldSignGroup = settings.createGroup("OldSigns Settings", true);
     private final SettingGroup blacklistGroup = settings.createGroup("SignText Blacklist", true);
     private final SettingGroup signBoardGroup = settings.createGroup("Sign Cluster Settings", true);
-
     private final Setting<ChatMode> chatMode = modesGroup.add(
         new EnumSetting.Builder<ChatMode>()
             .name("chat-mode")
@@ -90,7 +81,6 @@ public class ChatSigns extends Module {
             .defaultValue(ChatMode.Both)
             .build()
     );
-
     private final Setting<RepeatMode> repeatMode = modesGroup.add(
         new EnumSetting.Builder<RepeatMode>()
             .name("repeat-mode")
@@ -99,7 +89,6 @@ public class ChatSigns extends Module {
             .visible(() -> chatMode.get() != ChatMode.ESP)
             .build()
     );
-
     private final Setting<Integer> repeatSeconds = modesGroup.add(
         new IntSetting.Builder()
             .name("repeat-cooldown")
@@ -110,7 +99,6 @@ public class ChatSigns extends Module {
             .defaultValue(10)
             .build()
     );
-
     private final Setting<Integer> chatSpeed = modesGroup.add(
         new IntSetting.Builder()
             .name("chat-speed")
@@ -120,7 +108,6 @@ public class ChatSigns extends Module {
             .defaultValue(0)
             .build()
     );
-
     private final Setting<Boolean> showOldSigns  = oldSignGroup.add(
         new BoolSetting.Builder()
             .name("show-old-signs*")
@@ -128,7 +115,6 @@ public class ChatSigns extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> onlyOldSigns = oldSignGroup.add(
         new BoolSetting.Builder()
             .name("only-show-old-signs")
@@ -137,7 +123,6 @@ public class ChatSigns extends Module {
             .visible(showOldSigns::get)
             .build()
     );
-
     private final Setting<Boolean> ignoreNether = oldSignGroup.add(
         new BoolSetting.Builder()
             .name("ignore-nether")
@@ -146,7 +131,6 @@ public class ChatSigns extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> ignoreDuplicates = modesGroup.add(
         new BoolSetting.Builder()
             .name("ignore-duplicates")
@@ -154,7 +138,6 @@ public class ChatSigns extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<TextColor> signColor = formatGroup.add(
         new EnumSetting.Builder<TextColor>()
             .name("sign-color")
@@ -162,7 +145,6 @@ public class ChatSigns extends Module {
             .defaultValue(TextColor.Light_Gray)
             .build()
     );
-
     private final Setting<TextFormat> textFormat = formatGroup.add(
         new EnumSetting.Builder<TextFormat>()
             .name("text-formatting")
@@ -170,7 +152,6 @@ public class ChatSigns extends Module {
             .defaultValue(TextFormat.Italic)
             .build()
     );
-
     private final Setting<TextColor> oldSignColor = oldSignGroup.add(
         new EnumSetting.Builder<TextColor>()
             .name("old-sign-color")
@@ -179,7 +160,6 @@ public class ChatSigns extends Module {
             .visible(showOldSigns::get)
             .build()
     );
-
     private final Setting<TextFormat> oldSignFormat = oldSignGroup.add(
         new EnumSetting.Builder<TextFormat>()
             .name("old-text-format")
@@ -188,28 +168,24 @@ public class ChatSigns extends Module {
             .visible(showOldSigns::get)
             .build()
     );
-
     private final Setting<Boolean> chatFormat = formatGroup.add(new BoolSetting.Builder()
         .name("fancy-display")
         .description("Displays each line of the sign on separate lines in chat.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> showCoords = formatGroup.add(new BoolSetting.Builder()
         .name("show-coordinates")
         .description("Display sign coordinates in chat.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<Boolean> renderOldSigns = oldSignGroup.add(new BoolSetting.Builder()
         .name("oldSign-ESP")
         .description("Render signs which could be old through walls.")
         .defaultValue(false)
         .build()
     );
-
     private final Setting<ESPBlockData> espSettings = oldSignGroup.add(new GenericSetting.Builder<ESPBlockData>()
         .name("ESP-settings")
         .defaultValue(
@@ -223,7 +199,6 @@ public class ChatSigns extends Module {
         )
         .build()
     );
-
     private final Setting<ESPBlockData> clickESPSettings = formatGroup.add(new GenericSetting.Builder<ESPBlockData>()
         .name("clickESP-settings")
         .description("Click on a chat entry to ESP the sign it belongs to. Click again or toggle the module to disable.")
@@ -238,7 +213,6 @@ public class ChatSigns extends Module {
         )
         .build()
     );
-
     private final Setting<Integer> clickESPTimeout = formatGroup.add(
         new IntSetting.Builder()
             .name("clickESP-timeout-seconds")
@@ -246,7 +220,6 @@ public class ChatSigns extends Module {
             .range(0, 1200).sliderRange(0, 120).defaultValue(30)
             .build()
     );
-
     private final Setting<Boolean> signBoardWaypoints = signBoardGroup.add(
         new BoolSetting.Builder()
             .name("signBoard-waypoints")
@@ -287,7 +260,6 @@ public class ChatSigns extends Module {
             .visible(() -> StardustUtil.XAERO_AVAILABLE && signBoardWaypoints.get())
             .build()
     );
-
     private final Setting<Boolean> signBoardAutoLog = signBoardGroup.add(
         new BoolSetting.Builder()
             .name("signBoard-autoDisconnect")
@@ -295,7 +267,6 @@ public class ChatSigns extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> forceKick = signBoardGroup.add(
         new BoolSetting.Builder()
             .name("force-kick")
@@ -303,7 +274,6 @@ public class ChatSigns extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> signBoardAutoLogAmount = signBoardGroup.add(
         new IntSetting.Builder()
             .name("signBoard-autoLog-threshold")
@@ -311,7 +281,6 @@ public class ChatSigns extends Module {
             .range(1, 1200).sliderRange(1, 120).defaultValue(5)
             .build()
     );
-
     private final Setting<Boolean> signBlacklist = blacklistGroup.add(
         new BoolSetting.Builder()
             .name("signText-blacklist")
@@ -330,7 +299,6 @@ public class ChatSigns extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> caseSensitive = blacklistGroup.add(
         new BoolSetting.Builder()
             .name("case-sensitive-blacklist")
@@ -339,7 +307,6 @@ public class ChatSigns extends Module {
             .visible(signBlacklist::get)
             .build()
     );
-
     private final Setting<Boolean> openBlacklistFile = blacklistGroup.add(
         new BoolSetting.Builder()
             .name("open-blacklist-file")
@@ -354,7 +321,6 @@ public class ChatSigns extends Module {
             })
             .build()
     );
-
     private int timer = 0;
     private int chatTimer = 0;
     private int clusterAmount = 0;
@@ -374,39 +340,31 @@ public class ChatSigns extends Module {
     private final HashMap<BlockPos, Long> signsToHighlight = new HashMap<>();
     private final Pattern fullYearsPattern = Pattern.compile("202[0-9]");
     private final Pattern fullDatesPattern = Pattern.compile("\\b(\\d{1,2}[-/\\. _,'+]\\d{1,2}[-/\\. _,'+]\\d{2,4}|\\d{4}[-/\\. _,'+]\\d{1,2}[-/\\. _,'+]\\d{1,2})\\b");
-
     @Nullable
     private BlockPos getTargetedSign() {
         ClientPlayerEntity player = mc.player;
         if (player == null || mc.world == null) return null;
         int viewDistance = mc.options.getViewDistance().getValue();
-
         double maxRangeBlocks = viewDistance * 16;
         HitResult trace = mc.getCameraEntity().raycast(maxRangeBlocks, 0F, false);
         if (trace != null) {
             BlockPos pos = ((BlockHitResult) trace).getBlockPos();
             if (mc.world.getBlockEntity(pos) instanceof SignBlockEntity) return pos;
         }
-
         return null;
     }
-
     private ArrayList<SignBlockEntity> getNearbySigns(WorldChunk chunk) {
         ArrayList<SignBlockEntity> signs = new ArrayList<>();
         Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
-
         if (blockEntities == null) return signs;
         blockEntities.forEach((pos, entity) -> {
             if (entity instanceof SignBlockEntity sbe) signs.add(sbe);
         });
-
         return signs;
     }
-
     private boolean isSignEmpty(SignBlockEntity sbe) {
         return !sbe.getFrontText().hasText(mc.player) && !sbe.getBackText().hasText(mc.player);
     }
-
     @Nullable
     private LocalDate parseDate(String dateStr) {
         String[] delimiters = {
@@ -419,31 +377,25 @@ public class ChatSigns extends Module {
             "d/MM/yyyy", "dd/M/yyyy", "dd/MM/yyyy", "yyyy/M/d", "yyyy/MM/d",
             "yyyy/M/dd", "yyyy/MM/dd", "yyyy/d/M", "yyyy/dd/M", "yyyy/d/MM", "yyyy/dd/MM",
         };
-
         for (String format : formats) {
             LocalDate date = null;
             try {
                 date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(format));
             } catch (Exception ignored) {}
-
             if (date != null) return date;
             for (String delimiter : delimiters) {
                 String fmt = format.replace("/", delimiter);
-
                 try {
                     date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(fmt));
                 } catch (Exception ignored) {}
                 if (date != null) return date;
             }
         }
-
         return null;
     }
-
     private String formatSignText(SignBlockEntity sign, WorldChunk chunk) {
         if (mc.world == null || isSignEmpty(sign)) return "";
         ArrayList<String> lines = new ArrayList<>();
-
         String color = signColor.get().label;
         String format = textFormat.get().label;
         for (Text line : sign.getFrontText().getMessages(false)) {
@@ -456,22 +408,6 @@ public class ChatSigns extends Module {
                 return Optional.empty();
             });
         }
-
-        /* State of OldSigns on 2b2t in 1.20+ */
-        // Signs that were placed in versions 1.8 - 1.12 are still recognizable,
-        // but signs placed before 1.8 (old signs) are now indistinguishable
-        // from new oak signs placed with standard text entries in pre-1.8 chunks after 1.19.
-
-        // You must now consider context clues such as the sign's environment, material, and content,
-        // in order to determine if it is truly likely to be old.
-
-        // We can check for old (pre 1.8) chunks easily with granite, andesite, & diorite to rule out signs in newer chunks,
-        // and we can make sure the sign material is oak for those signs in chunks devoid of alt-stones,
-        // but new oak signs placed in old chunks can still be mistaken for old signs by metadata alone.
-
-        // On 2b2t, this will single-out oak-material signs placed BOTH before January 2015, and AFTER August 2023 (in old pre 1.8 chunks).
-        // While this will still be useful for identifying old bases for a while,
-        // most old signs are at spawn, and the signal-to-noise ratio there will worsen every single day.
         boolean couldBeOld = false;
         RegistryKey<World> dimension = mc.world.getRegistryKey();
         if (dimension != World.NETHER || !ignoreNether.get()) {
@@ -480,13 +416,11 @@ public class ChatSigns extends Module {
                 Block block = sign.getCachedState().getBlock();
                 if (block instanceof SignBlock signBlock) woodType = signBlock.getWoodType();
                 else if (block instanceof WallSignBlock wallSignBlock) woodType = wallSignBlock.getWoodType();
-
                 if (woodType == WoodType.OAK) {
                     NbtCompound metadata = sign.createNbt(mc.world.getRegistryManager());
                     if (!metadata.toString().contains("{\"extra\":[") && !lines.isEmpty()) {
                         String testString = String.join(" ", lines);
                         Matcher fullYearsMatcher = fullYearsPattern.matcher(testString);
-
                         if (!fullYearsMatcher.find()) {
                             boolean invalidDate = false;
                             Matcher dateMatcher = fullDatesPattern.matcher(testString);
@@ -501,7 +435,6 @@ public class ChatSigns extends Module {
                 }
             }
         }
-
         if (!couldBeOld && showOldSigns.get() && onlyOldSigns.get()) return "";
         if (couldBeOld && showOldSigns.get()) {
             color = oldSignColor.get().label;
@@ -509,16 +442,12 @@ public class ChatSigns extends Module {
         }
         String signText = chatFormat.get() ?
             String.join("\n"+ color + format, lines) : String.join(" ", lines);
-
         if (signText.trim().isEmpty()) return "";
-
         StringBuilder txt = new StringBuilder();
         if (showOldSigns.get() && couldBeOld) {
             txt.append("§8<§o").append(StardustUtil.rCC()).append("✨§r§8> ");
-
             txt.append("§8[§4Old§7..§a?§8] ");
             if (chatFormat.get()) txt.append("\n     ");
-
             txt.append(oldSignColor.get().label).append(oldSignFormat.get().label)
                 .append(chatFormat.get() ? signText.replace("\n", "\n     ") : signText.trim());
         } else {
@@ -528,26 +457,21 @@ public class ChatSigns extends Module {
         }
         if (showCoords.get()) {
             BlockPos pos = sign.getPos();
-
             txt.append(chatFormat.get() ? "\n§8[" : " §8[")
                 .append(color).append(pos.getX()).append("§8, ")
                 .append(color).append(pos.getY()).append("§8, ").append(color).append(pos.getZ()).append("§r§8]");
         }
-
         return txt.toString();
     }
-
     private boolean inNewChunk(WorldChunk chunk, MinecraftClient mc, RegistryKey<World> dimension) {
         if (mc.world == null) return false;
         ChunkPos chunkPos = chunk.getPos();
         if (chunkCache.containsKey(chunkPos)) {
             return chunkCache.get(chunkPos);
         }
-
         if (dimension == World.NETHER) {
             BlockPos startPosDebris = chunkPos.getBlockPos(0, 0, 0);
             BlockPos endPosDebris = chunkPos.getBlockPos(15, 118, 15);
-
             int newBlocks = 0;
             for (BlockPos pos : BlockPos.iterate(startPosDebris, endPosDebris)) {
                 if (newBlocks >= 13) {
@@ -563,15 +487,12 @@ public class ChatSigns extends Module {
         } else if (dimension == World.OVERWORLD){
             BlockPos startPosAltStones = chunkPos.getBlockPos(0, 0, 0);
             BlockPos endPosAltStones = chunkPos.getBlockPos(15, 128, 15);
-
             int newBlocks = 0;
             for (BlockPos pos : BlockPos.iterate(startPosAltStones, endPosAltStones)) {
                 if (newBlocks >=  33) {
                     chunkCache.put(chunkPos, true);
                     return true;
                 }
-                // Andesite, Diorite, and Granite were added in 1.8,
-                // making it impossible to have old signs in chunks containing these, if naturally-generated.
                 Block block = mc.world.getBlockState(pos).getBlock();
                 if (block == Blocks.ANDESITE || block == Blocks.GRANITE || block == Blocks.DIORITE) ++newBlocks;
             }
@@ -585,14 +506,11 @@ public class ChatSigns extends Module {
             chunkCache.put(chunkPos, bl);
             return bl;
         }
-
         chunkCache.put(chunkPos, true);
         return true;
     }
-
     private void chatSigns(List<SignBlockEntity> signs, WorldChunk chunk, MinecraftClient mc) {
         if (mc.world == null || signs.isEmpty()) return;
-
         signs.forEach(sign -> {
             ++clusterAmount;
             String textOnSign = Arrays.stream(sign.getFrontText().getMessages(false)).map(Text::getString).collect(Collectors.joining(" ")).trim();
@@ -601,23 +519,19 @@ public class ChatSigns extends Module {
                 lastFullClusterPos = sign.getPos();
                 return;
             }
-
             if (chatMode.get() == ChatMode.ESP && posSet.contains(sign.getPos())) return;
             if (chatMode.get() == ChatMode.Both) {
                 if (posSet.contains(sign.getPos())) {
                     if (!sign.getPos().equals(lastFocusedSign)) return;
                 }
             }
-
             String msg = formatSignText(sign, chunk);
-
             posSet.add(sign.getPos());
             if (msg.isBlank()) {
                 ++emptyClusterAmount;
                 lastEmptyClusterPos = sign.getPos();
                 return;
             }
-
             if (signBlacklist.get() && !blacklisted.isEmpty()) {
                 if (caseSensitive.get()) {
                     if (blacklisted.stream().anyMatch(line -> textOnSign.contains(line.trim()))) {
@@ -635,7 +549,6 @@ public class ChatSigns extends Module {
                     return;
                 }
             }
-
             ++fullClusterAmount;
             lastFullClusterPos = sign.getPos();
             Style clickESP = Style.EMPTY.withClickEvent(
@@ -663,27 +576,21 @@ public class ChatSigns extends Module {
             } else ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(Text.literal(msg).setStyle(clickESP), textOnSign.hashCode());
         });
     }
-
     private void initBlacklistText() {
         File blackListFile = FabricLoader.getInstance().getGameDir().resolve(BLACKLIST_FILE).toFile();
-
         try(Stream<String> lineStream = Files.lines(blackListFile.toPath())) {
             blacklisted.addAll(lineStream.toList());
         }catch (Exception err) {
             LogUtil.error("Failed to read from " + blackListFile.getAbsolutePath() + "! - Why: " + err, this.name);
         }
     }
-
     private void openBlacklistFile() {
         resetBlacklistFileSetting();
         StardustUtil.openFile(BLACKLIST_FILE);
     }
-
     private void resetBlacklistFileSetting() {
         openBlacklistFile.set(false);
     }
-
-    // See ScreenMixin.java
     public boolean toggleClickESP(BlockPos pos, long timestamp) {
         if (signsToHighlight.containsKey(pos)) {
             signsToHighlight.remove(pos);
@@ -691,7 +598,6 @@ public class ChatSigns extends Module {
         } else signsToHighlight.put(pos, timestamp);
         return true;
     }
-
     private Vec3d getTracerOffset(BlockState state, BlockPos pos) {
         double offsetX;
         double offsetY;
@@ -731,42 +637,34 @@ public class ChatSigns extends Module {
             LogUtil.error("Failed to get tracer offset. Why: " + err, this.name);
             return Vec3d.ofCenter(pos);
         }
-
         return new Vec3d(offsetX, offsetY, offsetZ);
     }
-
     private void doForceKick(Text reason) {
         disconnectReason = reason;
         StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
     }
-
     @Override
     public void onActivate() {
         if (mc.player == null || mc.world == null) return;
         if (signBlacklist.get() && StardustUtil.checkOrCreateFile(mc, BLACKLIST_FILE)) initBlacklistText();
-
         BlockPos pos = mc.player.getBlockPos();
         if (chatMode.get() == ChatMode.ESP || chatMode.get() == ChatMode.Both) {
             int viewDistance = mc.options.getViewDistance().getValue();
-
             int startChunkX = (pos.getX() - (viewDistance * 16)) >> 4;
             int endChunkX = (pos.getX() + (viewDistance * 16)) >> 4;
             int startChunkZ = (pos.getZ() - (viewDistance * 16)) >> 4;
             int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
-
             for (int x = startChunkX; x < endChunkX; x++) {
                 for (int z = startChunkZ; z < endChunkZ; z++) {
                     if (mc.world.isChunkLoaded(x, z)) {
                         WorldChunk chunk = mc.world.getChunk(x, z);
                         List<SignBlockEntity> signs = getNearbySigns(chunk);
-
                         chatSigns(signs, chunk, mc);
                     }
                 }
             }
         }
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -787,7 +685,6 @@ public class ChatSigns extends Module {
         lastFullClusterPos = null;
         lastEmptyClusterPos = null;
     }
-
     @EventHandler
     private void onPacketReceived(PacketEvent.Receive event) {
         if (disconnectReason != null && event.packet instanceof DisconnectS2CPacket packet) {
@@ -800,18 +697,14 @@ public class ChatSigns extends Module {
         chunkCache.clear();
         signsToHighlight.clear();
     }
-
     @EventHandler
     private void onReceiveChunkData(ChunkDataEvent event) {
         if (mc.world == null || mc.player == null) return;
-
         if (chatMode.get() != ChatMode.Targeted) {
             List<SignBlockEntity> signs = getNearbySigns(event.chunk());
-
             chatSigns(signs, event.chunk(), mc);
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (StardustUtil.XAERO_AVAILABLE && signBoardWaypoints.get()) {
@@ -844,12 +737,10 @@ public class ChatSigns extends Module {
             toggle();
             return;
         }
-
         if (chatMode.get() == ChatMode.ESP) return;
         if (mc.world == null || mc.player == null) return;
         if (timer >= 65535) timer = 0;
         else if (timer % 6000 == 0) signMessages.clear();
-
         ++timer;
         ++chatTimer;
         if (timer % 5 == 0) {
@@ -862,25 +753,20 @@ public class ChatSigns extends Module {
                 lastFocusedSign = null;
                 return;
             }
-
             if (targetedSign.equals(lastFocusedSign) && repeatMode.get() == RepeatMode.Focus) return;
             else if (!targetedSign.equals(lastFocusedSign)) lastFocusedSign = targetedSign;
-
             WorldChunk chunk = mc.world.getChunk(targetedSign.getX() >> 4, targetedSign.getZ() >> 4);
             if (repeatMode.get() == RepeatMode.Cooldown) {
                 if (cooldowns.containsKey(targetedSign)) {
                     Instant now = Instant.now();
                     Instant stamp = cooldowns.get(targetedSign);
-
                     if (Duration.between(stamp, now).toSeconds() < repeatSeconds.get()) return;
                     if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
                 } else if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) {
                     chatSigns(List.of(sign), chunk, mc);
                 }
             }else if (mc.world.getBlockEntity(targetedSign) instanceof SignBlockEntity sign) chatSigns(List.of(sign), chunk, mc);
-
             cooldowns.put(targetedSign, Instant.now());
-
             for (BlockEntity be : Utils.blockEntities()) {
                 if (be instanceof SignBlockEntity sbe && !posSet.contains(sbe.getPos())) {
                     WorldChunk sbeChunk = mc.world.getChunk(sbe.getPos().getX() >> 4, sbe.getPos().getZ() >> 4);
@@ -888,7 +774,6 @@ public class ChatSigns extends Module {
                 }
             }
         }
-
         if (chatTimer >= chatSpeed.get() && !jobQueue.isEmpty()) {
             chatTimer = 0;
             if (chatSpeed.get() <= 0) {
@@ -902,11 +787,9 @@ public class ChatSigns extends Module {
             }
         }
     }
-
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (mc.player == null || mc.world == null) return;
-
         ESPBlockData highlight = clickESPSettings.get();
         List<BlockPos> signsToRemove = new ArrayList<>();
         if (!signsToHighlight.isEmpty()) {
@@ -918,7 +801,6 @@ public class ChatSigns extends Module {
                         continue;
                     }
                 }
-
                 BlockState state = mc.world.getBlockState(p);
                 BlockEntity sbe = mc.world.getBlockEntity(p);
                 if (highlight.tracer && highlight.tracerColor.a > 0) {
@@ -928,10 +810,8 @@ public class ChatSigns extends Module {
                         offset.getX(), offset.getY(), offset.getZ(), highlight.tracerColor
                     );
                 }
-
                 if (state == null || sbe == null) continue;
                 if (!(sbe instanceof SignBlockEntity)) continue;
-
                 VoxelShape shape = state.getOutlineShape(mc.world, p);
                 double x1 = p.getX() + shape.getMin(Direction.Axis.X);
                 double y1 = p.getY() + shape.getMin(Direction.Axis.Y);
@@ -939,7 +819,6 @@ public class ChatSigns extends Module {
                 double x2 = p.getX() + shape.getMax(Direction.Axis.X);
                 double y2 = p.getY() + shape.getMax(Direction.Axis.Y);
                 double z2 = p.getZ() + shape.getMax(Direction.Axis.Z);
-
                 event.renderer.box(
                     x1, y1, z1, x2, y2, z2,
                     highlight.sideColor, highlight.lineColor, highlight.shapeMode, 0
@@ -949,31 +828,26 @@ public class ChatSigns extends Module {
                 signsToHighlight.remove(p);
             }
         }
-
         if (!renderOldSigns.get()) return;
         List<BlockPos> inRange = oldSet
             .stream()
             .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16+32))
             .toList();
-
         ESPBlockData esp = espSettings.get();
         for (BlockPos pos : inRange) {
             BlockState state = mc.world.getBlockState(pos);
             if (!(state.getBlock() instanceof SignBlock) && !(state.getBlock() instanceof WallSignBlock)) continue;
             VoxelShape shape = state.getOutlineShape(mc.world, pos);
-
             double x1 = pos.getX() + shape.getMin(Direction.Axis.X);
             double y1 = pos.getY() + shape.getMin(Direction.Axis.Y);
             double z1 = pos.getZ() + shape.getMin(Direction.Axis.Z);
             double x2 = pos.getX() + shape.getMax(Direction.Axis.X);
             double y2 = pos.getY() + shape.getMax(Direction.Axis.Y);
             double z2 = pos.getZ() + shape.getMax(Direction.Axis.Z);
-
             event.renderer.box(
                 x1, y1, z1, x2, y2, z2,
                 esp.sideColor, esp.lineColor, esp.shapeMode, 0
             );
-
             if (esp.tracer) {
                 Vec3d offsetVec = getTracerOffset(state, pos);
                 event.renderer.line(
@@ -988,7 +862,6 @@ public class ChatSigns extends Module {
             }
         }
     }
-
     private record ChatSignsJob(Text message, int hashcode) {
         public Text getMessage() { return this.message; }
         public int getHashcode() { return this.hashcode; }

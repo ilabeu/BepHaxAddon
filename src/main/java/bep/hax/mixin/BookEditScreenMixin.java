@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import java.util.ArrayList;
 import java.util.Random;
 import net.minecraft.text.Text;
@@ -17,22 +16,14 @@ import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-/**
- * @author Tas [@0xTas] <root@0xTas.dev>
- **/
 @Mixin(BookEditScreen.class)
 public abstract class BookEditScreenMixin extends Screen {
     private static final Random RANDOM = new Random();
-
     @Shadow
     private boolean dirty;
     @Shadow
     private boolean signing;
-
-    // See BookTools.java
     protected BookEditScreenMixin(Text title) { super(title); }
-
     @Unique
     private boolean rainbowMode = false;
     @Unique
@@ -43,11 +34,9 @@ public abstract class BookEditScreenMixin extends Screen {
     private @Nullable StardustUtil.RainbowColor lastCC = null;
     @Unique
     private final ArrayList<ButtonWidget> buttons = new ArrayList<>();
-
     @Unique
     private void onClickColorButton(ButtonWidget btn) {
         String color = btn.getMessage().getString().substring(0, 2);
-
         if (this.signing) {
             ((BookEditScreenAccessor) this).getBookTitleSelectionManager().insert(color);
         } else {
@@ -55,11 +44,9 @@ public abstract class BookEditScreenMixin extends Screen {
             ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(color);
         }
     }
-
     @Unique
     private void onClickFormatButton(ButtonWidget btn) {
         String format = btn.getMessage().getString().substring(0, 2);
-
         if (rainbowMode) {
             activeFormatting = format;
         }else if (this.signing) {
@@ -69,7 +56,6 @@ public abstract class BookEditScreenMixin extends Screen {
             ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(format);
         }
     }
-
     @Unique
     private void onClickRainbowButton(ButtonWidget btn) {
         rainbowMode = !rainbowMode;
@@ -81,10 +67,8 @@ public abstract class BookEditScreenMixin extends Screen {
             btn.setTooltip(Tooltip.of(Text.of(uCC()+"R"+uCC()+"a"+uCC()+"i"+uCC()+"n"+uCC()+"b"+uCC()+"o"+uCC()+"w "+uCC()+"M"+uCC()+"o"+uCC()+"d"+uCC()+"e"+" §4Off")));
         }
     }
-
     @Unique
     private String uCC() {
-        // Return a random color code that follows the pattern of the rainbow.
         if (lastCC == null) {
             lastCC = StardustUtil.RainbowColor.getFirst();
         } else {
@@ -92,20 +76,16 @@ public abstract class BookEditScreenMixin extends Screen {
         }
         return lastCC.labels[RANDOM.nextInt(lastCC.labels.length)];
     }
-
     @Inject(method = "init", at = @At("TAIL"))
     private void mixinInit(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
-
         if (bookTools.skipFormatting()) return;
-
         int offset = 0;
         boolean odd = false;
         for (StardustUtil.TextColor color : StardustUtil.TextColor.values()) {
             if (color.label.isEmpty()) continue;
-
             this.buttons.add(
                 this.addDrawableChild(
                     ButtonWidget.builder(
@@ -116,14 +96,11 @@ public abstract class BookEditScreenMixin extends Screen {
                         .tooltip(Tooltip.of(Text.of("§7"+color.name().replace("_", " "))))
                         .build())
             );
-
             if (odd) offset += 12;
             odd = !odd;
         }
-
         for (StardustUtil.TextFormat format : StardustUtil.TextFormat.values()) {
             if (format.label.isEmpty()) continue;
-
             this.buttons.add(
                 this.addDrawableChild(
                     ButtonWidget.builder(
@@ -134,11 +111,9 @@ public abstract class BookEditScreenMixin extends Screen {
                         .tooltip(Tooltip.of(Text.of("§7"+format.name())))
                         .build())
             );
-
             if (odd) offset += 12;
             odd = !odd;
         }
-
         this.buttons.add(
             this.addDrawableChild(
                 ButtonWidget.builder(
@@ -150,7 +125,6 @@ public abstract class BookEditScreenMixin extends Screen {
                     .build()
             )
         );
-
         if (odd) offset += 12;
         odd = !odd;
         this.buttons.add(
@@ -165,7 +139,6 @@ public abstract class BookEditScreenMixin extends Screen {
             )
         );
     }
-
     @Inject(method = "charTyped", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/SelectionManager;insert(Ljava/lang/String;)V"))
     private void mixinCharTyped(char chr, int modifiers, CallbackInfoReturnable<Boolean> cir) {
         if (!rainbowMode || signing) return;
@@ -177,30 +150,25 @@ public abstract class BookEditScreenMixin extends Screen {
             ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert(uCC() + activeFormatting);
         }
     }
-
     @Inject(method = "finalizeBook", at = @At("HEAD"))
     private void mixinFinalizeBook(CallbackInfo ci) {
         if (this.dirty && this.didFormatPage) {
             ((BookEditScreenAccessor) this).getCurrentPageSelectionManager().insert("§r");
         }
     }
-
     @Inject(method = "changePage", at = @At("HEAD"))
     private void mixinChangePage(CallbackInfo ci) {
         this.didFormatPage = false;
     }
-
     @Inject(method = "updateButtons", at = @At("TAIL"))
     private void mixinUpdateButtons(CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
         BookTools bookTools = modules.get(BookTools.class);
         if (bookTools.skipFormatting()) return;
-
         for (ButtonWidget btn : this.buttons) {
             btn.visible = !signing || bookTools.shouldFormatTitles();
         }
-
         if (this.signing && !bookTools.autoTitles.get().trim().isEmpty()) {
             ((BookEditScreenAccessor) this).getBookTitleSelectionManager().insert(bookTools.autoTitles.get());
         }

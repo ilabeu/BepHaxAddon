@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.text.Text;
 import bep.hax.util.MsgUtil;
@@ -24,21 +23,13 @@ import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.systems.modules.render.BetterTooltips;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *     Allows you to preview items from the peek screen by giving you a client-side ghost item when you left-click.
- **/
 @Mixin(value = PeekScreen.class, remap = false)
 public abstract class PeekScreenMixin extends ShulkerBoxScreen {
     public PeekScreenMixin(ShulkerBoxScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
     }
-
     @Unique
     private @Nullable BetterTooltips btt = null;
-
-    // See BetterTooltipsMixin.java
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
     private void hijackMouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         if (mc.player == null) return;
@@ -46,7 +37,6 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
             Modules mods = Modules.get();
             if (mods == null) return;
             btt = mods.get(BetterTooltips.class);
-
             if (btt == null) return;
         }
         if (!btt.isActive()) return;
@@ -60,13 +50,8 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
                 } else {
                     empty = InvUtils.find(ItemStack::isEmpty, 0, 8);
                 }
-
                 if (empty.found()) {
                     ItemStack stack = focusedSlot.getStack();
-
-                    // Skull-block items aren't swappable by default,
-                    // causing the ghost item to disappear without this.
-                    // I don't distinguish the item type here, allowing you to put any ghost-item on your head.
                     EquippableComponent equippableComponent = EquippableComponent.builder(EquipmentSlot.HEAD)
                         .swappable(true)
                         .allowedEntities(EntityType.PLAYER)
@@ -74,7 +59,6 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
                         .build();
                     if (shouldSetComponent(stack))
                         stack.set(DataComponentTypes.EQUIPPABLE, equippableComponent);
-
                     mc.player.getInventory().setStack(empty.slot(), stack);
                     cir.setReturnValue(true);
                 } else {
@@ -86,7 +70,6 @@ public abstract class PeekScreenMixin extends ShulkerBoxScreen {
             LogUtil.error(err.toString(), "PeekScreenMixin");
         }
     }
-
     @Unique
     private boolean shouldSetComponent(ItemStack stack) {
         return (!stack.contains(DataComponentTypes.EQUIPPABLE)

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import bep.hax.util.MsgUtil;
 import bep.hax.util.MapUtil;
@@ -34,9 +33,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.chunk.WorldChunk;
-
 import java.util.*;
-
 public class VanityESP extends Module {
     private final SettingGroup sgFeatures = settings.getDefaultGroup();
     private final SettingGroup sgMapFrames = settings.createGroup("Map Frames");
@@ -44,44 +41,36 @@ public class VanityESP extends Module {
     private final SettingGroup sgShulkerFrames = settings.createGroup("Shulker Frames");
     private final SettingGroup sgOminousVaults = settings.createGroup("Ominous Vaults");
     private final SettingGroup sgTreasure = settings.createGroup("Buried Treasure");
-
-    // === FEATURE TOGGLES ===
     private final Setting<Boolean> highlightMapFrames = sgFeatures.add(new BoolSetting.Builder()
         .name("map-frames")
         .description("Highlights item frames containing maps.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> highlightBanners = sgFeatures.add(new BoolSetting.Builder()
         .name("banners")
         .description("Highlights banners.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> highlightShulkerFrames = sgFeatures.add(new BoolSetting.Builder()
         .name("shulker-frames")
         .description("Highlights item frames containing shulker boxes.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> highlightOminousVaults = sgFeatures.add(new BoolSetting.Builder()
         .name("ominous-vaults")
         .description("Highlights ominous vaults.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> highlightTreasure = sgFeatures.add(new BoolSetting.Builder()
         .name("buried-treasure")
         .description("Highlights buried treasure chests.")
         .defaultValue(true)
         .build()
     );
-
-    // === MAP FRAMES SETTINGS ===
     private final Setting<SettingColor> mapFillColor = sgMapFrames.add(new ColorSetting.Builder()
         .name("side-color")
         .description("Fill color for map frames.")
@@ -89,7 +78,6 @@ public class VanityESP extends Module {
         .visible(highlightMapFrames::get)
         .build()
     );
-
     private final Setting<SettingColor> mapOutlineColor = sgMapFrames.add(new ColorSetting.Builder()
         .name("line-color")
         .description("Outline color for map frames.")
@@ -97,7 +85,6 @@ public class VanityESP extends Module {
         .visible(highlightMapFrames::get)
         .build()
     );
-
     private final Setting<Boolean> mapRenderFill = sgMapFrames.add(new BoolSetting.Builder()
         .name("render-sides")
         .description("Render sides of map frames.")
@@ -105,7 +92,6 @@ public class VanityESP extends Module {
         .visible(highlightMapFrames::get)
         .build()
     );
-
     private final Setting<Boolean> mapRenderOutline = sgMapFrames.add(new BoolSetting.Builder()
         .name("render-lines")
         .description("Render lines of map frames.")
@@ -113,8 +99,6 @@ public class VanityESP extends Module {
         .visible(highlightMapFrames::get)
         .build()
     );
-
-    // === BANNERS SETTINGS ===
     private final Setting<SettingColor> bannerFillColor = sgBanners.add(new ColorSetting.Builder()
         .name("side-color")
         .description("Fill color for banners.")
@@ -122,7 +106,6 @@ public class VanityESP extends Module {
         .visible(highlightBanners::get)
         .build()
     );
-
     private final Setting<SettingColor> bannerOutlineColor = sgBanners.add(new ColorSetting.Builder()
         .name("line-color")
         .description("Outline color for banners.")
@@ -130,7 +113,6 @@ public class VanityESP extends Module {
         .visible(highlightBanners::get)
         .build()
     );
-
     private final Setting<Boolean> bannerRenderFill = sgBanners.add(new BoolSetting.Builder()
         .name("render-sides")
         .description("Render sides of banners.")
@@ -138,7 +120,6 @@ public class VanityESP extends Module {
         .visible(highlightBanners::get)
         .build()
     );
-
     private final Setting<Boolean> bannerRenderOutline = sgBanners.add(new BoolSetting.Builder()
         .name("render-lines")
         .description("Render lines of banners.")
@@ -146,8 +127,6 @@ public class VanityESP extends Module {
         .visible(highlightBanners::get)
         .build()
     );
-
-    // === SHULKER FRAMES SETTINGS ===
     private final Setting<SettingColor> shulkerFillColor = sgShulkerFrames.add(new ColorSetting.Builder()
         .name("side-color")
         .description("Fill color for shulker frames.")
@@ -155,7 +134,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
     private final Setting<SettingColor> shulkerOutlineColor = sgShulkerFrames.add(new ColorSetting.Builder()
         .name("line-color")
         .description("Outline color for shulker frames.")
@@ -163,7 +141,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
     private final Setting<SettingColor> shulkerTracerColor = sgShulkerFrames.add(new ColorSetting.Builder()
         .name("tracer-color")
         .description("Tracer color for shulker frames.")
@@ -171,7 +148,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
     private final Setting<Boolean> shulkerRenderFill = sgShulkerFrames.add(new BoolSetting.Builder()
         .name("render-sides")
         .description("Render sides of shulker frames.")
@@ -179,7 +155,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
     private final Setting<Boolean> shulkerRenderOutline = sgShulkerFrames.add(new BoolSetting.Builder()
         .name("render-lines")
         .description("Render lines of shulker frames.")
@@ -187,7 +162,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
     private final Setting<Boolean> shulkerRenderTracer = sgShulkerFrames.add(new BoolSetting.Builder()
         .name("tracers")
         .description("Add tracers to shulker frames.")
@@ -195,8 +169,6 @@ public class VanityESP extends Module {
         .visible(highlightShulkerFrames::get)
         .build()
     );
-
-    // === OMINOUS VAULTS SETTINGS ===
     private final Setting<SettingColor> vaultFillColor = sgOminousVaults.add(new ColorSetting.Builder()
         .name("side-color")
         .description("Fill color for ominous vaults.")
@@ -204,7 +176,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
     private final Setting<SettingColor> vaultOutlineColor = sgOminousVaults.add(new ColorSetting.Builder()
         .name("line-color")
         .description("Outline color for ominous vaults.")
@@ -212,7 +183,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
     private final Setting<SettingColor> vaultTracerColor = sgOminousVaults.add(new ColorSetting.Builder()
         .name("tracer-color")
         .description("Tracer color for ominous vaults.")
@@ -220,7 +190,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
     private final Setting<Boolean> vaultRenderFill = sgOminousVaults.add(new BoolSetting.Builder()
         .name("render-sides")
         .description("Render sides of ominous vaults.")
@@ -228,7 +197,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
     private final Setting<Boolean> vaultRenderOutline = sgOminousVaults.add(new BoolSetting.Builder()
         .name("render-lines")
         .description("Render lines of ominous vaults.")
@@ -236,7 +204,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
     private final Setting<Boolean> vaultRenderTracer = sgOminousVaults.add(new BoolSetting.Builder()
         .name("tracers")
         .description("Add tracers to ominous vaults.")
@@ -244,8 +211,6 @@ public class VanityESP extends Module {
         .visible(highlightOminousVaults::get)
         .build()
     );
-
-    // === TREASURE SETTINGS ===
     private final Setting<Boolean> treasureChat = sgTreasure.add(new BoolSetting.Builder()
         .name("chat-notification")
         .description("Notify with a chat message.")
@@ -253,7 +218,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<Boolean> treasureCoords = sgTreasure.add(new BoolSetting.Builder()
         .name("show-coords")
         .description("Display chest coordinates in chat notifications.")
@@ -261,7 +225,6 @@ public class VanityESP extends Module {
         .visible(() -> highlightTreasure.get() && treasureChat.get())
         .build()
     );
-
     private final Setting<Boolean> treasureWaypoints = sgTreasure.add(new BoolSetting.Builder()
         .name("add-waypoints")
         .description("Adds waypoints to your Xaeros map for treasure chests.")
@@ -269,7 +232,6 @@ public class VanityESP extends Module {
         .visible(() -> highlightTreasure.get() && StardustUtil.XAERO_AVAILABLE)
         .build()
     );
-
     private final Setting<Boolean> treasureTempWaypoints = sgTreasure.add(new BoolSetting.Builder()
         .name("temporary-waypoints")
         .description("Temporary waypoints are removed when you disconnect.")
@@ -277,7 +239,6 @@ public class VanityESP extends Module {
         .visible(() -> highlightTreasure.get() && StardustUtil.XAERO_AVAILABLE && treasureWaypoints.get())
         .build()
     );
-
     private final Setting<Boolean> treasureSound = sgTreasure.add(new BoolSetting.Builder()
         .name("sound-notification")
         .description("Notify with sound.")
@@ -285,7 +246,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<Double> treasureVolume = sgTreasure.add(new DoubleSetting.Builder()
         .name("volume")
         .min(0.0)
@@ -296,7 +256,6 @@ public class VanityESP extends Module {
         .visible(() -> highlightTreasure.get() && treasureSound.get())
         .build()
     );
-
     private final Setting<SettingColor> treasureFillColor = sgTreasure.add(new ColorSetting.Builder()
         .name("side-color")
         .description("Fill color for treasure chests.")
@@ -304,7 +263,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<SettingColor> treasureOutlineColor = sgTreasure.add(new ColorSetting.Builder()
         .name("line-color")
         .description("Outline color for treasure chests.")
@@ -312,7 +270,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<SettingColor> treasureTracerColor = sgTreasure.add(new ColorSetting.Builder()
         .name("tracer-color")
         .description("Tracer color for treasure chests.")
@@ -320,7 +277,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<Boolean> treasureRenderFill = sgTreasure.add(new BoolSetting.Builder()
         .name("render-sides")
         .description("Render sides of treasure chests.")
@@ -328,7 +284,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<Boolean> treasureRenderOutline = sgTreasure.add(new BoolSetting.Builder()
         .name("render-lines")
         .description("Render lines of treasure chests.")
@@ -336,7 +291,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
     private final Setting<Boolean> treasureRenderTracer = sgTreasure.add(new BoolSetting.Builder()
         .name("tracers")
         .description("Add tracers to treasure chests.")
@@ -344,9 +298,6 @@ public class VanityESP extends Module {
         .visible(highlightTreasure::get)
         .build()
     );
-
-    // === DATA STRUCTURES ===
-    // Ominous Vaults
     private final Set<BlockPos> ominousVaults = Collections.synchronizedSet(new HashSet<>());
     private final Map<ChunkPos, Set<BlockPos>> chunkVaults = new HashMap<>();
     private Set<ChunkPos> lastLoadedChunks = new HashSet<>();
@@ -358,15 +309,10 @@ public class VanityESP extends Module {
     private int initialScanChunksPerTick = 0;
     private long lastFullRescan = 0;
     private final int fullRescanIntervalMs = 3000;
-
-    // Treasure
     private final Set<BlockPos> lootedTreasure = new HashSet<>();
     private final List<BlockPos> notifiedTreasure = new ArrayList<>();
-
     public VanityESP() {
         super(Bep.STASH, "VanityESP", "Unified ESP for decorative items and special blocks.");
-
-        // Setup initial chunk scan for ominous vaults on world join
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             if (mc.world == null || mc.player == null) return;
             initialScanQueue.clear();
@@ -382,21 +328,16 @@ public class VanityESP extends Module {
             initialScanActive = true;
         });
     }
-
     @Override
     public void onActivate() {
         if (mc.player == null || mc.world == null) return;
         if (!highlightTreasure.get()) return;
-
-        // Initial scan for treasure on activation
         BlockPos pos = mc.player.getBlockPos();
         int viewDistance = mc.options.getViewDistance().getValue();
-
         int startChunkX = (pos.getX() - (viewDistance * 16)) >> 4;
         int endChunkX = (pos.getX() + (viewDistance * 16)) >> 4;
         int startChunkZ = (pos.getZ() - (viewDistance * 16)) >> 4;
         int endChunkZ = (pos.getZ() + (viewDistance * 16)) >> 4;
-
         for (int x = startChunkX; x < endChunkX; x++) {
             for (int z = startChunkZ; z < endChunkZ; z++) {
                 if (mc.world.isChunkLoaded(x, z)) {
@@ -406,19 +347,14 @@ public class VanityESP extends Module {
             }
         }
     }
-
     @Override
     public void onDeactivate() {
         notifiedTreasure.clear();
     }
-
-    // === TICK EVENT ===
     @EventHandler
     private void onTick(meteordevelopment.meteorclient.events.world.TickEvent.Pre event) {
         if (mc.world == null || mc.player == null) return;
         if (!highlightOminousVaults.get()) return;
-
-        // Process initial scan queue for vaults
         if (initialScanActive) {
             int processed = 0;
             int minY0 = mc.world.getBottomY();
@@ -433,34 +369,28 @@ public class VanityESP extends Module {
             }
             if (initialScanQueue.isEmpty()) initialScanActive = false;
         }
-
         Set<ChunkPos> currentChunks = new HashSet<>();
         BlockPos playerPos = mc.player.getBlockPos();
         int chunkRadius = mc.options.getViewDistance().getValue();
         int minY = mc.world.getBottomY();
         int maxY = mc.world.getHeight();
-
         for (int cx = (playerPos.getX() >> 4) - chunkRadius; cx <= (playerPos.getX() >> 4) + chunkRadius; cx++) {
             for (int cz = (playerPos.getZ() >> 4) - chunkRadius; cz <= (playerPos.getZ() >> 4) + chunkRadius; cz++) {
                 currentChunks.add(new ChunkPos(cx, cz));
             }
         }
-
         Set<ChunkPos> newChunks = new HashSet<>(currentChunks);
         newChunks.removeAll(lastLoadedChunks);
         Set<ChunkPos> unloadedChunks = new HashSet<>(lastLoadedChunks);
         unloadedChunks.removeAll(currentChunks);
-
         for (ChunkPos chunkPos : unloadedChunks) {
             Set<BlockPos> removed = chunkVaults.remove(chunkPos);
             if (removed != null) ominousVaults.removeAll(removed);
             pendingChunks.remove(chunkPos);
         }
-
         for (ChunkPos chunkPos : newChunks) {
             pendingChunks.put(chunkPos, 10);
         }
-
         Set<ChunkPos> toScan = new HashSet<>();
         for (Map.Entry<ChunkPos, Integer> entry : new HashMap<>(pendingChunks).entrySet()) {
             int ticksLeft = entry.getValue() - 1;
@@ -471,8 +401,6 @@ public class VanityESP extends Module {
             scanChunkForVaults(chunkPos, minY, maxY);
             pendingChunks.remove(chunkPos);
         }
-
-        // Periodically validate cached vaults
         long now = System.currentTimeMillis();
         if (now - lastRecheckTime >= recheckIntervalMs) {
             lastRecheckTime = now;
@@ -493,26 +421,20 @@ public class VanityESP extends Module {
             ominousVaults.removeAll(toRemoveVaults);
             for (Set<BlockPos> set : chunkVaults.values()) set.removeAll(toRemoveVaults);
         }
-
         if (now - lastFullRescan >= fullRescanIntervalMs) {
             lastFullRescan = now;
             for (ChunkPos chunkPos : lastLoadedChunks) {
                 scanChunkForVaults(chunkPos, minY, maxY);
             }
         }
-
         lastLoadedChunks = currentChunks;
     }
-
-    // === CHUNK DATA EVENT (for treasure) ===
     @EventHandler
     private void onChunkData(ChunkDataEvent event) {
         if (!highlightTreasure.get()) return;
         if (mc.world == null || mc.player == null) return;
         scanChunkForTreasure(event.chunk());
     }
-
-    // === INTERACT BLOCK EVENT (for treasure looting) ===
     @EventHandler
     private void onInteractBlock(InteractBlockEvent event) {
         if (!highlightTreasure.get()) return;
@@ -531,19 +453,14 @@ public class VanityESP extends Module {
             }
         }
     }
-
-    // === RENDER EVENT ===
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (mc.world == null || mc.player == null) return;
-
-        // Render Map Frames
         if (highlightMapFrames.get()) {
             ShapeMode mapMode = getShapeMode(mapRenderFill.get(), mapRenderOutline.get());
             if (mapMode != null) {
                 for (ItemFrameEntity frame : mc.world.getEntitiesByClass(ItemFrameEntity.class, mc.player.getBoundingBox().expand(64),
                     e -> e.getHeldItemStack().getItem().getTranslationKey().equals("item.minecraft.filled_map"))) {
-
                     Box box;
                     float pitch = frame.getPitch();
                     if (pitch == 90 || pitch == -90) {
@@ -551,39 +468,30 @@ public class VanityESP extends Module {
                     } else {
                         box = frame.getBoundingBox().expand(0.12, 0.12, 0.01);
                     }
-
                     Color fill = new Color(mapFillColor.get());
                     Color outline = new Color(mapOutlineColor.get());
                     event.renderer.box(box, fill, outline, mapMode, 0);
                 }
             }
         }
-
-        // Render Banners
         if (highlightBanners.get()) {
             ShapeMode bannerMode = getShapeMode(bannerRenderFill.get(), bannerRenderOutline.get());
             if (bannerMode != null) {
                 renderBanners(event, bannerMode);
             }
         }
-
-        // Render Shulker Frames
         if (highlightShulkerFrames.get()) {
             ShapeMode shulkerMode = getShapeMode(shulkerRenderFill.get(), shulkerRenderOutline.get());
             if (shulkerMode != null) {
                 renderShulkerFrames(event, shulkerMode);
             }
         }
-
-        // Render Ominous Vaults
         if (highlightOminousVaults.get()) {
             ShapeMode vaultMode = getShapeMode(vaultRenderFill.get(), vaultRenderOutline.get());
             if (vaultMode != null) {
                 renderOminousVaults(event, vaultMode);
             }
         }
-
-        // Render Treasure
         if (highlightTreasure.get()) {
             ShapeMode treasureMode = getShapeMode(treasureRenderFill.get(), treasureRenderOutline.get());
             if (treasureMode != null) {
@@ -591,33 +499,26 @@ public class VanityESP extends Module {
             }
         }
     }
-
-    // === HELPER METHODS ===
     private ShapeMode getShapeMode(boolean renderFill, boolean renderOutline) {
         if (renderFill && renderOutline) return ShapeMode.Both;
         else if (renderFill) return ShapeMode.Sides;
         else if (renderOutline) return ShapeMode.Lines;
         return null;
     }
-
     private void renderBanners(Render3DEvent event, ShapeMode shapeMode) {
         int radius = 8;
         BlockPos playerPos = mc.player.getBlockPos();
         Color fill = new Color(bannerFillColor.get());
         Color outline = new Color(bannerOutlineColor.get());
-
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 WorldChunk chunk = mc.world.getChunk(playerPos.getX() / 16 + dx, playerPos.getZ() / 16 + dz);
                 if (chunk == null) continue;
-
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
                     if (!(be instanceof BannerBlockEntity banner)) continue;
-
                     BlockPos pos = banner.getPos();
                     BlockState state = mc.world.getBlockState(pos);
                     Box box;
-
                     if (state.contains(WallBannerBlock.FACING)) {
                         Direction facing = state.get(WallBannerBlock.FACING);
                         double centerX = pos.getX() + 0.5;
@@ -627,7 +528,6 @@ public class VanityESP extends Module {
                         double width = 0.45;
                         double y1 = pos.getY() - 0.95;
                         double y2 = pos.getY() + 0.85;
-
                         switch (facing) {
                             case NORTH:
                                 box = new Box(centerX - width, y1, pos.getZ() + 1 - offset - depth, centerX + width, y2, pos.getZ() + 1 - offset);
@@ -644,7 +544,6 @@ public class VanityESP extends Module {
                             default:
                                 continue;
                         }
-
                         event.renderer.box(box, fill, outline, shapeMode, 0);
                     } else if (state.contains(BannerBlock.ROTATION)) {
                         int rotation = state.get(BannerBlock.ROTATION);
@@ -652,7 +551,6 @@ public class VanityESP extends Module {
                         double centerZ = pos.getZ() + 0.5;
                         double y1 = pos.getY();
                         double y2 = pos.getY() + 1.85;
-
                         if (rotation == 0 || rotation == 8) {
                             double width = 0.45;
                             double depth = 0.03;
@@ -665,18 +563,15 @@ public class VanityESP extends Module {
                             double size = 0.3;
                             box = new Box(centerX - size, y1, centerZ - size, centerX + size, y2, centerZ + size);
                         }
-
                         event.renderer.box(box, fill, outline, shapeMode, 0);
                     }
                 }
             }
         }
     }
-
     private void renderShulkerFrames(Render3DEvent event, ShapeMode shapeMode) {
         List<Entity> frames = getShulkerFrames();
         if (frames.isEmpty()) return;
-
         for (Entity frame : frames) {
             Box box = frame.getBoundingBox();
             event.renderer.box(
@@ -697,7 +592,6 @@ public class VanityESP extends Module {
             }
         }
     }
-
     private void renderOminousVaults(Render3DEvent event, ShapeMode shapeMode) {
         for (BlockPos pos : ominousVaults) {
             event.renderer.box(
@@ -718,13 +612,11 @@ public class VanityESP extends Module {
             }
         }
     }
-
     private void renderTreasure(Render3DEvent event, ShapeMode shapeMode) {
         List<BlockPos> inRange = notifiedTreasure
             .stream()
             .filter(pos -> pos.isWithinDistance(mc.player.getBlockPos(), mc.options.getViewDistance().getValue() * 16 + 32))
             .toList();
-
         for (BlockPos pos : inRange) {
             if (lootedTreasure.contains(pos)) continue;
             event.renderer.box(
@@ -732,7 +624,6 @@ public class VanityESP extends Module {
                 pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1,
                 treasureFillColor.get(), treasureOutlineColor.get(), shapeMode, 0
             );
-
             if (treasureRenderTracer.get()) {
                 event.renderer.line(
                     RenderUtils.center.x,
@@ -746,7 +637,6 @@ public class VanityESP extends Module {
             }
         }
     }
-
     private List<Entity> getShulkerFrames() {
         List<Entity> result = new ArrayList<>();
         if (mc.world == null) return result;
@@ -758,7 +648,6 @@ public class VanityESP extends Module {
         }
         return result;
     }
-
     private boolean isShulkerBox(ItemStack stack) {
         if (stack == null) return false;
         return stack.getItem() == Items.SHULKER_BOX
@@ -779,7 +668,6 @@ public class VanityESP extends Module {
             || stack.getItem() == Items.RED_SHULKER_BOX
             || stack.getItem() == Items.BLACK_SHULKER_BOX;
     }
-
     private boolean scanChunkForVaults(ChunkPos chunkPos, int minY, int maxY) {
         net.minecraft.world.chunk.Chunk chunk;
         try {
@@ -814,16 +702,13 @@ public class VanityESP extends Module {
         }
         return false;
     }
-
     private void scanChunkForTreasure(WorldChunk chunk) {
         Map<BlockPos, BlockEntity> blockEntities = chunk.getBlockEntities();
-
         for (BlockPos pos : blockEntities.keySet()) {
             if (notifiedTreasure.contains(pos)) continue;
             if (blockEntities.get(pos) instanceof ChestBlockEntity) {
                 int localX = ChunkSectionPos.getLocalCoord(pos.getX());
                 int localZ = ChunkSectionPos.getLocalCoord(pos.getZ());
-
                 if (localX == 9 && localZ == 9 && isBuriedNaturally(pos)) {
                     if (StardustUtil.XAERO_AVAILABLE && treasureWaypoints.get()) {
                         MapUtil.addWaypoint(
@@ -849,11 +734,9 @@ public class VanityESP extends Module {
             }
         }
     }
-
     private boolean isBuriedNaturally(BlockPos pos) {
         if (mc.world == null) return false;
         Block block = mc.world.getBlockState(pos.up()).getBlock();
-
         return block == Blocks.SAND || block == Blocks.DIRT || block == Blocks.GRAVEL
             || block == Blocks.STONE || block == Blocks.DIORITE || block == Blocks.GRANITE
             || block == Blocks.ANDESITE || block == Blocks.SANDSTONE || block == Blocks.COAL_ORE;

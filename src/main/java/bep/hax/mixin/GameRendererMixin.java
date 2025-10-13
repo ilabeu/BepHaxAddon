@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.modules.NoHurtCam;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.client.render.Camera;
@@ -11,30 +10,23 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
-
     @Inject(method = "tiltViewWhenHurt", at = @At("HEAD"), cancellable = true)
     private void onTiltViewWhenHurt(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
         Modules modules = Modules.get();
         if (modules == null) return;
-        
         NoHurtCam noHurtCam = modules.get(NoHurtCam.class);
         if (noHurtCam != null && noHurtCam.shouldDisableHurtCam()) {
             ci.cancel();
         }
     }
-
     @Inject(method = "renderFloatingItem", at = @At("HEAD"), cancellable = true)
     private void onRenderFloatingItem(CallbackInfo ci) {
-        // This prevents the red overlay rendering
         Modules modules = Modules.get();
         if (modules == null) return;
-        
         NoHurtCam noHurtCam = modules.get(NoHurtCam.class);
         if (noHurtCam != null && noHurtCam.shouldDisableRedOverlay()) {
-            // We'll handle the red overlay in a different mixin
         }
     }
 }

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.io.File;
 import java.util.List;
 import java.util.Arrays;
@@ -39,19 +38,12 @@ import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class WaxAura extends Module {
     public WaxAura() { super(Bep.STARDUST, "WaxAura", "Automatically waxes signs within your reach."); }
-
     private final String BLACKLIST_FILE = "meteor-client/waxaura-blacklist.txt";
-
     private final SettingGroup sgWax = settings.createGroup("Wax Settings");
     private final SettingGroup sgESP = settings.createGroup("ESP Settings");
     private final SettingGroup sgBlacklist = settings.createGroup("Blacklist Settings");
-
     private final Setting<Boolean> hotbarOnly = sgWax.add(
         new BoolSetting.Builder()
             .name("hotbar-only")
@@ -59,7 +51,6 @@ public class WaxAura extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> swapBack = sgWax.add(
         new BoolSetting.Builder()
             .name("swap-back")
@@ -67,7 +58,6 @@ public class WaxAura extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> standingStill = sgWax.add(
         new BoolSetting.Builder()
             .name("standing-still")
@@ -75,7 +65,6 @@ public class WaxAura extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> hangingSigns = sgWax.add(
         new BoolSetting.Builder()
             .name("hanging-signs")
@@ -83,7 +72,6 @@ public class WaxAura extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> contentBlacklist = sgBlacklist.add(
         new BoolSetting.Builder()
             .name("content-blacklist")
@@ -102,7 +90,6 @@ public class WaxAura extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> openBlacklistFile = sgBlacklist.add(
         new BoolSetting.Builder()
             .name("open-blacklist-file")
@@ -116,7 +103,6 @@ public class WaxAura extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> espNonWaxed = sgESP.add(
         new BoolSetting.Builder()
             .name("ESP-unwaxed-signs")
@@ -124,7 +110,6 @@ public class WaxAura extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> espRange = sgESP.add(
         new IntSetting.Builder()
             .name("ESP-range")
@@ -134,7 +119,6 @@ public class WaxAura extends Module {
             .defaultValue(128)
             .build()
     );
-
     private final Setting<ESPBlockData> espSettings = sgESP.add(
         new GenericSetting.Builder<ESPBlockData>()
             .name("ESP-settings")
@@ -149,7 +133,6 @@ public class WaxAura extends Module {
             )
             .build()
     );
-
     private final Setting<Integer> tickRate = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-rate")
@@ -158,7 +141,6 @@ public class WaxAura extends Module {
             .defaultValue(2)
             .build()
     );
-
     private int timer = 0;
     private int combSlot = -1;
     private int rotPriority = 69420;
@@ -166,39 +148,31 @@ public class WaxAura extends Module {
     private final HashSet<String> blacklisted = new HashSet<>();
     private final HashSet<BlockPos> signsToESP = new HashSet<>();
     private final HashSet<SignBlockEntity> signsToWax = new HashSet<>();
-
     private void initBlacklistText() {
         File blackListFile = FabricLoader.getInstance().getGameDir().resolve(BLACKLIST_FILE).toFile();
-
         try(Stream<String> lineStream = Files.lines(blackListFile.toPath())) {
             blacklisted.addAll(lineStream.toList());
         }catch (Exception err) {
             LogUtil.error("Failed to read from "+ blackListFile.getAbsolutePath() +"! - Why:\n"+err, this.name);
         }
     }
-
     private void resetBlacklistFileSetting() { openBlacklistFile.set(false); }
-
     private boolean isSignEmpty(SignBlockEntity sbe) {
         return !sbe.getFrontText().hasText(mc.player) && !sbe.getBackText().hasText(mc.player);
     }
-
     private boolean containsBlacklistedText(SignBlockEntity sbe) {
         String front = Arrays.stream(sbe.getFrontText().getMessages(false))
             .map(Text::getString)
             .collect(Collectors.joining(" "))
             .trim();
-
         String back = Arrays.stream(sbe.getBackText().getMessages(false))
             .map(Text::getString)
             .collect(Collectors.joining(" "))
             .trim();
-
         return blacklisted.stream()
             .anyMatch(line -> front.toLowerCase().contains(line.trim().toLowerCase())
                 || back.toLowerCase().contains(line.trim().toLowerCase()));
     }
-
     private void getSignsToESP() {
         for (BlockEntity be : Utils.blockEntities()) {
             if (be instanceof SignBlockEntity sbe && !sbe.isWaxed() && !isSignEmpty(sbe)) {
@@ -206,7 +180,6 @@ public class WaxAura extends Module {
             }
         }
     }
-
     private void getSignsToWax() {
         if (mc.player == null || mc.world == null || mc.currentScreen != null) return;
         for (BlockPos pos : BlockPos.iterateOutwards(mc.player.getBlockPos(), 5, 5, 5)) {
@@ -215,21 +188,17 @@ public class WaxAura extends Module {
             }
         }
     }
-
     private void waxSign(SignBlockEntity sbe) {
         if (mc.player == null || mc.interactionManager == null) return;
-
         BlockPos pos = sbe.getPos();
         Vec3d hitVec = Vec3d.ofCenter(pos);
         BlockHitResult hit = new BlockHitResult(hitVec, mc.player.getHorizontalFacing().getOpposite(), pos, false);
-
         ItemStack current = mc.player.getInventory().getMainHandStack();
         if (current.getItem() != Items.HONEYCOMB) {
             int end;
             if (hotbarOnly.get()) {
                 end = 9;
             } else end = mc.player.getInventory().main.size();
-
             for (int n = 0; n < end; n++) {
                 ItemStack stack = mc.player.getInventory().getStack(n);
                 if (stack.getItem() == Items.HONEYCOMB) {
@@ -251,7 +220,6 @@ public class WaxAura extends Module {
             if (swapBack.get()) timer = -1;
         }
     }
-
     @Override
     public void onActivate() {
         if (mc.world == null) {
@@ -260,7 +228,6 @@ public class WaxAura extends Module {
         }
         if (contentBlacklist.get() && StardustUtil.checkOrCreateFile(mc, BLACKLIST_FILE)) initBlacklistText();
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -270,18 +237,15 @@ public class WaxAura extends Module {
         signsToESP.clear();
         rotPriority = 69420;
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.interactionManager == null) return;
-
         getSignsToESP();
         if (standingStill.get()) {
             Vec3d vel = mc.player.getVelocity();
             if (vel.length() >= 0.08d) return;
         }
         if (timer % 2 == 0) getSignsToWax();
-
         ++timer;
         ItemStack active = mc.player.getActiveItem();
         if ((active.contains(DataComponentTypes.FOOD) || Utils.isThrowable(active.getItem())) && mc.player.getItemUseTime() > 0) return;
@@ -295,7 +259,6 @@ public class WaxAura extends Module {
                     signsToWax.removeIf(sbe -> contentBlacklist.get() && containsBlacklistedText(sbe));
                     signsToWax.removeIf(sbe -> !hangingSigns.get() && sbe instanceof HangingSignBlockEntity);
                     signsToWax.removeIf(sbe -> !sbe.getPos().isWithinDistance(mc.player.getBlockPos(), 6));
-
                     if (signsToWax.isEmpty()) {
                         if (swapBack.get() && combSlot != -1) {
                             if (combSlot < 9) InvUtils.swapBack();
@@ -305,13 +268,11 @@ public class WaxAura extends Module {
                         return;
                     }
                     currentSign = signsToWax.stream().toList().get(0);
-
                     waxSign(currentSign);
                 }
             }
         }
     }
-
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (mc.player == null || mc.world == null || !espNonWaxed.get()) return;
@@ -321,24 +282,20 @@ public class WaxAura extends Module {
             .filter(pos -> mc.world.getBlockEntity(pos) instanceof SignBlockEntity sbe && !sbe.isWaxed())
             .filter(pos -> hangingSigns.get() || !(mc.world.getBlockEntity(pos) instanceof HangingSignBlockEntity))
             .toList();
-
         ESPBlockData esp = espSettings.get();
         for (BlockPos pos : valid) {
             BlockState state = mc.world.getBlockState(pos);
             VoxelShape shape = state.getOutlineShape(mc.world, pos);
-
             double x1 = pos.getX() + shape.getMin(Direction.Axis.X);
             double y1 = pos.getY() + shape.getMin(Direction.Axis.Y);
             double z1 = pos.getZ() + shape.getMin(Direction.Axis.Z);
             double x2 = pos.getX() + shape.getMax(Direction.Axis.X);
             double y2 = pos.getY() + shape.getMax(Direction.Axis.Y);
             double z2 = pos.getZ() + shape.getMax(Direction.Axis.Z);
-
             event.renderer.box(
                 x1, y1, z1, x2, y2, z2,
                 esp.sideColor, esp.lineColor, esp.shapeMode, 0
             );
-
             if (esp.tracer) {
                 try {
                     double offsetX;
@@ -385,7 +342,6 @@ public class WaxAura extends Module {
                         offsetY = pos.getY() + .5;
                         offsetZ = pos.getZ() + .5;
                     }
-
                     event.renderer.line(
                         RenderUtils.center.x,
                         RenderUtils.center.y,

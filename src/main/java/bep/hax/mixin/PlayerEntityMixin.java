@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.util.CapeManager;
 import net.minecraft.world.World;
 import net.minecraft.util.math.Vec3d;
@@ -21,10 +20,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
-
     @Unique private long toggleTimestamp = System.currentTimeMillis();
-
-    // See RocketMan.java
     @SuppressWarnings("UnnecessaryContinue")
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     private void allowRocketHover(CallbackInfo ci) {
@@ -35,7 +31,6 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             while (rm.getClientInstance().options.backKey.wasPressed()) { continue; }
             return;
         }
-
         Vec3d hoverVec = Vec3d.ZERO;
         if (rm.getClientInstance().player == null) return;
         ClientPlayerEntity player = rm.getClientInstance().player;
@@ -65,7 +60,6 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 Vec3d rotVec = Vec3d.fromPolar(-180, player.getYaw());
                 hoverVec = rotVec.multiply(rm.horizontalSpeed.get());
             }
-
             if (rm.getClientInstance().player.input.playerInput.jump() && rm.getClientInstance().player.input.playerInput.sneak()) {
                 rm.getClientInstance().player.setSneaking(true);
             } else if (rm.getClientInstance().player.input.playerInput.jump()) {
@@ -95,7 +89,6 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 hoverVec = hoverVec.add(0, -rm.verticalSpeed.get(), 0);
             }
         }
-
         if (!rm.hoverMode.get().equals(RocketMan.HoverMode.Off)) {
             switch (rm.hoverMode.get()) {
                 case Hold -> {
@@ -112,7 +105,6 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 case Toggle -> {
                     boolean processed = false;
                     boolean toggled = rm.isHovering;
-
                     long now = System.currentTimeMillis();
                     if (rm.isHoverKeyPressed() && now - toggleTimestamp >= 420) {
                         if (!toggled) {
@@ -142,8 +134,6 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                             || player.input.playerInput.backward() || player.input.playerInput.jump() || player.input.playerInput.sneak()) {
                             player.move(MovementType.SELF, hoverVec);
                         }
-
-                        // consume key-presses for s, so we don't toggle hover mode off automatically if we switch back to toggle mode
                         while (rm.getClientInstance().options.backKey.wasPressed()) {
                             continue;
                         }
@@ -152,5 +142,4 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             }
         } else while (rm.getClientInstance().options.backKey.wasPressed()) { continue; }
     }
-
 }

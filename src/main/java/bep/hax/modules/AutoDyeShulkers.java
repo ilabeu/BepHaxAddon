@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import java.util.Random;
 import net.minecraft.item.Item;
@@ -21,22 +20,15 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class AutoDyeShulkers extends Module {
     private static final Random RANDOM = new Random();
-
     public AutoDyeShulkers() { super(Bep.STARDUST, "AutoDyeShulkers", "Automatically dye shulker boxes and/or bundles in crafting grids."); }
-
     public enum DyeMode {
         Shulkers, Bundles, Both
     }
     public enum OperatingMode {
         Table, Inventory, Both
     }
-
     private final Setting<DyeMode> dyeMode = settings.getDefaultGroup().add(
         new EnumSetting.Builder<DyeMode>()
             .name("dye-mode")
@@ -51,14 +43,12 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(OperatingMode.Both)
             .build()
     );
-
     private final Setting<DyeColor> dyeColor = settings.getDefaultGroup().add(
         new EnumSetting.Builder<DyeColor>()
             .name("color")
             .defaultValue(DyeColor.LIGHT_BLUE)
             .build()
     );
-
     private final Setting<Boolean> reDyeColored = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("recolor-colored")
@@ -66,7 +56,6 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> closeOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("close-screen")
@@ -74,7 +63,6 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> disableOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("disable-on-done")
@@ -82,7 +70,6 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> pingOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("sound-ping")
@@ -90,7 +77,6 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Double> pingVolume = settings.getDefaultGroup().add(
         new DoubleSetting.Builder()
             .name("ping-volume")
@@ -98,7 +84,6 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(1.0)
             .build()
     );
-
     private final Setting<Integer> tickRate = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-rate")
@@ -107,10 +92,8 @@ public class AutoDyeShulkers extends Module {
             .defaultValue(3)
             .build()
     );
-
     private int timer = 0;
     private boolean notified = false;
-
     public static boolean isColoredShulker(Item box) {
         return (box == Items.BLACK_SHULKER_BOX
             || box == Items.GRAY_SHULKER_BOX || box == Items.LIGHT_GRAY_SHULKER_BOX
@@ -121,7 +104,6 @@ public class AutoDyeShulkers extends Module {
             || box == Items.BLUE_SHULKER_BOX || box == Items.PURPLE_SHULKER_BOX
             || box == Items.MAGENTA_SHULKER_BOX || box == Items.PINK_SHULKER_BOX || box == Items.BROWN_SHULKER_BOX);
     }
-
     private boolean isValidShulker(Item box) {
         if (!reDyeColored.get()) return box == Items.SHULKER_BOX;
         else return switch (dyeColor.get()) {
@@ -143,7 +125,6 @@ public class AutoDyeShulkers extends Module {
             case BROWN -> box != Items.BROWN_SHULKER_BOX && (isColoredShulker(box) || box == Items.SHULKER_BOX);
         };
     }
-
     public static boolean isColoredBundle(Item sack) {
         return (sack == Items.BLACK_BUNDLE
             || sack == Items.GRAY_BUNDLE || sack == Items.LIGHT_GRAY_BUNDLE
@@ -154,7 +135,6 @@ public class AutoDyeShulkers extends Module {
             || sack == Items.BLUE_BUNDLE || sack == Items.PURPLE_BUNDLE
             || sack == Items.MAGENTA_BUNDLE || sack == Items.PINK_BUNDLE || sack == Items.BROWN_BUNDLE);
     }
-
     private boolean isValidBundle(Item sack) {
         if (!reDyeColored.get()) return sack == Items.BUNDLE;
         else return switch (dyeColor.get()) {
@@ -176,7 +156,6 @@ public class AutoDyeShulkers extends Module {
             case BROWN -> sack != Items.BROWN_BUNDLE && (isColoredBundle(sack) || sack == Items.BUNDLE);
         };
     }
-
     private int getUnoccupiedSlot(int occupied, int inputEnd) {
         int slot;
         do {
@@ -184,7 +163,6 @@ public class AutoDyeShulkers extends Module {
         } while (slot == occupied);
         return  slot;
     }
-
     private <T extends AbstractRecipeScreenHandler> int getItemSlot(Item wanted, T cs, int invStart, int invEnd) {
         for (int n = invStart; n < invEnd; n++) {
             ItemStack stack = cs.getSlot(n).getStack();
@@ -194,13 +172,10 @@ public class AutoDyeShulkers extends Module {
                 if (isValidBundle(stack.getItem())) return n;
             } else if (wanted == stack.getItem()) return n;
         }
-
         return -1;
     }
-
     private <T extends AbstractRecipeScreenHandler> void dyeShulker(T cs, int inputEnd, int invStart, int invEnd) {
         ItemStack output = cs.getSlot(0).getStack();
-
         switch (dyeMode.get()) {
             case Both -> {
                 if (isColoredShulker(output.getItem()) || isColoredBundle(output.getItem())) {
@@ -383,13 +358,11 @@ public class AutoDyeShulkers extends Module {
             }
         }
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
         notified = false;
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
@@ -404,7 +377,6 @@ public class AutoDyeShulkers extends Module {
             onDeactivate();
             return;
         }
-
         if (mc.currentScreen instanceof CraftingScreen && mc.player.currentScreenHandler instanceof CraftingScreenHandler cs) {
             ++timer;
             if (timer >= tickRate.get()) {

@@ -1,27 +1,21 @@
 package bep.hax.util;
-
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Identifier;
-
 import java.util.*;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
 public class CapeManager {
     private static final CapeManager INSTANCE = new CapeManager();
-
     public static final Identifier CAPE_TEXTURE = Identifier.of("bephax", "textures/cape/cape.png");
     public static final Identifier FRIEND_CAPE_TEXTURE = Identifier.of("bephax", "textures/cape/bephax.png");
-
+    public static final Identifier TRADING_CAPE_TEXTURE = Identifier.of("bephax", "textures/cape/trading.png");
     private static final Set<UUID> CAPE_UUIDS = new HashSet<>();
     private static final Set<UUID> FRIEND_CAPE_UUIDS = new HashSet<>();
-
+    private static final Set<UUID> TRADING_CAPE_UUIDS = new HashSet<>();
     private final Set<UUID> glowingPlayers = Collections.synchronizedSet(new HashSet<>());
-
     static {
         CAPE_UUIDS.add(UUID.fromString("2ffa806c-cbad-4274-8175-eb2494b7fd66"));
         CAPE_UUIDS.add(UUID.fromString("d039366f-5879-4de3-b4fa-a496f6e6e12c"));
@@ -62,11 +56,6 @@ public class CapeManager {
         CAPE_UUIDS.add(UUID.fromString("7e4d4671-eb0b-427c-b94a-64a020daf1fa"));
         CAPE_UUIDS.add(UUID.fromString("faea9d8b-b6de-4855-91ac-9a884fee8836"));
         CAPE_UUIDS.add(UUID.fromString("c941216d-e16b-4019-b965-3570dead2ea3"));
-
-
-
-
-        // Friend capes with red glow
         FRIEND_CAPE_UUIDS.add(UUID.fromString("f5c4da20-b770-4073-a50f-e9d2cd69ae3c"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("7cbdb0a3-a141-4a2c-a4cc-f9637d392b56"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("91bdb7ca-ad68-4b92-a78e-898c761aed42"));
@@ -74,7 +63,6 @@ public class CapeManager {
         FRIEND_CAPE_UUIDS.add(UUID.fromString("2ba6f46e-ef30-4060-a019-5832045e2110"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("2d3e440e-b764-41b4-9aa5-ebcf1cd87ac4"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("3062e6ee-e4b3-41af-bf41-ae29921bda6a"));
-        FRIEND_CAPE_UUIDS.add(UUID.fromString("e9bb2116-19f6-4998-90ac-352d128b06a1"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("bf775b81-1fae-40a1-b967-95ea5da0404e"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("ad3195a8-1888-44d7-9d61-5bddacfa8b8f"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("34a67d07-9afc-4620-9708-24254ae0e362"));
@@ -82,107 +70,108 @@ public class CapeManager {
         FRIEND_CAPE_UUIDS.add(UUID.fromString("c52a9f8b-22e0-4cd6-93c3-2c664f2f89b8"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("c1dad6ec-2454-47fc-b23f-64a6315055e1"));
         FRIEND_CAPE_UUIDS.add(UUID.fromString("0efe3c27-d239-4bca-926f-e85d7527b37b"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("e9bb2116-19f6-4998-90ac-352d128b06a1"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("af6ba3f6-24ab-4eae-a52e-81c7b0097955"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("af371e84-a08c-4eaa-ae03-e45bb60d6a46"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("be8e82dc-95e5-40f8-9c5e-58a9a5058ce7"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("863e5ba9-fb0e-4867-a870-371cf2d86bb3"));
+        TRADING_CAPE_UUIDS.add(UUID.fromString("f65f7c2b-070a-4db1-b377-e7743a850c3f"));
     }
-
     private CapeManager() {
         MeteorClient.EVENT_BUS.subscribe(this);
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
-
         glowingPlayers.clear();
         for (PlayerListEntry entry : mc.getNetworkHandler().getPlayerList()) {
             if (entry.getProfile() != null && entry.getProfile().getId() != null) {
                 UUID uuid = entry.getProfile().getId();
-                // Only add players who actually have capes (regular or friend)
-                if (CAPE_UUIDS.contains(uuid) || FRIEND_CAPE_UUIDS.contains(uuid)) {
+                if (CAPE_UUIDS.contains(uuid) || FRIEND_CAPE_UUIDS.contains(uuid) || TRADING_CAPE_UUIDS.contains(uuid)) {
                     glowingPlayers.add(uuid);
                 }
             }
         }
     }
-
     public static CapeManager getInstance() {
         return INSTANCE;
     }
-
     public boolean hasCape(UUID uuid) {
         return CAPE_UUIDS.contains(uuid);
     }
-
     public boolean hasCape(PlayerEntity player) {
         return player != null && hasCape(player.getUuid());
     }
-
     public boolean hasFriendCape(UUID uuid) {
         return FRIEND_CAPE_UUIDS.contains(uuid);
     }
-
     public boolean hasFriendCape(PlayerEntity player) {
         return player != null && hasFriendCape(player.getUuid());
     }
-
-    public boolean hasAnyCape(UUID uuid) {
-        return hasCape(uuid) || hasFriendCape(uuid);
+    public boolean hasTradingCape(UUID uuid) {
+        return TRADING_CAPE_UUIDS.contains(uuid);
     }
-
+    public boolean hasTradingCape(PlayerEntity player) {
+        return player != null && hasTradingCape(player.getUuid());
+    }
+    public boolean hasAnyCape(UUID uuid) {
+        return hasCape(uuid) || hasFriendCape(uuid) || hasTradingCape(uuid);
+    }
     public boolean hasAnyCape(PlayerEntity player) {
         return player != null && hasAnyCape(player.getUuid());
     }
-
     public void addGlowingPlayer(UUID uuid) {
         glowingPlayers.add(uuid);
     }
-
     public void removeGlowingPlayer(UUID uuid) {
         glowingPlayers.remove(uuid);
     }
-
     public boolean shouldGlow(UUID uuid) {
         return glowingPlayers.contains(uuid);
     }
-
     public boolean shouldGlow(PlayerEntity player) {
         return player != null && shouldGlow(player.getUuid());
     }
-
     public void clearGlowingPlayers() {
         glowingPlayers.clear();
     }
-
     public Set<UUID> getGlowingPlayers() {
         return Collections.unmodifiableSet(glowingPlayers);
     }
-
     public static void addCapeUUID(UUID uuid) {
         CAPE_UUIDS.add(uuid);
     }
-
     public static void addCapeUUID(String uuidString) {
         try {
             CAPE_UUIDS.add(UUID.fromString(uuidString));
         } catch (IllegalArgumentException e) {
         }
     }
-
     public static Set<UUID> getCapeUUIDs() {
         return Collections.unmodifiableSet(CAPE_UUIDS);
     }
-
     public static void addFriendCapeUUID(UUID uuid) {
         FRIEND_CAPE_UUIDS.add(uuid);
     }
-
     public static void addFriendCapeUUID(String uuidString) {
         try {
             FRIEND_CAPE_UUIDS.add(UUID.fromString(uuidString));
         } catch (IllegalArgumentException e) {
         }
     }
-
     public static Set<UUID> getFriendCapeUUIDs() {
         return Collections.unmodifiableSet(FRIEND_CAPE_UUIDS);
+    }
+    public static void addTradingCapeUUID(UUID uuid) {
+        TRADING_CAPE_UUIDS.add(uuid);
+    }
+    public static void addTradingCapeUUID(String uuidString) {
+        try {
+            TRADING_CAPE_UUIDS.add(UUID.fromString(uuidString));
+        } catch (IllegalArgumentException e) {
+        }
+    }
+    public static Set<UUID> getTradingCapeUUIDs() {
+        return Collections.unmodifiableSet(TRADING_CAPE_UUIDS);
     }
 }

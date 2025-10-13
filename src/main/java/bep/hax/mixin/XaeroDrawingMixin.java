@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.modules.TrailMaker;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.util.math.ChunkPos;
@@ -9,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xaeroplus.Globals;
 import xaeroplus.module.impl.Drawing;
-
 @Mixin(Drawing.class)
 public class XaeroDrawingMixin
 {
@@ -19,7 +17,6 @@ public class XaeroDrawingMixin
         TrailMaker trailMaker = Modules.get().get(TrailMaker.class);
         if (!trailMaker.isRecording()) return;
         trailMaker.dimension = Globals.getCurrentDimensionId();
-
         trailMaker.points.add(new ChunkPos(chunkX, chunkZ));
     }
 }

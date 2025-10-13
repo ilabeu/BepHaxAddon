@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import java.util.UUID;
 import net.minecraft.text.Text;
 import net.minecraft.text.Style;
@@ -30,27 +29,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import meteordevelopment.meteorclient.systems.modules.misc.Notifier;
 import net.minecraft.sound.SoundEvents;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- *     Adds greeter-style join/leave messages to Notifier
- **/
 @Mixin(value = Notifier.class, remap = false)
 public abstract class NotifierMixin extends Module {
     public NotifierMixin(Category category, String name, String desc) {
         super(category, name, desc);
     }
-
     @Shadow
     @Final
     private SettingGroup sgJoinsLeaves;
     @Shadow
     @Final
     private ArrayListDeque<Text> messageQueue;
-
     @Unique
     @Nullable
     private Setting<Boolean> greeterNotifications = null;
@@ -66,7 +56,6 @@ public abstract class NotifierMixin extends Module {
     @Unique
     @Nullable
     private Setting<Double> mentionVolume = null;
-
     @Unique
     private final String[] prefixGreetings = {
         "Hello", "Hi", "Welcome", "Howdy", "Yo", "Sup", "Greetings", "Hey", "Hola", "Hiya"
@@ -85,7 +74,6 @@ public abstract class NotifierMixin extends Module {
     private final String[] suffixFarewells = {
         "left", "disconnected", "peaced out", "logged out", "departed", "signed off", "split", "logged off"
     };
-
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/misc/Notifier;simpleNotifications:Lmeteordevelopment/meteorclient/settings/Setting;", shift = At.Shift.AFTER))
     private void addGreeterSettings(CallbackInfo ci) {
         greeterNotifications = sgJoinsLeaves.add(
@@ -95,7 +83,6 @@ public abstract class NotifierMixin extends Module {
                 .defaultValue(false)
                 .build()
         );
-
         notificationFormatting = sgJoinsLeaves.add(
             new EnumSetting.Builder<StardustUtil.TextFormat>()
                 .name("greeter-notification-formatting")
@@ -104,7 +91,6 @@ public abstract class NotifierMixin extends Module {
                 .visible(() -> greeterNotifications != null && greeterNotifications.get())
                 .build()
         );
-
         highlightMentions = sgJoinsLeaves.add(
             new BoolSetting.Builder()
                 .name("highlight-mentions")
@@ -112,7 +98,6 @@ public abstract class NotifierMixin extends Module {
                 .defaultValue(true)
                 .build()
         );
-
         mentionSound = sgJoinsLeaves.add(
             new BoolSetting.Builder()
                 .name("mention-sound")
@@ -121,7 +106,6 @@ public abstract class NotifierMixin extends Module {
                 .visible(() -> highlightMentions != null && highlightMentions.get())
                 .build()
         );
-
         mentionVolume = sgJoinsLeaves.add(
             new DoubleSetting.Builder()
                 .name("mention-volume")
@@ -135,15 +119,12 @@ public abstract class NotifierMixin extends Module {
                 .build()
         );
     }
-
     @Inject(method = "createJoinNotifications", at = @At("HEAD"), cancellable = true)
     private void greetPlayers(PlayerListS2CPacket packet, CallbackInfo ci) {
         if (greeterNotifications == null || !greeterNotifications.get()) return;
-
         ci.cancel();
         for (PlayerListS2CPacket.Entry entry : packet.getPlayerAdditionEntries()) {
             if (entry.profile() == null) continue;
-
             String name = entry.profile().getName();
             String format = notificationFormatting == null ? "§o" : notificationFormatting.get().label;
             int luckyInt = ThreadLocalRandom.current().nextInt(3);
@@ -156,16 +137,13 @@ public abstract class NotifierMixin extends Module {
             }
         }
     }
-
     @Inject(method = "createLeaveNotification", at = @At("HEAD"), cancellable = true)
     private void bidFarewell(PlayerRemoveS2CPacket packet, CallbackInfo ci) {
         if (mc.getNetworkHandler() == null || greeterNotifications == null || !greeterNotifications.get()) return;
-
         ci.cancel();
         for (UUID id : packet.profileIds()) {
             PlayerListEntry player = mc.getNetworkHandler().getPlayerListEntry(id);
             if (player == null) continue;
-
             String name = player.getProfile().getName();
             String format = notificationFormatting == null ? "§o" : notificationFormatting.get().label;
             int luckyInt = ThreadLocalRandom.current().nextInt(3);
@@ -178,5 +156,4 @@ public abstract class NotifierMixin extends Module {
             }
         }
     }
-
 }

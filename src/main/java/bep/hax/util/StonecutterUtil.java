@@ -1,14 +1,10 @@
 package bep.hax.util;
-
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import it.unimi.dsi.fastutil.objects.ReferenceSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
-
 public class StonecutterUtil {
-    // https://minecraft.wiki/w/Stonecutter#Usage
     public static final Reference2ReferenceOpenHashMap<Item, ReferenceSet<Item>> STONECUTTER_BLOCKS = new Reference2ReferenceOpenHashMap<>();
-
     static {
         STONECUTTER_BLOCKS.put(
             Items.STONE,

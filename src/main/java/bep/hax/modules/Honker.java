@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.Collection;
 import bep.hax.Bep;
 import net.minecraft.util.Hand;
@@ -26,17 +25,11 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
 import meteordevelopment.meteorclient.settings.ProvidedStringSetting;
 import net.minecraft.network.packet.s2c.play.PlaySoundFromEntityS2CPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class Honker extends Module {
     public Honker() {
         super(Bep.STARDUST, "Honker", "Automatically use goat horns when a player enters your render distance.");
     }
-
     public static String[] horns = {"Admire", "Call", "Dream", "Feel", "Ponder", "Seek", "Sing", "Yearn", "Random"};
-
     private final Setting<String> desiredCall = settings.getDefaultGroup().add(
         new ProvidedStringSetting.Builder()
             .name("horn-preference")
@@ -45,7 +38,6 @@ public class Honker extends Module {
             .defaultValue("Random")
             .build()
     );
-
     private final Setting<Boolean> ignoreFakes = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("ignore-fakes")
@@ -53,7 +45,6 @@ public class Honker extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> hornSpam = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("horn-spam")
@@ -62,7 +53,6 @@ public class Honker extends Module {
             .onChanged(it -> { if (it) this.ticksSinceUsedHorn = 420; })
             .build()
     );
-
     private final Setting<Boolean> hornSpamAlone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("when-alone")
@@ -72,7 +62,6 @@ public class Honker extends Module {
             .onChanged(it -> { if (it) this.ticksSinceUsedHorn = 420; })
             .build()
     );
-
     private final Setting<Boolean> muteHorns = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("mute-horns")
@@ -80,7 +69,6 @@ public class Honker extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> muteAllHorns = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("mute-all-horns")
@@ -89,19 +77,15 @@ public class Honker extends Module {
             .defaultValue(false)
             .build()
     );
-
     private int ticksSinceUsedHorn = 0;
     private boolean needsMuting = false;
-
     private void honkHorn(int hornSlot, int activeSlot) {
         if (mc.interactionManager == null) return;
-
         needsMuting = true;
         InvUtils.move().from(hornSlot).to(activeSlot);
         mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
         InvUtils.move().from(activeSlot).to(hornSlot);
     }
-
     private void honkDesiredHorn() {
         if (mc.player == null) return;
         if ("Random".equals(desiredCall.get())) {
@@ -119,7 +103,6 @@ public class Honker extends Module {
             }
         } else {
             String desiredCallId = desiredCall.get().toLowerCase() + "_goat_horn";
-
             int hornIndex = -1;
             for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
                 ItemStack stack = mc.player.getInventory().getStack(n);
@@ -128,22 +111,17 @@ public class Honker extends Module {
                 RegistryEntry<Instrument> instrument = stack.get(DataComponentTypes.INSTRUMENT);
                 String id = instrument.value().soundEvent().value().id().toUnderscoreSeparatedString();
                 if (id == null) continue;
-
                 hornIndex = n;
                 if (id.equals("minecraft:"+desiredCallId)) break;
             }
-
             if (hornIndex != -1) {
                 honkHorn(hornIndex, mc.player.getInventory().selectedSlot);
             }
         }
     }
-
-    // See GoatHornItemMixin.java
     public boolean shouldMuteHorns() {
         return muteHorns.get() && needsMuting || muteHorns.get() && muteAllHorns.get();
     }
-
     @Override
     public void onActivate() {
         if (mc.world == null) return;
@@ -151,7 +129,6 @@ public class Honker extends Module {
             ticksSinceUsedHorn = 0;
             return;
         }
-
         for (Entity entity : mc.world.getEntities()) {
             if (entity instanceof PlayerEntity && !(entity instanceof ClientPlayerEntity)) {
                 if (ignoreFakes.get()) {
@@ -165,28 +142,23 @@ public class Honker extends Module {
         needsMuting = false;
         ticksSinceUsedHorn = 0;
     }
-
     @EventHandler
     private void onEntityAdd(EntityAddedEvent event) {
         if (hornSpam.get() || mc.player == null) return;
         if (!(event.entity instanceof PlayerEntity player)) return;
         if (player instanceof ClientPlayerEntity) return;
-
         if (ignoreFakes.get()) {
             Collection<PlayerListEntry> players = mc.player.networkHandler.getPlayerList();
             if (players.stream().noneMatch(entry -> entry.getProfile().getId().equals(player.getUuid()))) return;
         }
-
         if (!hornSpam.get()) {
             honkDesiredHorn();
             needsMuting = false;
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!hornSpam.get() || mc.player == null || mc.world == null) return;
-
         boolean playerNearby = false;
         for (Entity entity : mc.world.getEntities()) {
             if (entity instanceof PlayerEntity && !(entity instanceof ClientPlayerEntity)) {
@@ -198,11 +170,9 @@ public class Honker extends Module {
                 break;
             }
         }
-
         if (!playerNearby && !hornSpamAlone.get()) return;
         ItemStack activeItem = mc.player.getActiveItem();
         if (activeItem.contains(DataComponentTypes.FOOD) || Utils.isThrowable(activeItem.getItem()) && mc.player.getItemUseTime() > 0) return;
-
         ++ticksSinceUsedHorn;
         if (ticksSinceUsedHorn > 150) {
             honkDesiredHorn();
@@ -210,13 +180,10 @@ public class Honker extends Module {
             ticksSinceUsedHorn = 0;
         }
     }
-
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
         if (!(event.packet instanceof PlaySoundFromEntityS2CPacket) || !shouldMuteHorns()) return;
-
         SoundEvent soundEvent = ((PlaySoundFromEntityS2CPacket) event.packet).getSound().value();
-
         for (int n = 0; n < SoundEvents.GOAT_HORN_SOUND_COUNT; n++) {
             if (soundEvent == SoundEvents.GOAT_HORN_SOUNDS.get(n).value()) {
                 event.cancel();

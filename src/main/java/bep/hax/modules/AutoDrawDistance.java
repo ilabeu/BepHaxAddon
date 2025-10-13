@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import net.minecraft.text.Text;
 import bep.hax.util.MsgUtil;
@@ -14,10 +13,6 @@ import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-
-/**
- * @author Tas [@0xTas] <root@0xTas.dev>
- */
 public class AutoDrawDistance extends Module {
     public AutoDrawDistance() {
         super(
@@ -26,7 +21,6 @@ public class AutoDrawDistance extends Module {
             "Automatically adjusts your render distance to maintain an FPS target."
         );
     }
-
     private final Setting<Integer> fpsTarget = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("FPS-target")
@@ -36,7 +30,6 @@ public class AutoDrawDistance extends Module {
             .defaultValue(60)
             .build()
     );
-
     private final Setting<Integer> minDistance = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("minimum-render-distance")
@@ -46,7 +39,6 @@ public class AutoDrawDistance extends Module {
             .defaultValue(4)
             .build()
     );
-
     private final Setting<Integer> maxDistance = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("maximum-render-distance")
@@ -56,7 +48,6 @@ public class AutoDrawDistance extends Module {
             .defaultValue(12)
             .build()
     );
-
     private final Setting<Integer> sweetSpotDelay = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("increase-delay")
@@ -66,7 +57,6 @@ public class AutoDrawDistance extends Module {
             .defaultValue(420)
             .build()
     );
-
     private final Setting<Boolean> verbose = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("debug")
@@ -74,7 +64,6 @@ public class AutoDrawDistance extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> reportFPS = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("report-FPS")
@@ -83,13 +72,11 @@ public class AutoDrawDistance extends Module {
             .visible(verbose::get)
             .build()
     );
-
     private int timer = 0;
     private int justIncreased = 0;
     private int sweetSpotCounter = 0;
     private boolean sweetSpot = false;
     private final IntArrayList fpsData = new IntArrayList();
-
     private void updateDrawDistance(int distance) {
         boolean bl = Runtime.getRuntime().maxMemory() >= 1000000000L;
         SimpleOption<Integer> viewDistance = new SimpleOption<>(
@@ -97,55 +84,44 @@ public class AutoDrawDistance extends Module {
             (optionText, value) -> GameOptions.getGenericValueText(optionText, Text.translatable("options.chunks", value)),
             new SimpleOption.ValidatingIntSliderCallbacks(2, bl ? 32 : 16),
             distance, value -> MinecraftClient.getInstance().worldRenderer.scheduleTerrainUpdate());
-
         ((GameOptionsAccessor) mc.options).setViewDistance(viewDistance);
-
         mc.options.sendClientSettings();
         if (verbose.get() && !(mc.player == null)) {
             MsgUtil.updateModuleMsg("Updated view distance to§8: §2" + distance + "§7.", this.name, "viewDistDebugUpdate".hashCode());
         }
     }
-
     private void tryLowerDrawDistanceDynamic(int drawDistance, int reduceAmount) {
         if (reduceAmount <= 0) return;
-
         if (drawDistance - reduceAmount < minDistance.get()) {
             tryLowerDrawDistanceDynamic(drawDistance, reduceAmount-1);
         } else {
             updateDrawDistance(drawDistance - reduceAmount);
         }
     }
-
     @Override
     public void onDeactivate() {
         sweetSpotCounter = 0;
         timer = 0;
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (fpsData.size() > 500) fpsData.clear();
         if (timer >= 65535) timer = 0;
-
         if (sweetSpot) ++sweetSpotCounter; else sweetSpotCounter = 0;
         if (sweetSpotCounter >= sweetSpotDelay.get()) {
             sweetSpot = false;
             sweetSpotCounter = 0;
         }
-
         int currentFps = mc.getCurrentFps();
-
         fpsData.add(currentFps);
         ++timer;
         if (timer % 10 == 0) {
             int drawDistance = mc.options.getViewDistance().getValue();
-
             int averageFps = 0;
             for (int point : fpsData) {
                 averageFps += point;
             }
             averageFps = averageFps / fpsData.size();
-
             int closeEnough = 5;
             if (justIncreased > 0) {
                 if (justIncreased >= 3 && averageFps >= fpsTarget.get() - closeEnough) {
@@ -156,7 +132,6 @@ public class AutoDrawDistance extends Module {
                         if (reportFPS.get()) {
                             MsgUtil.updateMsg("Average FPS§8: §2" + averageFps, "averageFPSUpdate".hashCode());
                         }
-
                         MsgUtil.updateModuleMsg("Entered a §2sweet spot§8..!", this.name, "sweetSpotUpdate".hashCode());
                     }
                 } else {
@@ -166,29 +141,23 @@ public class AutoDrawDistance extends Module {
             } else if (sweetSpot) {
                 if (averageFps >= fpsTarget.get() - closeEnough) return;
             }
-
             if (averageFps >= fpsTarget.get() - closeEnough) {
                 if (drawDistance >= maxDistance.get()) return;
-
                 ++justIncreased;
                 fpsData.clear();
                 if (verbose.get() && reportFPS.get() && mc.player != null) {
                     MsgUtil.updateMsg("Average FPS§8: §2" + averageFps, "averageFPSUpdate".hashCode());
                 }
-
                 updateDrawDistance(drawDistance + 1);
             } else {
                 int targetFps = fpsTarget.get();
                 if (targetFps - averageFps <= closeEnough) return;
                 if (drawDistance <= minDistance.get()) return;
-
                 if (verbose.get() && reportFPS.get() && mc.player != null) {
                     MsgUtil.updateMsg("Average FPS§8: §2" + averageFps, "averageFPSUpdate".hashCode());
                 }
-
                 fpsData.clear();
                 if (timer < 250) return;
-
                 int diff = targetFps - averageFps;
                 if (diff <= 15) {
                     tryLowerDrawDistanceDynamic(drawDistance, 2);

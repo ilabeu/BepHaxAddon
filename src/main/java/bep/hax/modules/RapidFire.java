@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import org.lwjgl.glfw.GLFW;
 import bep.hax.Bep;
@@ -19,13 +18,8 @@ import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class RapidFire extends Module {
     public RapidFire() { super(Bep.STARDUST, "RapidFire", "Rapidly fires every crossbow you've got.");}
-
     private final Setting<Boolean> autoLoad = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("auto-reload")
@@ -33,7 +27,6 @@ public class RapidFire extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> autoCycleReload = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("reload-entire-hotbar")
@@ -42,7 +35,6 @@ public class RapidFire extends Module {
             .visible(autoLoad::get)
             .build()
     );
-
     private final Setting<Boolean> fromInventory = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("from-inventory")
@@ -50,7 +42,6 @@ public class RapidFire extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> autoFire = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("auto-fire")
@@ -58,7 +49,6 @@ public class RapidFire extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<List<Item>> swapBlacklist = settings.getDefaultGroup().add(
         new ItemListSetting.Builder()
             .name("swap-blacklist")
@@ -67,7 +57,6 @@ public class RapidFire extends Module {
             .visible(fromInventory::get)
             .build()
     );
-
     public final Setting<Keybind> fireKey = settings.getDefaultGroup().add(
         new KeybindSetting.Builder()
             .name("fire-key")
@@ -75,7 +64,6 @@ public class RapidFire extends Module {
             .defaultValue(Keybind.fromKeys(GLFW.GLFW_KEY_V, GLFW.GLFW_MOD_CONTROL))
             .build()
     );
-
     private final Setting<Integer> tickDelay = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-delay")
@@ -83,14 +71,10 @@ public class RapidFire extends Module {
             .defaultValue(10)
             .build()
     );
-
     private int timer = 0;
     private boolean firing = false;
     private final ArrayListDeque<Integer> jobList = new ArrayListDeque<>();
-
-    // See ClientPlayerInteractionManagerMixin.java
     public boolean charging = false;
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -98,7 +82,6 @@ public class RapidFire extends Module {
         jobList.clear();
         charging = false;
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.interactionManager == null) return;
@@ -113,7 +96,6 @@ public class RapidFire extends Module {
                         hotbarSlots[n] = 1;
                     }
                 }
-
                 int i = 0;
                 for (int slot : hotbarSlots) {
                     ItemStack current = mc.player.getInventory().getStack(i);
@@ -131,7 +113,6 @@ public class RapidFire extends Module {
                     i++;
                 }
             }
-
             for (int n = 0; n < 9; n++) {
                 ItemStack stack = mc.player.getInventory().getStack(n);
                 if (stack.getItem() == Items.CROSSBOW && CrossbowItem.isCharged(stack)) {

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,17 +39,11 @@ import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import net.minecraft.network.packet.s2c.play.PlayerRespawnS2CPacket;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.ESPBlockData;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class PagePirate extends Module {
     public PagePirate() { super(Bep.STARDUST, "PagePirate", "Pirates books that are held by other players."); }
-
     private final SettingGroup sgChat = settings.createGroup("Chat Display");
     private final SettingGroup sgCopy = settings.createGroup("Physical Copy");
     private final SettingGroup sgESP = settings.createGroup("ESP Settings");
-
     private final Setting<Boolean> chatDisplay = sgChat.add(
         new BoolSetting.Builder()
             .name("chat-display")
@@ -58,7 +51,6 @@ public class PagePirate extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> displayBooksOnGround = sgChat.add(
         new BoolSetting.Builder()
             .name("display-books-on-ground")
@@ -66,7 +58,6 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> displayBooksInItemFrames = sgChat.add(
         new BoolSetting.Builder()
             .name("display-books-in-item-frames")
@@ -74,14 +65,12 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> deobfuscatePages = sgChat.add(
         new BoolSetting.Builder()
             .name("deobfuscate-contents-in-chat")
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> localCopy = sgCopy.add(
         new BoolSetting.Builder()
             .name("physical-copy")
@@ -89,7 +78,6 @@ public class PagePirate extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> finalizeCopy = sgCopy.add(
         new BoolSetting.Builder()
             .name("sign-local-copy")
@@ -97,7 +85,6 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> writeCoverPage = sgCopy.add(
         new BoolSetting.Builder()
             .name("write-cover-page")
@@ -105,7 +92,6 @@ public class PagePirate extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> copyBooksOnGround = sgCopy.add(
         new BoolSetting.Builder()
             .name("copy-books-on-ground")
@@ -113,7 +99,6 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> copyBooksInItemFrames = sgCopy.add(
         new BoolSetting.Builder()
             .name("copy-books-in-item-frames")
@@ -121,7 +106,6 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> overwrite = sgCopy.add(
         new BoolSetting.Builder()
             .name("overwrite-book-&-quill")
@@ -129,7 +113,6 @@ public class PagePirate extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> tickDelay = sgCopy.add(
         new IntSetting.Builder()
             .name("tick-delay")
@@ -138,7 +121,6 @@ public class PagePirate extends Module {
             .defaultValue(40)
             .build()
     );
-
     private final Setting<Boolean> espItemFrames = sgESP.add(
         new BoolSetting.Builder()
             .name("ESP-item-frames")
@@ -146,7 +128,6 @@ public class PagePirate extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> espBooksOnGround = sgESP.add(
         new BoolSetting.Builder()
             .name("ESP-books-on-ground")
@@ -154,7 +135,6 @@ public class PagePirate extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<ESPBlockData> bookESP = sgESP.add(
         new GenericSetting.Builder<ESPBlockData>()
             .name("book-entity-ESP")
@@ -169,42 +149,33 @@ public class PagePirate extends Module {
             )
             .build()
     );
-
     private int timer = 0;
     private final HashSet<String> seenPages = new HashSet<>();
     private final HashSet<ItemEntity> booksOnGround = new HashSet<>();
     private final HashSet<ItemFrameEntity> booksInItemFrames = new HashSet<>();
     private final ArrayListDeque<PirateTask> jobQueue = new ArrayListDeque<>();
     private final HashMap<String, ArrayList<String>> seenBooks = new HashMap<>();
-
     private String formatPageText(String page) {
         String formattedPage = page.replaceAll("\\\\n", "~pgprte~newline~");
         formattedPage = formattedPage
             .replace("{\"text\":\"", "")
             .replaceAll("(?m)\"}$", "");
-
         return formattedPage.trim();
     }
-
     private String decodeUnicodeChars(String page) {
         Pattern pattern = Pattern.compile("\\\\u[0-9a-fA-F]{4}");
         Matcher matcher = pattern.matcher(page);
-
         StringBuilder decodedPage = new StringBuilder();
-
         while (matcher.find()) {
             String unicode = matcher.group();
             char uChar = (char) Integer.parseInt(unicode.substring(2), 16);
             matcher.appendReplacement(decodedPage, Character.toString(uChar));
         }
         matcher.appendTail(decodedPage);
-
         return decodedPage.toString();
     }
-
     private String dayOfMonthSuffix(int dom) {
         String day = String.valueOf(dom);
-
         if (!day.endsWith("11") && day.endsWith("1")) {
             return day+"st";
         } else if (!day.endsWith("12") && day.endsWith("2")) {
@@ -215,15 +186,12 @@ public class PagePirate extends Module {
             return day+"th";
         }
     }
-
     private boolean bookAndQuillHasContent(ItemStack book) {
         if (book.getItem() != Items.WRITABLE_BOOK) return false;
         WritableBookContentComponent content = book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
         List<String> pages = content.pages().stream().map(page -> page.raw().trim()).toList();
-
         return pages.stream().anyMatch(page -> !page.isBlank());
     }
-
     private boolean equipBookAndQuill() {
         FindItemResult result = InvUtils.find(stack -> {
             if (stack.getItem() instanceof WritableBookItem) {
@@ -237,7 +205,6 @@ public class PagePirate extends Module {
             }
             return false;
         });
-
         if (result.found()) {
             if (result.slot() < 9) {
                 InvUtils.swap(result.slot(), true);
@@ -260,27 +227,21 @@ public class PagePirate extends Module {
         }
         return false;
     }
-
     private boolean itemFrameHasBook(ItemFrameEntity itemFrame) {
         ItemStack stack = itemFrame.getHeldItemStack();
         return stack.getItem() == Items.WRITTEN_BOOK || bookAndQuillHasContent(stack);
     }
-
     private void handleWrittenBook(ItemStack book, String piratedFrom) {
         if (book.contains(DataComponentTypes.WRITTEN_BOOK_CONTENT)) {
             WrittenBookContentComponent metadata = book.get(DataComponentTypes.WRITTEN_BOOK_CONTENT);
-
             String author = metadata.author();
             String title = metadata.title().raw();
             List<String> pages = metadata.getPages(false).stream().map(Text::getString).toList();
-
             String pageText = pages.stream()
                 .map(this::formatPageText)
                 .map(this::decodeUnicodeChars)
                 .collect(Collectors.joining("\n"));
-
             if (seenPages.contains(pageText.replace("~pgprte~newline~", "\n")) && seenBooks.containsKey(author) && seenBooks.get(author).contains(title)) return;
-
             seenPages.add(pageText.replace("~pgprte~newline~", "\n"));
             if (seenBooks.containsKey(author)) {
                 ArrayList<String> booksFromAuthor = seenBooks.get(author);
@@ -295,7 +256,6 @@ public class PagePirate extends Module {
                 if (deobfuscatePages.get()) {
                     pageText = pageText.replace("§k", "");
                 }
-
                 switch (piratedFrom) {
                     case "on ground" -> {
                         if (displayBooksOnGround.get()) {
@@ -339,25 +299,20 @@ public class PagePirate extends Module {
             }
         }
     }
-
     private void handleBookAndQuill(ItemStack book, String piratedFrom) {
         if (!book.contains(DataComponentTypes.WRITABLE_BOOK_CONTENT)) return;
         WritableBookContentComponent metadata = book.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
         List<String> pages = metadata.pages().stream().map(p -> p.get(false)).toList();
-
         String pageText = pages.stream()
             .map(this::formatPageText)
             .map(this::decodeUnicodeChars)
             .collect(Collectors.joining("\n"));
-
         if (seenPages.contains(pageText.replace("~pgprte~newline~", "\n"))) return;
-
         seenPages.add(pageText.replace("~pgprte~newline~", "\n"));
         if (chatDisplay.get() && !pageText.replace("~pgprte~newline~", " ").isBlank()) {
             if (deobfuscatePages.get()) {
                 pageText = pageText.replace("§k", "");
             }
-
             switch (piratedFrom) {
                 case "on ground" -> {
                     if (displayBooksOnGround.get()) {
@@ -386,28 +341,23 @@ public class PagePirate extends Module {
                 }
                 default -> jobQueue.addLast(new PirateTask(null, piratedFrom, pages));
             }
-
         }
     }
-
     private void makeLocalCopy(@Nullable WrittenBookContentComponent metadata, List<String> pages, String piratedFrom) {
         ArrayList<String> filtered = new ArrayList<>(pages.stream()
             .map(this::formatPageText)
             .map(this::decodeUnicodeChars)
             .toList());
         if (filtered.isEmpty()) return;
-
         if (!equipBookAndQuill()) {
             MsgUtil.sendModuleMsg("Failed to copy nearby book because you have no empty Book & Quills§c..!", this.name);
             return;
         }
-
         List<String> piratedPages = new ArrayList<>();
         if (writeCoverPage.get() && metadata != null) {
             String rcc = StardustUtil.rCC();
             LocalDate currentDate = LocalDate.now();
             LocalTime currentTime = LocalTime.now();
-
             String paddedMinute, paddedHour;
             if (currentTime.getMinute() < 10) {
                 paddedMinute = "0"+currentTime.getMinute();
@@ -426,17 +376,14 @@ public class PagePirate extends Module {
                 "§o" + dayOfMonthSuffix(currentDate.getDayOfMonth()) +
                 " §0§oof "+rcc+"§o" + currentDate.getMonth().toString().charAt(0) +
                 currentDate.getMonth().toString().substring(1).toLowerCase() + "§0§o, "+rcc+"§o" + currentDate.getYear() + "§0§o.";
-
             piratedPages.add(coverPage);
         }
-
         int slot = mc.player.getInventory().selectedSlot;
         boolean shouldSign = finalizeCopy.get() && metadata != null;
         MsgUtil.sendModuleMsg("Successfully copied nearby book§a..!", this.name);
         piratedPages.addAll(filtered.stream().map(page -> page.replace("~pgprte~newline~", "\n")).toList());
         mc.getNetworkHandler().sendPacket(new BookUpdateC2SPacket(slot, piratedPages, shouldSign ? Optional.of(metadata.title().raw()) : Optional.empty()));
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -446,21 +393,18 @@ public class PagePirate extends Module {
         booksOnGround.clear();
         booksInItemFrames.clear();
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (!Utils.canUpdate()) return;
         booksInItemFrames.removeIf(frame -> !itemFrameHasBook(frame));
         booksOnGround.removeIf(book -> book.isRemoved() || book.isRegionUnloaded());
         booksInItemFrames.removeIf(frame -> frame.isRemoved() || frame.isRegionUnloaded());
-
         for (Entity entity : mc.world.getEntities()) {
             if (entity instanceof PlayerEntity player && !(entity instanceof ClientPlayerEntity)) {
                 String name = player.getGameProfile().getName();
                 ItemStack mainHand = player.getStackInHand(Hand.MAIN_HAND);
                 if (mainHand.getItem() == Items.WRITTEN_BOOK) handleWrittenBook(mainHand, name);
                 else if (mainHand.getItem() == Items.WRITABLE_BOOK) handleBookAndQuill(mainHand, name);
-
                 ItemStack offHand = player.getStackInHand(Hand.OFF_HAND);
                 if (offHand.getItem() == Items.WRITTEN_BOOK) handleWrittenBook(offHand, name);
                 else if (mainHand.getItem() == Items.WRITABLE_BOOK) handleBookAndQuill(offHand, name);
@@ -488,7 +432,6 @@ public class PagePirate extends Module {
                 }
             }
         }
-
         ++timer;
         if (timer >= tickDelay.get() && !jobQueue.isEmpty()) {
             timer = 0;
@@ -496,7 +439,6 @@ public class PagePirate extends Module {
             makeLocalCopy(task.getData(), task.getPages(), task.getPiratedFrom());
         }
     }
-
     @EventHandler
     private void onRender3D(Render3DEvent event) {
         if (!Utils.canUpdate()) return;
@@ -507,7 +449,6 @@ public class PagePirate extends Module {
                 double x = MathHelper.lerp(event.tickDelta, frame.lastRenderX, frame.getX()) - frame.getX();
                 double y = MathHelper.lerp(event.tickDelta, frame.lastRenderY, frame.getY()) - frame.getY();
                 double z = MathHelper.lerp(event.tickDelta, frame.lastRenderZ, frame.getZ()) - frame.getZ();
-
                 double x1 = x + box.minX;
                 double y1 = y + box.minY;
                 double z1 = z + box.minZ;
@@ -528,14 +469,12 @@ public class PagePirate extends Module {
                 }
             }
         }
-
         if (espBooksOnGround.get()) {
             for (ItemEntity book : booksOnGround) {
                 Box box = book.getBoundingBox();
                 double x = MathHelper.lerp(event.tickDelta, book.lastRenderX, book.getX()) - book.getX();
                 double y = MathHelper.lerp(event.tickDelta, book.lastRenderY, book.getY()) - book.getY();
                 double z = MathHelper.lerp(event.tickDelta, book.lastRenderZ, book.getZ()) - book.getZ();
-
                 double x1 = x + box.minX;
                 double y1 = y + box.minY;
                 double z1 = z + box.minZ;
@@ -558,14 +497,12 @@ public class PagePirate extends Module {
             }
         }
     }
-
     @EventHandler
     private void onRespawnOrDimensionChange(PacketEvent.Receive event) {
         if (!(event.packet instanceof PlayerRespawnS2CPacket)) return;
         booksOnGround.clear();
         booksInItemFrames.clear();
     }
-
     private record PirateTask(@Nullable WrittenBookContentComponent metadata, String piratedFrom, List<String> pages) {
         public List<String> getPages() { return this.pages; }
         public String getPiratedFrom() { return this.piratedFrom; }

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
@@ -11,32 +10,25 @@ import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-
-
 public class GotoPosition extends Module
 {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
     public final Setting<BlockPos> target = sgGeneral.add(new BlockPosSetting.Builder()
         .name("target-position")
         .description("Coords to go to. Y is ignored.")
         .defaultValue(new BlockPos(0,0,0))
         .build()
     );
-
     public final Setting<Boolean> disconnectOnComplete = sgGeneral.add(new BoolSetting.Builder()
         .name("disconnect-when-complete")
         .description("Disconnects when you get to the target")
         .defaultValue(false)
         .build()
     );
-
-
     public GotoPosition()
     {
         super(Bep.STASH, "goto-position", "Goes in a straight line towards the position you give and stops once there.");
     }
-
     @Override
     public void onActivate()
     {
@@ -47,7 +39,6 @@ public class GotoPosition extends Module
         long seconds = totalSeconds % 60;
         info("Completion will take an estimated %02d hours %02d minutes %02d seconds at an average speed of 70bps", hours, minutes, seconds);
     }
-
     @Override
     public void onDeactivate()
     {
@@ -55,20 +46,6 @@ public class GotoPosition extends Module
         Input.setKeyState(mc.options.forwardKey, false);
         mc.player.setVelocity(0, 0, 0);
     }
-
-//    @Override
-//    public WWidget getWidget(GuiTheme theme)
-//    {
-//        WVerticalList list = theme.verticalList();
-//        WButton clear = list.add(theme.button("Clear Coordinates")).widget();
-//
-//        clear.action = () -> {
-//            target.reset();
-//        };
-//
-//        return list;
-//    }
-
     @EventHandler
     private void onTick(TickEvent.Post event)
     {
@@ -90,7 +67,5 @@ public class GotoPosition extends Module
             target.reset();
             this.toggle();
         }
-
     }
-
 }

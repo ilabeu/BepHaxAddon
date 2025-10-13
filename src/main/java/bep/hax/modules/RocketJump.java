@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import net.minecraft.item.Item;
 import net.minecraft.util.Hand;
@@ -21,13 +20,8 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class RocketJump extends Module {
     public RocketJump() {super(Bep.STARDUST, "RocketJump", "Rocket-boosted jumps (requires an elytra)."); }
-
     private final Setting<Boolean> preferChestplate = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("prefer-chestplate")
@@ -42,19 +36,16 @@ public class RocketJump extends Module {
             .defaultValue(3)
             .build()
     );
-
     private int timer = -1;
     private int swapSlot = -1;
     private boolean jumped = false;
     private boolean jumping = false;
     private @Nullable Item chestplate = null;
-
     private void starFlying() {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
         mc.player.startGliding();
         mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_FALL_FLYING));
     }
-
     private void useRocket() {
         if (mc.player == null) return;
         int rocketSlot = getRocketSlot();
@@ -74,7 +65,6 @@ public class RocketJump extends Module {
         if (rocketSlot < 9) InvUtils.swapBack();
         else InvUtils.move().from(mc.player.getInventory().selectedSlot).to(rocketSlot);
     }
-
     private int getRocketSlot() {
         FindItemResult rockets = InvUtils.findInHotbar(Items.FIREWORK_ROCKET);
         if (!rockets.found()) {
@@ -83,10 +73,8 @@ public class RocketJump extends Module {
                 return -1;
             }
         }
-
         return rockets.slot();
     }
-
     private boolean hasActiveRocket() {
         if (mc.world == null) return false;
         for (Entity e : mc.world.getEntities()) {
@@ -96,7 +84,6 @@ public class RocketJump extends Module {
         }
         return false;
     }
-
     @Override
     public void onActivate() {
         if (!Utils.canUpdate()) {
@@ -109,10 +96,8 @@ public class RocketJump extends Module {
             sendToggledMsg();
             return;
         }
-
         jumping = true;
     }
-
     @Override
     public void onDeactivate() {
         timer = -1;
@@ -120,16 +105,13 @@ public class RocketJump extends Module {
         jumped = false;
         jumping = false;
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || !jumping) return;
         boolean wearingSomething = !mc.player.getEquippedStack(EquipmentSlot.CHEST).isEmpty();
-
         if (!jumped && wearingSomething) {
             boolean wearingElytra = mc.player.getEquippedStack(EquipmentSlot.CHEST).isOf(Items.ELYTRA)
                 && mc.player.getEquippedStack(EquipmentSlot.CHEST).getDamage() < Items.ELYTRA.getDefaultStack().getMaxDamage();
-
             if (wearingElytra) {
                 if (mc.player.isGliding()) {
                     jumped = true;
@@ -154,7 +136,6 @@ public class RocketJump extends Module {
                     sendToggledMsg();
                     return;
                 }
-
                 swapSlot = elytra.slot();
                 InvUtils.move().from(elytra.slot()).toArmor(2);
                 return;
@@ -167,7 +148,6 @@ public class RocketJump extends Module {
                 sendToggledMsg();
                 return;
             }
-
             if (preferChestplate.get()) {
                 boolean found = false;
                 if (chestplate != null) for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -193,7 +173,6 @@ public class RocketJump extends Module {
             InvUtils.move().from(elytra.slot()).toArmor(2);
             return;
         }
-
         if (swapSlot != -1) {
             --timer;
             if (timer <= 0) {
@@ -218,7 +197,6 @@ public class RocketJump extends Module {
                             }
                         }
                     }
-
                     swapSlot = -420;
                     InvUtils.click().slotArmor(2);
                 } else if (swapSlot == -420) {

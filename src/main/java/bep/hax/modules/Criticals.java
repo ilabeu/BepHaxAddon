@@ -1,8 +1,8 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
-import bep.hax.util.IPlayerInteractEntityC2SPacket;
+import bep.hax.util.InventoryManager;
+import bep.hax.util.InventoryManager.IPlayerInteractEntityC2SPacket;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.Entity;
@@ -16,34 +16,23 @@ import net.minecraft.util.Hand;
 import bep.hax.modules.PVPModule;
 import bep.hax.util.CacheTimer;
 import bep.hax.util.EntityUtil;
-import bep.hax.util.InventoryUtils;
 import bep.hax.util.MovementUtil;
 import bep.hax.util.PlacementUtils;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
-/**
- * Modified critical attacks to always land critical hits
- * Ported from PVP with Meteor Client integration
- */
 public class Criticals extends PVPModule {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
-    // Settings
     private final Setting<Boolean> multitask = sgGeneral.add(new BoolSetting.Builder()
         .name("multitask")
         .description("Allows crits when other combat modules are enabled")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<CritMode> mode = sgGeneral.add(new EnumSetting.Builder<CritMode>()
         .name("mode")
         .description("Mode for critical attack modifier")
         .defaultValue(CritMode.PACKET)
         .build()
     );
-
     private final Setting<Boolean> phaseOnly = sgGeneral.add(new BoolSetting.Builder()
         .name("phase-only")
         .description("Only attempts criticals when phased")
@@ -51,7 +40,6 @@ public class Criticals extends PVPModule {
         .visible(() -> mode.get() == CritMode.GRIM_V3 || mode.get() == CritMode.GRIM)
         .build()
     );
-
     private final Setting<Boolean> wallsOnly = sgGeneral.add(new BoolSetting.Builder()
         .name("walls-only")
         .description("Only attempts criticals in walls")
@@ -59,7 +47,6 @@ public class Criticals extends PVPModule {
         .visible(() -> (mode.get() == CritMode.GRIM_V3 || mode.get() == CritMode.GRIM) && phaseOnly.get())
         .build()
     );
-
     private final Setting<Boolean> moveFix = sgGeneral.add(new BoolSetting.Builder()
         .name("move-fix")
         .description("Pauses crits when moving")
@@ -67,36 +54,24 @@ public class Criticals extends PVPModule {
         .visible(() -> mode.get() == CritMode.GRIM_V3 || mode.get() == CritMode.GRIM)
         .build()
     );
-
-    // State tracking
     private final CacheTimer attackTimer = new CacheTimer();
     private boolean postUpdateGround;
     private boolean postUpdateSprint;
-
     public Criticals() {
         super(Bep.CATEGORY, "criticals", "Modifies attacks to always land critical hits");
     }
-
     @Override
     public void onDeactivate() {
         postUpdateGround = false;
         postUpdateSprint = false;
     }
-
     @EventHandler
     private void onSendPacket(PacketEvent.Send event) {
         if (mc.player == null || mc.world == null) return;
-
-        // Skip during crystal combat - handled by other modules
         if (isOtherCombatActive()) return;
-
-        // Handle attack packets
         if (event.packet instanceof PlayerInteractEntityC2SPacket packet) {
-            // Check if it's an attack packet using our mixin interface
             IPlayerInteractEntityC2SPacket accessor = (IPlayerInteractEntityC2SPacket) packet;
             if (!accessor.isAttackPacket()) return;
-            
-            // Get the entity from the world using entity ID
             Entity target = null;
             if (mc.world != null) {
                 int entityId = accessor.getTargetEntityId();
@@ -108,29 +83,20 @@ public class Criticals extends PVPModule {
                 }
             }
             if (!isValidTarget(target)) return;
-
-            // Handle vehicle attacks differently
             if (EntityUtil.isVehicle(target)) {
                 handleVehicleAttack(target);
                 return;
             }
-
-            // Handle sprint state
             postUpdateSprint = mc.player.isSprinting();
             if (postUpdateSprint) {
                 mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.STOP_SPRINTING));
             }
-
-            // Perform critical attack
             performCriticalAttack(target);
         }
     }
-
     @EventHandler
     private void onSentPacket(PacketEvent.Sent event) {
         if (mc.player == null) return;
-
-        // Handle post-attack cleanup
         if (event.packet instanceof PlayerInteractEntityC2SPacket) {
             if (postUpdateGround) {
                 mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
@@ -138,54 +104,42 @@ public class Criticals extends PVPModule {
                 ));
                 postUpdateGround = false;
             }
-
             if (postUpdateSprint) {
                 mc.getNetworkHandler().sendPacket(new ClientCommandC2SPacket(mc.player, ClientCommandC2SPacket.Mode.START_SPRINTING));
                 postUpdateSprint = false;
             }
         }
     }
-
     private boolean isOtherCombatActive() {
         if (!multitask.get()) {
-            // Check for active combat modules that should have priority
-            // This would normally check AutoCrystal, SelfTrap, etc. but we'll keep it simple
             return false;
         }
         return false;
     }
-
-
     private boolean isValidTarget(Entity entity) {
         if (entity == null || !entity.isAlive() || !(entity instanceof LivingEntity)) {
             return false;
         }
-
-        // Check various conditions that prevent critical hits
         return !(mc.player.isRiding() ||
             mc.player.isGliding() ||
             mc.player.isTouchingWater() ||
             mc.player.isInLava() ||
             mc.player.isHoldingOntoLadder() ||
             mc.player.hasStatusEffect(StatusEffects.BLINDNESS) ||
-            InventoryUtils.isHolding32k());
+            InventoryManager.isHolding32k());
     }
-
     private void handleVehicleAttack(Entity target) {
         if (mode.get() == CritMode.PACKET) {
-            // Spam attack packets for vehicles
             for (int i = 0; i < 5; i++) {
                 mc.getNetworkHandler().sendPacket(PlayerInteractEntityC2SPacket.attack(target, mc.player.isSneaking()));
                 mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
             }
         }
     }
-
     private void performCriticalAttack(Entity target) {
         double x = mc.player.getX();
         double y = mc.player.getY();
         double z = mc.player.getZ();
-
         switch (mode.get()) {
             case VANILLA -> {
                 if (mc.player.isOnGround() && !mc.options.jumpKey.isPressed()) {
@@ -222,16 +176,12 @@ public class Criticals extends PVPModule {
                 if (phaseOnly.get() && (wallsOnly.get() ? !PlacementUtils.isDoublePhased() : !PlacementUtils.isPhased())) {
                     return;
                 }
-
                 if (moveFix.get() && MovementUtil.isMovingInput()) {
                     return;
                 }
-
                 if (attackTimer.passed(250) && mc.player.isOnGround() && !mc.player.isCrawling()) {
-                    // Use current player rotations for Grim bypasses - critical for 2b2t
                     float yaw = mc.player.getYaw();
                     float pitch = mc.player.getPitch();
-
                     mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
                         x, y + 0.0625, z, yaw, pitch, false, false));
                     mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
@@ -245,16 +195,12 @@ public class Criticals extends PVPModule {
                 if (phaseOnly.get() && (wallsOnly.get() ? !PlacementUtils.isDoublePhased() : !PlacementUtils.isPhased())) {
                     return;
                 }
-
                 if (moveFix.get() && MovementUtil.isMovingInput()) {
                     return;
                 }
-
                 if (mc.player.isOnGround() && !mc.player.isCrawling()) {
-                    // Use current player rotations for Grim V3 bypasses - critical for 2b2t
                     float yaw = mc.player.getYaw();
                     float pitch = mc.player.getPitch();
-
                     mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
                         x, y, z, yaw, pitch, true, false));
                     mc.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
@@ -264,12 +210,10 @@ public class Criticals extends PVPModule {
                 }
             }
             case LOW_HOP -> {
-                // Set upward motion for low hop
                 mc.player.setVelocity(mc.player.getVelocity().x, 0.3425, mc.player.getVelocity().z);
             }
         }
     }
-
     public enum CritMode {
         PACKET("Packet"),
         PACKET_STRICT("Packet Strict"),
@@ -277,13 +221,10 @@ public class Criticals extends PVPModule {
         GRIM("Grim"),
         GRIM_V3("Grim V3"),
         LOW_HOP("Low Hop");
-
         private final String displayName;
-
         CritMode(String displayName) {
             this.displayName = displayName;
         }
-
         @Override
         public String toString() {
             return displayName;

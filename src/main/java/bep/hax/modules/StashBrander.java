@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import bep.hax.Bep;
 import net.minecraft.item.Item;
@@ -18,20 +17,14 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import bep.hax.mixin.accessor.AnvilScreenHandlerAccessor;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.player.EXPThrower;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class StashBrander extends Module {
     public StashBrander() { super(Bep.STARDUST, "StashBrander","Allows you to automatically rename items in bulk when using anvils."); }
-
     private final Setting<List<Item>> itemList = settings.getDefaultGroup().add(
         new ItemListSetting.Builder()
             .name("items")
             .description("Items to automatically rename (or exclude from being renamed, if blacklist mode is enabled.)")
             .build()
     );
-
     private final Setting<String> itemName = settings.getDefaultGroup().add(
         new StringSetting.Builder()
             .name("custom-name")
@@ -44,7 +37,6 @@ public class StashBrander extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> blacklistMode = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("blacklist-mode")
@@ -52,7 +44,6 @@ public class StashBrander extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> renameNamed = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("rename-prenamed")
@@ -60,14 +51,12 @@ public class StashBrander extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> muteAnvils = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("mute-anvils")
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> pingOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("sound-ping")
@@ -75,7 +64,6 @@ public class StashBrander extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Double> pingVolume = settings.getDefaultGroup().add(
         new DoubleSetting.Builder()
             .name("ping-volume")
@@ -84,7 +72,6 @@ public class StashBrander extends Module {
             .defaultValue(1.0)
             .build()
     );
-
     private final Setting<Boolean> closeOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("close-anvil")
@@ -92,7 +79,6 @@ public class StashBrander extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> disableOnDone = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("disable-on-done")
@@ -100,7 +86,6 @@ public class StashBrander extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> enableExpThrower = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("enable-exp-thrower")
@@ -108,7 +93,6 @@ public class StashBrander extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> tickRate = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("tick-rate")
@@ -117,18 +101,14 @@ public class StashBrander extends Module {
             .defaultValue(0)
             .build()
     );
-
     private int timer = 0;
     private boolean notified = false;
     private static final int ANVIL_OFFSET = 3;
-
-    // See WorldMixin.java
     public boolean shouldMute() { return muteAnvils.get(); }
-
     private boolean hasValidItems(AnvilScreenHandler handler) {
         if (mc.player == null) return false;
         for (int n = 0; n < mc.player.getInventory().main.size() + ANVIL_OFFSET; n++) {
-            if (n == 2) continue; // ignore output stack
+            if (n == 2) continue;
             ItemStack stack = handler.getSlot(n).getStack();
             if ((blacklistMode.get() && !itemList.get().contains(stack.getItem()))
                 || (!blacklistMode.get() && itemList.get().contains(stack.getItem())))
@@ -139,7 +119,6 @@ public class StashBrander extends Module {
         }
         return false;
     }
-
     private void noXP() {
         if (mc.player == null) return;
         if (!notified) {
@@ -151,7 +130,6 @@ public class StashBrander extends Module {
         if (disableOnDone.get()) this.toggle();
         if (enableExpThrower.get() && !Modules.get().isActive(EXPThrower.class)) Modules.get().get(EXPThrower.class).toggle();
     }
-
     private void finished() {
         if (mc.player == null) return;
         if (!notified) {
@@ -162,13 +140,11 @@ public class StashBrander extends Module {
         if (closeOnDone.get()) mc.player.closeHandledScreen();
         if (disableOnDone.get()) this.toggle();
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
         notified = false;
     }
-
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (mc.player == null) return;
@@ -178,18 +154,15 @@ public class StashBrander extends Module {
         }
         if (!(mc.currentScreen instanceof AnvilScreen anvilScreen)) return;
         if (!(mc.player.currentScreenHandler instanceof AnvilScreenHandler anvil)) return;
-
         if (timer < tickRate.get()) {
             timer++;
             return;
         } else {
             timer = 0;
         }
-
         ItemStack input1 = anvil.getSlot(AnvilScreenHandler.INPUT_1_ID).getStack();
         ItemStack input2 = anvil.getSlot(AnvilScreenHandler.INPUT_2_ID).getStack();
         ItemStack output = anvil.getSlot(AnvilScreenHandler.OUTPUT_ID).getStack();
-
         if (!hasValidItems(anvil)) finished();
         else if (input1.isEmpty() && input2.isEmpty()) {
             for (int n = ANVIL_OFFSET; n < mc.player.getInventory().main.size() + ANVIL_OFFSET; n++) {
@@ -197,7 +170,6 @@ public class StashBrander extends Module {
                 if (stack.contains(DataComponentTypes.CUSTOM_NAME) && !renameNamed.get()) continue;
                 else if (stack.getName().getString().equals(itemName.get())) continue;
                 else if (itemName.get().isBlank() && !stack.contains(DataComponentTypes.CUSTOM_NAME)) continue;
-
                 if ((blacklistMode.get() && !itemList.get().contains(stack.getItem()))
                     || (!blacklistMode.get() && itemList.get().contains(stack.getItem())))
                 {
@@ -210,7 +182,6 @@ public class StashBrander extends Module {
                             if (mc.player.experienceLevel >= cost) {
                                 InvUtils.shiftClick().slotId(AnvilScreenHandler.OUTPUT_ID);
                             } else noXP();
-
                             return;
                         }
                     }

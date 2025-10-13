@@ -1,8 +1,12 @@
 package bep.hax.mixin.meteor;
-
+import bep.hax.util.InventoryManager;
+import meteordevelopment.meteorclient.events.packets.PacketEvent;
+import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.orbit.EventPriority;
 import net.minecraft.item.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
+import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,25 +24,22 @@ import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.systems.modules.player.EXPThrower;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(value = EXPThrower.class, remap = false)
 public abstract class ExpThrowerMixin extends Module {
     public ExpThrowerMixin(Category category, String name, String description) {
         super(category, name, description);
     }
-
     @Unique
     private @Nullable Setting<Integer> levelCap = null;
     @Unique
     private @Nullable Setting<Boolean> autoToggle = null;
     @Unique
     private @Nullable Setting<Boolean> hotbarSwap = null;
-
+    @Unique
+    private InventoryManager inventoryManager;
     @Inject(method = "<init>", at = @At("TAIL"))
     private void addLevelCapSetting(CallbackInfo ci) {
+        inventoryManager = InventoryManager.getInstance();
         levelCap = this.settings.getDefaultGroup().add(
             new IntSetting.Builder()
                 .name("level-cap")
@@ -63,23 +64,18 @@ public abstract class ExpThrowerMixin extends Module {
                 .build()
         );
     }
-
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
     private void stopAtLevelCap(CallbackInfo ci) {
         if (mc.player == null) return;
         if (hotbarSwap != null && hotbarSwap.get()) {
             FindItemResult result = InvUtils.findInHotbar(Items.EXPERIENCE_BOTTLE);
-
             if (!result.found()) {
                 FindItemResult result1 = InvUtils.find(Items.EXPERIENCE_BOTTLE);
-
                 if (result1.found()) {
                     FindItemResult emptySlot = InvUtils.findInHotbar(ItemStack::isEmpty);
-
                     if (emptySlot.found()) InvUtils.move().from(result1.slot()).to(emptySlot.slot());
                     else {
                         FindItemResult nonCriticalSlot = InvUtils.findInHotbar(stack -> !(stack.getItem() instanceof MiningToolItem) && !(stack.isIn(ItemTags.WEAPON_ENCHANTABLE)) && !(stack.contains(DataComponentTypes.FOOD)));
-
                         if (nonCriticalSlot.found()) InvUtils.move().from(result1.slot()).to(emptySlot.slot());
                         else {
                             int luckySlot = ThreadLocalRandom.current().nextInt(9);
@@ -87,18 +83,35 @@ public abstract class ExpThrowerMixin extends Module {
                         }
                     }
                 }
-
                 ci.cancel();
                 return;
             }
         }
-
         if (levelCap == null || levelCap.get() == 0) return;
         if (mc.player.experienceLevel >= levelCap.get()) {
             ci.cancel();
             if (autoToggle != null && autoToggle.get()) {
                 this.toggle();
             }
+        }
+    }
+    @Unique
+    @EventHandler(priority = EventPriority.HIGH)
+    private void onSendPacket(PacketEvent.Send event) {
+        if (!isActive() || mc.player == null) return;
+        if (event.packet instanceof PlayerInteractItemC2SPacket) {
+            ItemStack heldItem = mc.player.getMainHandStack();
+            if (heldItem.getItem() == Items.EXPERIENCE_BOTTLE) {
+                int currentSlot = mc.player.getInventory().selectedSlot;
+                inventoryManager.setSlot(currentSlot);
+                inventoryManager.syncToClient();
+            }
+        }
+    }
+    @Inject(method = "onDeactivate", at = @At("HEAD"))
+    private void onDeactivateInject(CallbackInfo ci) {
+        if (inventoryManager != null) {
+            inventoryManager.syncToClient();
         }
     }
 }

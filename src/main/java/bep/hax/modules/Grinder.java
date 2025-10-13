@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import java.util.ArrayDeque;
 import bep.hax.Bep;
@@ -33,17 +32,11 @@ import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import bep.hax.mixin.accessor.GrindstoneScreenHandlerAccessor;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class Grinder extends Module {
     public Grinder() { super(Bep.STARDUST, "Grinder", "Automatically grinds enchantments off of select items in the grindstone."); }
-
     public enum ModuleMode {
         Packet, Interact
     }
-
     private final Setting<ModuleMode> moduleMode = settings.getDefaultGroup().add(
         new EnumSetting.Builder<ModuleMode>()
             .name("mode")
@@ -118,41 +111,34 @@ public class Grinder extends Module {
             .visible(() -> moduleMode.get().equals(ModuleMode.Interact))
             .build()
     );
-
     private int timer = 0;
     private boolean notified = false;
     private @Nullable ItemStack combinedItem = null;
     private @Nullable ItemStack currentTarget = null;
     private final IntArrayList projectedEmpty = new IntArrayList();
     private final IntArrayList processedSlots = new IntArrayList();
-
     private boolean hasValidItems(GrindstoneScreenHandler handler) {
         if (mc.player == null) return false;
         for (int n = 0; n < mc.player.getInventory().main.size() + 3; n++) {
-            if (n == 2) continue; // skip output slot
+            if (n == 2) continue;
             if (isValidItem(handler.getSlot(n).getStack())) return true;
         }
         return false;
     }
-
     private boolean hasValidEnchantments(ItemStack stack) {
         if (!stack.hasEnchantments()) return false;
         Object2IntMap<RegistryEntry<Enchantment>> enchants = new Object2IntArrayMap<>();
-
         Utils.getEnchantments(stack, enchants);
         if (enchants.size() == 1 && Utils.hasEnchantment(stack, Enchantments.BINDING_CURSE)) return false;
         else if (enchants.size() == 1 && Utils.hasEnchantment(stack, Enchantments.VANISHING_CURSE)) return false;
         else if (enchants.size() == 2 && Utils.hasEnchantment(stack, Enchantments.BINDING_CURSE) && Utils.hasEnchantment(stack, Enchantments.VANISHING_CURSE)) return false;
-
         return !enchants.isEmpty();
     }
-
     private boolean isValidItem(ItemStack item) {
         return itemList.get().contains(item.getItem())
             && hasValidEnchantments(item)
             && (grindNamed.get() || !item.contains(DataComponentTypes.CUSTOM_NAME));
     }
-
     private int predictEmptySlot(GrindstoneScreenHandler handler) {
         if (mc.player == null) return -1;
         for (int n = mc.player.getInventory().main.size() + 2; n >= 3; n--) {
@@ -167,7 +153,6 @@ public class Grinder extends Module {
         }
         return -1;
     }
-
     private void finished() {
         if (mc.player == null) return;
         if (!notified) {
@@ -180,28 +165,22 @@ public class Grinder extends Module {
         if (closeOnDone.get()) mc.player.closeHandledScreen();
         if (disableOnDone.get()) toggle();
     }
-
     private @Nullable ClickSlotC2SPacket generatePacket(GrindstoneScreenHandler handler) {
         if (mc.player == null) return null;
         Int2ObjectMap<ItemStack> changedSlots = new Int2ObjectOpenHashMap<>();
-
         if (currentTarget != null && combinedItem != null) {
-            // empty output
             changedSlots.put(0, ItemStack.EMPTY);
             changedSlots.put(1, ItemStack.EMPTY);
             changedSlots.put(2, ItemStack.EMPTY);
             int shiftClickTargetSlot = predictEmptySlot(handler);
-
             if (shiftClickTargetSlot == -1) {
                 MsgUtil.sendModuleMsg("Failed to predict empty target slot§c..!", this.name);
                 return null;
             }
-
             if (combinedItem.isEmpty()) {
                 combinedItem = ((GrindstoneScreenHandlerAccessor) handler).invokeGrind(currentTarget);
             }
             changedSlots.put(shiftClickTargetSlot, combinedItem.copy());
-
             combinedItem = null;
             currentTarget = null;
             return new ClickSlotC2SPacket(
@@ -209,22 +188,18 @@ public class Grinder extends Module {
                 SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
             );
         } else if (currentTarget != null) {
-            // fill input slot 2
             for (int n = 3; n < mc.player.getInventory().main.size() + 3; n++) {
                 if (processedSlots.contains(n)) continue;
                 ItemStack stack = handler.getSlot(n).getStack();
                 if (!isValidItem(stack) || !stack.isOf(currentTarget.getItem())) continue;
                 Pair<ItemStack, Integer> combinedStackPlusDamage = combineStacks(handler, currentTarget, stack);
-
                 combinedItem = combinedStackPlusDamage.getLeft();
-
                 processedSlots.add(1);
                 processedSlots.add(n);
                 projectedEmpty.add(n);
                 changedSlots.put(1, stack);
                 changedSlots.put(n, ItemStack.EMPTY);
                 changedSlots.put(2, ((GrindstoneScreenHandlerAccessor) handler).invokeGrind(combinedItem));
-
                 return new ClickSlotC2SPacket(
                     handler.syncId, handler.getRevision(), n, 0,
                     SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
@@ -233,12 +208,10 @@ public class Grinder extends Module {
             combinedItem = ItemStack.EMPTY;
             return generatePacket(handler);
         } else {
-            // fill input slot 1
             for (int n = 3; n < mc.player.getInventory().main.size() + 3; n++) {
                 if (processedSlots.contains(n)) continue;
                 ItemStack stack = handler.getSlot(n).getStack();
                 if (!isValidItem(stack)) continue;
-
                 currentTarget = stack;
                 processedSlots.add(0);
                 processedSlots.add(n);
@@ -246,32 +219,24 @@ public class Grinder extends Module {
                 changedSlots.put(0, stack);
                 changedSlots.put(n, ItemStack.EMPTY);
                 changedSlots.put(2, ((GrindstoneScreenHandlerAccessor) handler).invokeGrind(stack));
-
                 if (!combine.get()) combinedItem = ItemStack.EMPTY;
-
                 return new ClickSlotC2SPacket(
                     handler.syncId, handler.getRevision(), n, 0,
                     SlotActionType.QUICK_MOVE, ItemStack.EMPTY, changedSlots
                 );
             }
         }
-
         return null;
     }
-
     private Pair<ItemStack, Integer> combineStacks(GrindstoneScreenHandler handler, ItemStack stack1, ItemStack stack2) {
         if (!stack1.isOf(stack2.getItem())) return new Pair<>(ItemStack.EMPTY, 0);
-
         int j = stack1.getMaxDamage() - stack1.getDamage();
         int k = stack1.getMaxDamage() - stack2.getDamage();
         int l = j + k + stack1.getMaxDamage() * 5 / 100;
         int m = Math.max(stack1.getMaxDamage() - l, 0);
-
         ((GrindstoneScreenHandlerAccessor) handler).invokeTransferEnchantments(stack1, stack2);
-
         return new Pair<>(stack1, m);
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -281,7 +246,6 @@ public class Grinder extends Module {
         projectedEmpty.clear();
         processedSlots.clear();
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null) return;
@@ -291,23 +255,19 @@ public class Grinder extends Module {
         }
         if (!(mc.currentScreen instanceof GrindstoneScreen)) return;
         if (!(mc.player.currentScreenHandler instanceof GrindstoneScreenHandler grindstone)) return;
-
         switch (moduleMode.get()) {
             case Packet -> {
                 if (mc.getNetworkHandler() == null || notified) return;
                 ArrayDeque<ClickSlotC2SPacket> packets = new ArrayDeque<>();
-
                 boolean exhausted = false;
                 while (!exhausted) {
                     ClickSlotC2SPacket packet = generatePacket(grindstone);
-
                     if (packet == null) {
                         exhausted = true;
                     } else {
                         packets.addLast(packet);
                     }
                 }
-
                 while (!packets.isEmpty()) {
                     ((ClientConnectionAccessor) mc.getNetworkHandler()
                         .getConnection())
@@ -322,11 +282,9 @@ public class Grinder extends Module {
                     ++timer;
                     return;
                 }
-
                 ItemStack input1 = grindstone.getSlot(GrindstoneScreenHandler.INPUT_1_ID).getStack();
                 ItemStack input2 = grindstone.getSlot(GrindstoneScreenHandler.INPUT_2_ID).getStack();
                 ItemStack output = grindstone.getSlot(GrindstoneScreenHandler.OUTPUT_ID).getStack();
-
                 if (!hasValidItems(grindstone)) finished();
                 else if (input1.isEmpty() && input2.isEmpty()) {
                     Item turboItem = null;
@@ -336,7 +294,6 @@ public class Grinder extends Module {
                         else if (!itemList.get().contains(stack.getItem())) continue;
                         else if (stack.contains(DataComponentTypes.CUSTOM_NAME) && !grindNamed.get()) continue;
                         if (combine.get() && turboItem != null && stack.getItem() != turboItem) continue;
-
                         if (!combine.get()) {
                             InvUtils.shiftClick().slotId(n);
                             return;
@@ -366,7 +323,6 @@ public class Grinder extends Module {
             }
         }
     }
-
     @EventHandler
     private void onPacketReceive(PacketEvent.Receive event) {
         if (!muteGrindstone.get() || !(event.packet instanceof PlaySoundS2CPacket packet)) return;

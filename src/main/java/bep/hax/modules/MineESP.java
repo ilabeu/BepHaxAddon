@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
@@ -11,18 +10,14 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
-
 import java.util.ArrayList;
 import java.util.List;
-
 public class MineESP extends meteordevelopment.meteorclient.systems.modules.Module {
     public MineESP() {
         super(Bep.CATEGORY, "Mine ESP", "Renders a box at blocks being mined by other players.");
     }
-
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgRender = settings.createGroup("Render");
-
     private final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
         .name("Range")
         .description("Only renders inside this range.")
@@ -39,8 +34,6 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
         .sliderRange(0, 50)
         .build()
     );
-
-    //--------------------Render--------------------//
     private final Setting<ShapeMode> shapeMode = sgRender.add(new EnumSetting.Builder<ShapeMode>()
         .name("Shape Mode")
         .description("Which parts of boxes should be rendered.")
@@ -59,52 +52,41 @@ public class MineESP extends meteordevelopment.meteorclient.systems.modules.Modu
         .defaultValue(new SettingColor(255, 0, 0, 50))
         .build()
     );
-
     private final List<Render> renders = new ArrayList<>();
     Render render = null;
-
     @EventHandler
     private void onRender(Render3DEvent event) {
         if (mc.player == null || mc.world == null) return;
-
         if (render != null && contains()) render = null;
-
         if (render != null) {
             renders.add(render);
             render = null;
         }
-
         renders.forEach(r -> {
             double delta = Math.min((System.currentTimeMillis() - r.time) / (maxTime.get() * 1000d), 1);
             event.renderer.box(getBox(r.pos, getProgress(Math.min(delta * 4, 1))), getColor(sideColor.get(), 1 - delta), getColor(lineColor.get(), 1 - delta), shapeMode.get(), 0);
         });
     }
-
     @EventHandler
     private void onReceive(PacketEvent.Receive event) {
         if (event.packet instanceof BlockBreakingProgressS2CPacket packet) {
             render = new Render(packet.getPos(), packet.getEntityId(), System.currentTimeMillis());
         }
     }
-
     private boolean contains() {
         for (Render r : renders) {
             if (r.id == render.id && r.pos.equals(render.pos)) return true;
         }
         return false;
     }
-
     private Color getColor(Color color, double delta) {
         return new Color(color.r, color.g, color.b, (int) Math.floor(color.a * delta));
     }
-
     private double getProgress(double delta) {
         return 1 - Math.pow(1 - (delta), 5);
     }
-
     private Box getBox(BlockPos pos, double progress) {
         return new Box(pos.getX() + 0.5 - progress / 2, pos.getY() + 0.5 - progress / 2,pos.getZ() + 0.5 - progress / 2, pos.getX() + 0.5 + progress / 2, pos.getY() + 0.5 + progress / 2, pos.getZ() + 0.5 + progress / 2);
     }
-
     private record Render(BlockPos pos, int id, long time) {}
 }

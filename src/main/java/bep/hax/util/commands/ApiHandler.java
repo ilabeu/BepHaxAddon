@@ -1,5 +1,4 @@
 package bep.hax.util.commands;
-
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
@@ -10,15 +9,8 @@ import java.net.URISyntaxException;
 import bep.hax.util.StardustUtil;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- * credit to <a href="https://github.com/rfresh2">rfresh for the 2b api</a>
- **/
 public class ApiHandler {
     public static final String API_2B2T_URL = "https://api.2b2t.vc";
-
     public static void sendErrorResponse() {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         if (player != null) {
@@ -30,11 +22,9 @@ public class ApiHandler {
             );
         }
     }
-
     @Nullable
     public String fetchResponse(String requestString) {
         HttpClient client = HttpClient.newHttpClient();
-
         HttpRequest req;
         try {
             req = HttpRequest.newBuilder().uri(new URI(requestString))
@@ -47,24 +37,20 @@ public class ApiHandler {
             LogUtil.error(err.toString(), "ApiHandler");
             return null;
         }
-
         if (req == null) {
             sendErrorResponse();
             return null;
         }
-
         HttpResponse<String> res = null;
         try {
             res = client.sendAsync(req, HttpResponse.BodyHandlers.ofString()).get();
         } catch (Exception err) {
             LogUtil.error(err.toString(), "ApiHandler");
         }
-
         if (res == null) {
             sendErrorResponse();
             return null;
         }
-
         if (res.statusCode() == 200) {
             return res.body();
         } else if (res.statusCode() == 204) {
@@ -73,7 +59,6 @@ public class ApiHandler {
             sendErrorResponse();
             LogUtil.warn("Received unexpected response from api.2b2t.vc: \"" + res + "\"", "ApiHandler");
         }
-
         return null;
     }
 }

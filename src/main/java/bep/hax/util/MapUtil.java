@@ -1,27 +1,20 @@
 package bep.hax.util;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-
-/**
- * @author Tas [@0xTas] <root@0xTas.dev>
- **/
 public class MapUtil {
     public static void addWaypoint(BlockPos pos, String name, String initials, Purpose purpose, WpColor color, boolean temp) {
         if (!StardustUtil.XAERO_AVAILABLE) return;
         XaeroIntegration.addWaypoint(pos, name, initials, purpose, color, temp);
     }
-
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static void removeWaypoints(String name, Predicate<BlockPos> posPredicate, Optional<Integer> yOverride) {
         if (!StardustUtil.XAERO_AVAILABLE) return;
         XaeroIntegration.removeWaypoints(name, posPredicate, yOverride);
     }
-
     private static class XaeroIntegration {
         static void addWaypoint(BlockPos pos, String name, String initials, Purpose purpose, WpColor color, boolean temp) {
             try {
@@ -29,19 +22,15 @@ public class MapUtil {
                     LogUtil.warn("Cancelling duplicate waypoint with name: \"" + name + "\"..!", "MapUtil");
                     return;
                 }
-
                 xaero.hud.minimap.waypoint.set.WaypointSet set = getWaypointSet();
-
                 if (set == null) {
                     LogUtil.warn("Cancelling waypoint with name \"" + name + "\" because the waypoint set is null..!", "MapUtil");
                     return;
                 }
-
                 xaero.common.minimap.waypoints.Waypoint waypoint = new xaero.common.minimap.waypoints.Waypoint(
                     pos.getX(), pos.getY(), pos.getZ(),
                     name, initials, getColor(color), getPurpose(purpose), temp
                 );
-
                 set.add(waypoint);
                 xaero.map.mods.SupportMods.xaeroMinimap.requestWaypointsRefresh();
                 saveWaypoints();
@@ -49,23 +38,19 @@ public class MapUtil {
                 LogUtil.error("Error while trying to add waypoint to Xaero map! Why - " + err, "MapUtil");
             }
         }
-
         static @Nullable xaero.hud.minimap.module.MinimapSession getMinimapSession() {
             return xaero.hud.minimap.BuiltInHudModules.MINIMAP.getCurrentSession();
         }
-
         static @Nullable xaero.hud.minimap.world.MinimapWorld getWaypointWorld() {
             xaero.hud.minimap.module.MinimapSession session = getMinimapSession();
             if (session == null) return null;
             return session.getWorldManager().getCurrentWorld();
         }
-
         static @Nullable xaero.hud.minimap.waypoint.set.WaypointSet getWaypointSet() {
             xaero.hud.minimap.world.MinimapWorld currentWorld = getWaypointWorld();
             if (currentWorld == null) return null;
             return currentWorld.getCurrentWaypointSet();
         }
-
         static @Nullable xaero.common.minimap.waypoints.Waypoint getWaypointByCoordinate(int x, int z) {
             xaero.hud.minimap.waypoint.set.WaypointSet waypointSet = getWaypointSet();
             if (waypointSet == null) return null;
@@ -76,7 +61,6 @@ public class MapUtil {
             }
             return null;
         }
-
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
         static void removeWaypoints(String name, Predicate<BlockPos> posPredicate, Optional<Integer> yOverride) {
             try {
@@ -101,7 +85,6 @@ public class MapUtil {
                 LogUtil.error("Error while trying to remove waypoints from Xaero map! Why - " + err, "MapUtil");
             }
         }
-
         static void saveWaypoints() {
             try {
                 xaero.hud.minimap.module.MinimapSession session = getMinimapSession();
@@ -111,14 +94,12 @@ public class MapUtil {
                 LogUtil.error("Failed saving minimap waypoints! Why: " + err, "MapUtil");
             }
         }
-
         static xaero.hud.minimap.waypoint.WaypointPurpose getPurpose(Purpose purpose) {
             return switch (purpose) {
                 case Normal -> xaero.hud.minimap.waypoint.WaypointPurpose.NORMAL;
                 case Destination -> xaero.hud.minimap.waypoint.WaypointPurpose.DESTINATION;
             };
         }
-
         static xaero.hud.minimap.waypoint.WaypointColor getColor(WpColor color) {
             return switch (color) {
                 case Random -> xaero.hud.minimap.waypoint.WaypointColor.getRandom();
@@ -141,11 +122,9 @@ public class MapUtil {
             };
         }
     }
-
     public enum Purpose {
         Normal, Destination
     }
-
     public enum WpColor {
         Black, Dark_Blue, Dark_Green, Dark_Aqua, Dark_Red, Dark_Purple,
         Gold, Gray, Dark_Gray, Blue, Green, Aqua, Red, Purple, Yellow, White, Random

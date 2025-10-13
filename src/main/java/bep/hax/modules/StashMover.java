@@ -837,7 +837,6 @@ public class StashMover extends Module {
         } else {
             warning("Not near any configured area! Will retry in 5 seconds...");
             if (debugMode.get()) {
-                // Removed coordinate logging
                 warning("Input area not set");
                 warning("Output area not set");
             }
@@ -846,11 +845,9 @@ public class StashMover extends Module {
         }
     }
     private void handleInputProcess() {
-        // Prevent re-entering if we're already transitioning to enderchest handling
         if (currentState == ProcessState.OPENING_ENDERCHEST) {
             return;
         }
-
         if (isInventoryFull()) {
             if (fillEnderChest.get() && !isEnderChestFull()) {
                 info("Inventory full, checking enderchest...");
@@ -1044,16 +1041,13 @@ public class StashMover extends Module {
         Vec3d eyePos = mc.player.getEyePos();
         Vec3d playerPos = mc.player.getPos();
         double distance = eyePos.distanceTo(Vec3d.ofCenter(currentContainer.pos));
-
         double horizontalDistance = Math.sqrt(
             Math.pow(currentContainer.pos.getX() + 0.5 - playerPos.x, 2) +
                 Math.pow(currentContainer.pos.getZ() + 0.5 - playerPos.z, 2)
         );
         double verticalDiff = Math.abs(currentContainer.pos.getY() - eyePos.y);
-
         boolean isDiagonal = verticalDiff > 1.5 && horizontalDistance < 2.5;
         double effectiveReach = isDiagonal ? 3.2 : 3.5;
-
         if (distance > effectiveReach) {
             if (retryCount < 2) {
                 info("Too far (" + String.format("%.1f", distance) + "m), moving closer...");
@@ -1072,12 +1066,10 @@ public class StashMover extends Module {
         double targetPitch = Rotations.getPitch(containerCenter);
         mc.player.setYaw((float)targetYaw);
         mc.player.setPitch((float)targetPitch);
-
         for (int i = 0; i < 2; i++) {
             mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
                 (float)targetYaw, (float)targetPitch, mc.player.isOnGround(), mc.player.horizontalCollision));
         }
-
         info("Opening container (attempt " + (containerOpenFailures + 1) + ")");
         performImprovedInteraction(containerCenter);
         currentState = ProcessState.WAITING;
@@ -1100,13 +1092,8 @@ public class StashMover extends Module {
             false
         );
         ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-            Hand.MAIN_HAND,
-            hitResult,
-            0
-        ));
-        if (result != ActionResult.SUCCESS) {
-            mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+        if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+            result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
         }
         if (debugMode.get()) {
             info("Interaction: face=" + clickFace + ", result=" + result);
@@ -1194,11 +1181,9 @@ public class StashMover extends Module {
                 false
             );
             ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                Hand.MAIN_HAND,
-                hitResult,
-                i
-            ));
+            if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+                result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+            }
             if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
                 if (debugMode.get()) {
                     info("Container opened with position " + i + ", face: " + bestFace);
@@ -1242,18 +1227,8 @@ public class StashMover extends Module {
                 false
             );
             ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                Hand.MAIN_HAND,
-                hitResult,
-                0
-            ));
-            if (result != ActionResult.SUCCESS) {
-                mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
-                mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                    Hand.OFF_HAND,
-                    hitResult,
-                    1
-                ));
+            if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+                result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
             }
             if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
                 if (debugMode.get()) {
@@ -1412,19 +1387,16 @@ public class StashMover extends Module {
                 mc.player.networkHandler.sendPacket(new PlayerMoveC2SPacket.LookAndOnGround(
                     (float)yaw, (float)pitch, mc.player.isOnGround(), mc.player.horizontalCollision
                 ));
-
                 Direction[] faces = {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
                 Direction face = faces[stateTimer % faces.length];
                 Vec3d hitVec = calculatePreciseHitVector(currentContainer.pos, face, mc.player.getEyePos());
-
                 BlockHitResult hitResult = new BlockHitResult(
                     hitVec, face, currentContainer.pos, false
                 );
-
-                mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-                mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                    Hand.MAIN_HAND, hitResult, stateTimer
-                ));
+                ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+                if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+                    mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+                }
             }
             return;
         }
@@ -1727,8 +1699,9 @@ public class StashMover extends Module {
                 false
             );
             ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                Hand.MAIN_HAND, hitResult, timer + i));
+            if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+                result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+            }
             if (result == ActionResult.SUCCESS || result == ActionResult.CONSUME) {
                 if (debugMode.get()) {
                     info("Interaction successful!");
@@ -1807,6 +1780,10 @@ public class StashMover extends Module {
             currentState = ProcessState.INPUT_PROCESS;
             return;
         }
+        if (stateTimer > 0) {
+            stateTimer--;
+            return;
+        }
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
@@ -1850,8 +1827,22 @@ public class StashMover extends Module {
             }
         }
         if (!transferredItem) {
-            currentContainer.isEmpty = true;
-            info("Container is now empty");
+            boolean containerActuallyEmpty = true;
+            for (int i = 0; i < currentContainer.totalSlots; i++) {
+                Slot slot = handler.getSlot(i);
+                ItemStack stack = slot.getStack();
+                if (!stack.isEmpty()) {
+                    if (onlyShulkers.get() && !isShulkerBox(stack.getItem())) {
+                        continue;
+                    }
+                    containerActuallyEmpty = false;
+                    break;
+                }
+            }
+            if (containerActuallyEmpty) {
+                currentContainer.isEmpty = true;
+                info("Container is now empty");
+            }
             currentState = ProcessState.CLOSING_CONTAINER;
         }
     }
@@ -1960,8 +1951,7 @@ public class StashMover extends Module {
         enderChestPos = findNearbyEnderChest();
         if (enderChestPos != null) {
             currentState = ProcessState.OPENING_ENDERCHEST;
-            stateTimer = 0;  // Set to 0 to immediately initiate movement
-            // Directly set Baritone goal to move to enderchest
+            stateTimer = 0;
             GoalNear goal = new GoalNear(enderChestPos, 2);
             BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
             info("Moving to enderchest");
@@ -1980,10 +1970,8 @@ public class StashMover extends Module {
     }
     private void handleOpeningEnderChest() {
         if (enderChestPos == null) {
-            // Try to find enderchest one more time
             enderChestPos = findNearbyEnderChest();
             if (enderChestPos == null) {
-                // Still no enderchest found, try to place one if we have it
                 FindItemResult enderChest = InvUtils.findInHotbar(Items.ENDER_CHEST);
                 if (enderChest.found()) {
                     BlockPos placePos = findSuitablePlacePos();
@@ -1992,14 +1980,11 @@ public class StashMover extends Module {
                         return;
                     }
                 }
-                // No enderchest available at all, go back to input process
                 warning("No enderchest found or available to place");
                 currentState = ProcessState.INPUT_PROCESS;
                 return;
             }
         }
-
-        // Check if enderchest GUI is already open
         if (mc.currentScreen instanceof GenericContainerScreen) {
             containerOpenFailures = 0;
             if (isNearOutputArea()) {
@@ -2010,19 +1995,14 @@ public class StashMover extends Module {
             stateTimer = transferDelay.get();
             return;
         }
-
-        // Check if we're close enough to open the enderchest
         Vec3d eyePos = mc.player.getEyePos();
         double distance = eyePos.distanceTo(Vec3d.ofCenter(enderChestPos));
-
         if (distance <= 4.5) {
-            // We're close enough, try to open it
             Vec3d enderChestCenter = Vec3d.ofCenter(enderChestPos);
             double targetYaw = Rotations.getYaw(enderChestCenter);
             double targetPitch = Rotations.getPitch(enderChestCenter);
             mc.player.setYaw((float)targetYaw);
             mc.player.setPitch((float)targetPitch);
-
             BlockHitResult hitResult = new BlockHitResult(
                 enderChestCenter,
                 Direction.UP,
@@ -2030,18 +2010,14 @@ public class StashMover extends Module {
                 false
             );
             mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-            stateTimer = 10; // Small delay to let the GUI open
+            stateTimer = 10;
         } else {
-            // Too far, check if Baritone is already pathing
             if (!BaritoneAPI.getProvider().getPrimaryBaritone().getPathingBehavior().isPathing()) {
-                // Not pathing, initiate movement
                 GoalNear goal = new GoalNear(enderChestPos, 2);
                 BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess().setGoalAndPath(goal);
                 info("Moving to enderchest");
             }
-            // Otherwise, Baritone is already moving us there, just wait
         }
-
         if (stateTimer > 0) {
             stateTimer--;
         }
@@ -2049,6 +2025,10 @@ public class StashMover extends Module {
     private void handleFillingEnderChest() {
         if (!(mc.currentScreen instanceof GenericContainerScreen)) {
             checkNextStepAfterEnderChest();
+            return;
+        }
+        if (stateTimer > 0) {
+            stateTimer--;
             return;
         }
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
@@ -2094,6 +2074,21 @@ public class StashMover extends Module {
             }
         }
         if (!transferred) {
+            boolean inventoryHasItems = false;
+            for (int i = 0; i < 36; i++) {
+                ItemStack invStack = mc.player.getInventory().getStack(i);
+                if (!invStack.isEmpty()) {
+                    if (onlyShulkers.get() && !isShulkerBox(invStack.getItem())) {
+                        continue;
+                    }
+                    inventoryHasItems = true;
+                    break;
+                }
+            }
+            if (inventoryHasItems) {
+                stateTimer = transferDelay.get();
+                return;
+            }
             mc.player.closeHandledScreen();
             stateTimer = closeDelay.get();
             checkNextStepAfterEnderChest();
@@ -2117,6 +2112,10 @@ public class StashMover extends Module {
                 enderChestEmptied = true;
                 currentState = ProcessState.OUTPUT_PROCESS;
             }
+            return;
+        }
+        if (stateTimer > 0) {
+            stateTimer--;
             return;
         }
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
@@ -2169,7 +2168,6 @@ public class StashMover extends Module {
                     mc.player
                 );
                 transferred = true;
-                enderChestHasItems = true;
                 stateTimer = transferDelay.get();
                 info("Retrieved item from enderchest");
                 return;
@@ -2245,9 +2243,7 @@ public class StashMover extends Module {
         } else {
             pickupPos = outputPearlPickupPos.get();
         }
-
         ensureOffhandHasItem();
-
         double distance = mc.player.getPos().distanceTo(Vec3d.ofCenter(pickupPos));
         if (distance > 3) {
             GoalBlock goal = new GoalBlock(pickupPos);
@@ -2261,7 +2257,6 @@ public class StashMover extends Module {
     private void handleResetPearlPlaceShulker() {
         if (!hasPlacedShulker) {
             ItemStack slot0 = mc.player.getInventory().getStack(0);
-
             if (slot0.getItem() == Items.ENDER_PEARL) {
                 for (int i = 1; i < 36; i++) {
                     if (mc.player.getInventory().getStack(i).isEmpty()) {
@@ -2271,9 +2266,7 @@ public class StashMover extends Module {
                     }
                 }
             }
-
             ensureOffhandHasItem();
-
             slot0 = mc.player.getInventory().getStack(0);
             if (isShulkerBox(slot0.getItem())) {
                 offhandBackup = mc.player.getOffHandStack().copy();
@@ -2808,6 +2801,10 @@ public class StashMover extends Module {
             currentState = ProcessState.OUTPUT_PROCESS;
             return;
         }
+        if (stateTimer > 0) {
+            stateTimer--;
+            return;
+        }
         if (!(mc.player.currentScreenHandler instanceof GenericContainerScreenHandler handler)) {
             currentState = ProcessState.CLOSING_CONTAINER;
             return;
@@ -3055,25 +3052,17 @@ public class StashMover extends Module {
             item == Items.ENDER_CHEST;
     }
     private BlockPos findNearbyEnderChest() {
-        // Start with a smaller search radius for efficiency
-        int searchRadius = 32; // Reduced from 128 for faster searching
+        int searchRadius = 32;
         BlockPos playerPos = mc.player.getBlockPos();
-
         BlockPos closestEnderChest = null;
         double closestDistance = Double.MAX_VALUE;
-
-        // Search more thoroughly without skipping blocks
         for (int x = -searchRadius; x <= searchRadius; x++) {
-            for (int y = -5; y <= 5; y++) {  // Reduced vertical range
+            for (int y = -5; y <= 5; y++) {
                 for (int z = -searchRadius; z <= searchRadius; z++) {
                     BlockPos pos = playerPos.add(x, y, z);
-
-                    // Skip if too far away
                     double dist = playerPos.getSquaredDistance(pos);
                     if (dist > searchRadius * searchRadius) continue;
-
                     if (!mc.world.isChunkLoaded(pos)) continue;
-
                     Block block = mc.world.getBlockState(pos).getBlock();
                     if (block instanceof EnderChestBlock) {
                         if (dist < closestDistance) {
@@ -3084,7 +3073,6 @@ public class StashMover extends Module {
                 }
             }
         }
-
         if (closestEnderChest != null) {
             info("Found enderchest nearby");
         }
@@ -3308,14 +3296,8 @@ public class StashMover extends Module {
             hitVec, face, pos, false
         );
         ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-        mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-            Hand.MAIN_HAND, hitResult, 0
-        ));
         if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
             result = mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                Hand.OFF_HAND, hitResult, 1
-            ));
         }
         return result == ActionResult.SUCCESS || result == ActionResult.CONSUME;
     }
@@ -3349,10 +3331,10 @@ public class StashMover extends Module {
             BlockHitResult hitResult = new BlockHitResult(
                 hitPos, face, pos, false
             );
-            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
-            mc.player.networkHandler.sendPacket(new PlayerInteractBlockC2SPacket(
-                Hand.MAIN_HAND, hitResult, i
-            ));
+            ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, hitResult);
+            if (result != ActionResult.SUCCESS && result != ActionResult.CONSUME) {
+                mc.interactionManager.interactBlock(mc.player, Hand.OFF_HAND, hitResult);
+            }
         }
         if (debugMode.get()) {
             info("Sent packet spam interaction for stubborn chest");
@@ -3492,7 +3474,6 @@ public class StashMover extends Module {
     private void ensureOffhandHasItem() {
         ItemStack offhandStack = mc.player.getOffHandStack();
         ItemStack slot0 = mc.player.getInventory().getStack(0);
-
         if (!slot0.isEmpty() && slot0.getItem() != Items.ENDER_PEARL) {
             if (offhandStack.isEmpty()) {
                 mc.interactionManager.clickSlot(
@@ -3534,7 +3515,6 @@ public class StashMover extends Module {
             }
             return;
         }
-
         if (offhandStack.isEmpty()) {
             for (int i = 1; i < 9; i++) {
                 ItemStack stack = mc.player.getInventory().getStack(i);
@@ -3557,7 +3537,6 @@ public class StashMover extends Module {
                     return;
                 }
             }
-
             for (int i = 9; i < 36; i++) {
                 ItemStack stack = mc.player.getInventory().getStack(i);
                 if (!stack.isEmpty() && stack.getItem() != Items.ENDER_PEARL && !isShulkerBox(stack.getItem())) {

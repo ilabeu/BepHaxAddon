@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
@@ -17,17 +16,13 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
 import static meteordevelopment.meteorclient.MeteorClient.mc;
-
 public class AutoBreed extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
     private final SettingGroup sgRotation = settings.createGroup("Rotation");
     private final SettingGroup sgTiming = settings.createGroup("Timing");
-
     private final Setting<Set<EntityType<?>>> entities = sgGeneral.add(new EntityTypeListSetting.Builder()
         .name("entities")
         .description("Which entities to breed.")
@@ -41,7 +36,6 @@ public class AutoBreed extends Module {
         .onlyAttackable()
         .build()
     );
-
     private final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
         .name("range")
         .description("Maximum range to breed animals.")
@@ -51,37 +45,32 @@ public class AutoBreed extends Module {
         .sliderMax(6.0)
         .build()
     );
-
     private final Setting<Boolean> requireBothParents = sgGeneral.add(new BoolSetting.Builder()
         .name("require-both-parents")
         .description("Only breed when there are at least 2 breedable animals of the same type.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Boolean> ignoreBabies = sgGeneral.add(new BoolSetting.Builder()
         .name("ignore-babies")
         .description("Don't attempt to breed baby animals.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Integer> clicksPerAnimal = sgGeneral.add(new IntSetting.Builder()
         .name("clicks-per-animal")
         .description("Number of interaction attempts per animal.")
         .defaultValue(3)
         .min(1)
-        .max(5)
+        .max(100)
         .build()
     );
-
     private final Setting<Boolean> rotate = sgRotation.add(new BoolSetting.Builder()
         .name("rotate")
         .description("Rotate towards animals before feeding.")
         .defaultValue(true)
         .build()
     );
-
     private final Setting<Double> rotationSpeed = sgRotation.add(new DoubleSetting.Builder()
         .name("rotation-speed")
         .description("Maximum rotation speed per tick.")
@@ -91,7 +80,6 @@ public class AutoBreed extends Module {
         .visible(rotate::get)
         .build()
     );
-
     private final Setting<Integer> feedDelay = sgTiming.add(new IntSetting.Builder()
         .name("feed-delay")
         .description("Ticks between feeding different animals.")
@@ -100,7 +88,6 @@ public class AutoBreed extends Module {
         .max(100)
         .build()
     );
-
     private final Setting<Integer> clickDelay = sgTiming.add(new IntSetting.Builder()
         .name("click-delay")
         .description("Ticks between clicks on same animal.")
@@ -109,7 +96,6 @@ public class AutoBreed extends Module {
         .max(20)
         .build()
     );
-
     private final Setting<Integer> breedCooldown = sgTiming.add(new IntSetting.Builder()
         .name("breed-cooldown")
         .description("Seconds to wait after feeding before trying again.")
@@ -118,17 +104,14 @@ public class AutoBreed extends Module {
         .max(300)
         .build()
     );
-
     private final Setting<Boolean> debugMode = sgTiming.add(new BoolSetting.Builder()
         .name("debug")
         .description("Show debug messages.")
         .defaultValue(false)
         .build()
     );
-
     private final Map<UUID, Long> fedAnimals = new ConcurrentHashMap<>();
     private final Map<Class<?>, Integer> animalRotation = new ConcurrentHashMap<>();
-
     private PassiveEntity target = null;
     private int targetSlot = -1;
     private int previousSlot = -1;
@@ -136,17 +119,14 @@ public class AutoBreed extends Module {
     private int tickCount = 0;
     private int stateTicks = 0;
     private State state = State.IDLE;
-
     private enum State {
         IDLE,
         ROTATING,
         FEEDING
     }
-
     public AutoBreed() {
         super(Categories.World, "auto-breed", "Automatically breeds animals.");
     }
-
     @Override
     public void onActivate() {
         fedAnimals.clear();
@@ -154,14 +134,12 @@ public class AutoBreed extends Module {
         resetState();
         if (debugMode.get()) ChatUtils.info("[AutoBreed] Activated");
     }
-
     @Override
     public void onDeactivate() {
         fedAnimals.clear();
         restoreSlot();
         resetState();
     }
-
     private void resetState() {
         target = null;
         targetSlot = -1;
@@ -171,31 +149,25 @@ public class AutoBreed extends Module {
         stateTicks = 0;
         state = State.IDLE;
     }
-
     private void restoreSlot() {
         if (previousSlot != -1 && mc.player != null) {
             mc.player.getInventory().selectedSlot = previousSlot;
             previousSlot = -1;
         }
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.world == null) return;
-
         tickCount++;
         stateTicks++;
-
         long now = System.currentTimeMillis();
         fedAnimals.entrySet().removeIf(e -> now - e.getValue() > breedCooldown.get() * 1000L);
-
         switch (state) {
             case ROTATING -> handleRotating();
             case FEEDING -> handleFeeding();
             case IDLE -> handleIdle();
         }
     }
-
     private void handleRotating() {
         if (target == null || !target.isAlive() || mc.player.distanceTo(target) > range.get()) {
             if (debugMode.get()) ChatUtils.info("[AutoBreed] Target lost during rotation");
@@ -203,25 +175,19 @@ public class AutoBreed extends Module {
             resetState();
             return;
         }
-
         Vec3d targetPos = target.getBoundingBox().getCenter();
         Vec3d eyePos = mc.player.getEyePos();
         Vec3d diff = targetPos.subtract(eyePos);
-
         double dist = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
         float targetYaw = (float) Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f;
         float targetPitch = (float) -Math.toDegrees(Math.atan2(diff.y, dist));
-
         float yawDiff = MathHelper.wrapDegrees(targetYaw - mc.player.getYaw());
         float pitchDiff = targetPitch - mc.player.getPitch();
-
         float maxSpeed = rotationSpeed.get().floatValue();
         if (Math.abs(yawDiff) > maxSpeed) yawDiff = Math.copySign(maxSpeed, yawDiff);
         if (Math.abs(pitchDiff) > maxSpeed) pitchDiff = Math.copySign(maxSpeed, pitchDiff);
-
         mc.player.setYaw(mc.player.getYaw() + yawDiff);
         mc.player.setPitch(MathHelper.clamp(mc.player.getPitch() + pitchDiff, -90, 90));
-
         if (Math.abs(yawDiff) < 2.0f && Math.abs(pitchDiff) < 2.0f && stateTicks >= 5) {
             if (targetSlot != -1) {
                 previousSlot = mc.player.getInventory().selectedSlot;
@@ -231,13 +197,11 @@ public class AutoBreed extends Module {
                     ChatUtils.info("[AutoBreed] Switched to " + item.getName().getString() + " slot " + targetSlot);
                 }
             }
-
             state = State.FEEDING;
             stateTicks = 0;
             clickCount = 0;
         }
     }
-
     private void handleFeeding() {
         if (target == null || !target.isAlive() || mc.player.distanceTo(target) > range.get()) {
             if (debugMode.get()) ChatUtils.info("[AutoBreed] Target lost during feeding");
@@ -245,32 +209,23 @@ public class AutoBreed extends Module {
             resetState();
             return;
         }
-
         if (stateTicks < 2) return;
-
         if (stateTicks % clickDelay.get() == 0 && clickCount < clicksPerAnimal.get()) {
             Vec3d targetPos = target.getBoundingBox().getCenter();
             Vec3d eyePos = mc.player.getEyePos();
             Vec3d diff = targetPos.subtract(eyePos);
-
             double dist = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
             float yaw = (float) Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f;
             float pitch = (float) -Math.toDegrees(Math.atan2(diff.y, dist));
-
             mc.player.setYaw(yaw);
             mc.player.setPitch(MathHelper.clamp(pitch, -90, 90));
-
             Vec3d hitPos = targetPos;
             EntityHitResult hitResult = new EntityHitResult(target, hitPos);
-
             ActionResult result = mc.interactionManager.interactEntityAtLocation(mc.player, target, hitResult, Hand.MAIN_HAND);
-
             if (!result.isAccepted()) {
                 result = mc.interactionManager.interactEntity(mc.player, target, Hand.MAIN_HAND);
             }
-
             clickCount++;
-
             if (debugMode.get()) {
                 ItemStack heldItem = mc.player.getMainHandStack();
                 int countBefore = heldItem.getCount();
@@ -280,7 +235,6 @@ public class AutoBreed extends Module {
                     " - Item count: " + countBefore);
             }
         }
-
         if (clickCount >= clicksPerAnimal.get()) {
             fedAnimals.put(target.getUuid(), System.currentTimeMillis());
             if (debugMode.get()) {
@@ -290,41 +244,31 @@ public class AutoBreed extends Module {
             resetState();
         }
     }
-
     private void handleIdle() {
         if (tickCount < feedDelay.get()) return;
-
         List<PassiveEntity> animals = findBreedableAnimals();
         if (animals.isEmpty()) return;
-
         Map<Class<?>, List<PassiveEntity>> byType = new HashMap<>();
         for (PassiveEntity animal : animals) {
             byType.computeIfAbsent(animal.getClass(), k -> new ArrayList<>()).add(animal);
         }
-
         for (Map.Entry<Class<?>, List<PassiveEntity>> entry : byType.entrySet()) {
             Class<?> type = entry.getKey();
             List<PassiveEntity> list = entry.getValue();
-
             if (requireBothParents.get() && list.size() < 2) continue;
-
             int start = animalRotation.getOrDefault(type, 0);
             for (int i = 0; i < list.size(); i++) {
                 int idx = (start + i) % list.size();
                 PassiveEntity animal = list.get(idx);
-
                 int slot = findBreedingItemSlot(animal);
                 if (slot == -1) continue;
-
                 target = animal;
                 targetSlot = slot;
                 state = State.ROTATING;
                 stateTicks = 0;
                 clickCount = 0;
                 tickCount = 0;
-
                 animalRotation.put(type, (idx + 1) % list.size());
-
                 if (debugMode.get()) {
                     ItemStack item = mc.player.getInventory().getStack(slot);
                     ChatUtils.info("[AutoBreed] Targeting " + animal.getType().getName().getString() +
@@ -334,37 +278,29 @@ public class AutoBreed extends Module {
             }
         }
     }
-
     private List<PassiveEntity> findBreedableAnimals() {
         List<PassiveEntity> result = new ArrayList<>();
-
         for (Entity entity : mc.world.getEntities()) {
             if (!(entity instanceof PassiveEntity animal)) continue;
             if (!animal.isAlive()) continue;
             if (mc.player.distanceTo(animal) > range.get()) continue;
             if (!entities.get().contains(animal.getType())) continue;
-
             if (ignoreBabies.get()) {
                 try {
                     if (animal.isBaby()) continue;
                 } catch (Exception ignored) {}
             }
-
             if (fedAnimals.containsKey(animal.getUuid())) continue;
             if (!canBreed(animal)) continue;
             if (findBreedingItemSlot(animal) == -1) continue;
-
             result.add(animal);
         }
-
         result.sort(Comparator.comparingDouble(a -> mc.player.distanceTo(a)));
         return result;
     }
-
     private int findBreedingItemSlot(PassiveEntity animal) {
         List<Item> items = getBreedingItems(animal);
         if (items == null) return -1;
-
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = mc.player.getInventory().getStack(slot);
             if (!stack.isEmpty()) {
@@ -375,7 +311,6 @@ public class AutoBreed extends Module {
         }
         return -1;
     }
-
     private List<Item> getBreedingItems(PassiveEntity animal) {
         if (animal instanceof MooshroomEntity || animal instanceof CowEntity ||
             animal instanceof SheepEntity || animal instanceof GoatEntity) {
@@ -417,7 +352,6 @@ public class AutoBreed extends Module {
         if (animal instanceof SnifferEntity) return List.of(Items.TORCHFLOWER_SEEDS);
         return null;
     }
-
     private boolean canBreed(PassiveEntity animal) {
         if (animal instanceof HorseEntity horse) return horse.isTame();
         if (animal instanceof DonkeyEntity donkey) return donkey.isTame();
@@ -425,7 +359,6 @@ public class AutoBreed extends Module {
         if (animal instanceof CatEntity cat) return cat.isTamed();
         return true;
     }
-
     @Override
     public String getInfoString() {
         return String.valueOf(fedAnimals.size());

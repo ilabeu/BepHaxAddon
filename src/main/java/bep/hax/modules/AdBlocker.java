@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import java.util.ArrayList;
 import bep.hax.Bep;
@@ -16,17 +15,11 @@ import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.settings.StringListSetting;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
 import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class AdBlocker extends Module {
     public AdBlocker() { super(Bep.STARDUST, "AdBlocker", "Blocks advertisers in chat."); }
-
     public enum IgnoreStyle {
         None, Ignore, HardIgnore
     }
-
     private final Setting<IgnoreStyle> ignoreStyle = settings.getDefaultGroup().add(
         new EnumSetting.Builder<IgnoreStyle>()
             .name("ignore-advertisers")
@@ -47,27 +40,23 @@ public class AdBlocker extends Module {
             )
             .build()
     );
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onPacketReceive(PacketEvent.Receive event) {
         if (mc.getNetworkHandler() == null) return;
         if (!(event.packet instanceof GameMessageS2CPacket packet)) return;
-
         if (packet.content() == null) return;
         String content = packet.content().getString();
         for (String pattern : patterns.get()) {
             if (content.toLowerCase().contains(pattern.toLowerCase())) {
-                event.cancel(); // fuck yo packets
+                event.cancel();
                 if (!ignoreStyle.get().equals(IgnoreStyle.None)) {
                     String name = getNameFromMessage(content);
-
                     String cmd;
                     if (ignoreStyle.get().equals(IgnoreStyle.Ignore)) {
                         cmd = "ignore";
                     } else {
                         cmd = "ignorehard";
                     }
-
                     if (name.isBlank()) {
                         cmd = "ignoredeathmsgs";
                         List<String> responsible = new ArrayList<>();
@@ -93,16 +82,13 @@ public class AdBlocker extends Module {
             }
         }
     }
-
     private String getNameFromMessage(String message) {
         String name = "";
         String[] parts = message.split(" ");
         if (parts.length >= 3 && parts[1].equals("whispers:")) name = parts[0];
         else if (parts[0].startsWith("<") && parts[0].endsWith(">")) name = parts[0].substring(1, parts[0].length() - 1);
-
         return name;
     }
-
     private void extractNamesFromDeathMessage(Text msg, List<String> names) {
         if (msg.getStyle().getHoverEvent() != null) {
             HoverEvent event = msg.getStyle().getHoverEvent();
@@ -113,7 +99,6 @@ public class AdBlocker extends Module {
                 }
             }
         }
-
         for (Text sibling : msg.getSiblings()) {
             extractNamesFromDeathMessage(sibling, names);
         }

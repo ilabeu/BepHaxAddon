@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import bep.hax.modules.RespawnPointBlocker;
@@ -15,50 +14,39 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 @Mixin(MinecraftClient.class)
 public class RespawnPointBlockerSpamMixin {
     private long lastSpamTime = 0;
-    private static final long SPAM_COOLDOWN = 750; // 0.75 seconds
-
+    private static final long SPAM_COOLDOWN = 750;
     @Inject(method = "tick", at = @At("HEAD"))
     private void onTick(CallbackInfo ci) {
         RespawnPointBlocker module = Modules.get().get(RespawnPointBlocker.class);
         if (!module.isActive()) return;
-
         ClientPlayerEntity player = MeteorClient.mc.player;
         if (player == null || MeteorClient.mc.world == null) return;
-
         HitResult hitResult = MeteorClient.mc.crosshairTarget;
         if (hitResult instanceof BlockHitResult) {
             BlockHitResult blockHitResult = (BlockHitResult) hitResult;
             BlockPos blockPos = blockHitResult.getBlockPos();
             BlockState blockState = MeteorClient.mc.world.getBlockState(blockPos);
             Block block = blockState.getBlock();
-
-            // Check if crosshair is on a respawn point block
             if (isRespawnPointBlock(block)) {
                 boolean shouldBlock = false;
-
                 if (isBed(block) && module.blockBeds.get()) {
                     shouldBlock = true;
                 } else if (block == Blocks.RESPAWN_ANCHOR && module.blockRespawnAnchors.get()) {
                     shouldBlock = true;
                 }
-
                 if (shouldBlock && System.currentTimeMillis() - lastSpamTime >= SPAM_COOLDOWN) {
-                    // Clear crosshair target to prevent interaction
                     MeteorClient.mc.crosshairTarget = null;
                     lastSpamTime = System.currentTimeMillis();
                 }
             }
         }
     }
-
     private boolean isRespawnPointBlock(Block block) {
         return isBed(block) || block == Blocks.RESPAWN_ANCHOR;
     }
-
     private boolean isBed(Block block) {
         return block == Blocks.WHITE_BED || block == Blocks.ORANGE_BED || block == Blocks.MAGENTA_BED ||
                block == Blocks.LIGHT_BLUE_BED || block == Blocks.YELLOW_BED || block == Blocks.LIME_BED ||

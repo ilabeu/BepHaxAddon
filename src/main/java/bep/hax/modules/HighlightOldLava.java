@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import bep.hax.Bep;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -14,12 +13,10 @@ import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
-
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.orbit.EventHandler;
-
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
@@ -28,52 +25,42 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.chunk.Chunk;
-
 import java.io.*;
 import java.util.HashSet;
-
 import static bep.hax.util.Utils.sendWebhook;
-
-
 public class HighlightOldLava extends Module
 {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
     private final Setting<Integer> searchAbove = sgGeneral.add(new IntSetting.Builder()
         .name("search-above")
         .description("Y value to look above")
         .sliderRange(0, 120)
         .build()
     );
-
     private final Setting<Integer> lavaHeight = sgGeneral.add(new IntSetting.Builder()
         .name("lava-height")
         .description("The height of the lava to count as already loaded")
         .sliderRange(1, 30)
         .build()
     );
-
     private final Setting<Integer> renderDistance = sgGeneral.add(new IntSetting.Builder()
         .name("render-distance")
         .description("How far away to render the blocks.")
         .sliderRange(0, 512)
         .build()
     );
-
     private final Setting<Boolean> disconnectOnFound = sgGeneral.add(new BoolSetting.Builder()
         .name("disconnect-on-found")
         .description("Will auto disconnect you if old lava is found. (Good for afking)")
         .defaultValue(false)
         .build()
     );
-
     public final Setting<Mode> logMode = sgGeneral.add(new EnumSetting.Builder<Mode>()
         .name("log-mode")
         .description("How results are shown.")
         .defaultValue(Mode.Highlight)
         .build()
     );
-
     public final Setting<String> webhookLink = sgGeneral.add(new StringSetting.Builder()
         .name("webhook-link")
         .description("A discord webhook link. Looks like this: https://discord.com/api/webhooks/webhookUserId/webHookTokenOrSomething")
@@ -81,7 +68,6 @@ public class HighlightOldLava extends Module
         .visible(() -> logMode.get() == Mode.LogWebhook || logMode.get() == Mode.Both)
         .build()
     );
-
     public final Setting<Boolean> ping = sgGeneral.add(new BoolSetting.Builder()
         .name("ping-on-lava-found")
         .description("Pings you when lava that matches your search is found.")
@@ -89,7 +75,6 @@ public class HighlightOldLava extends Module
         .visible(() -> logMode.get() == Mode.LogWebhook || logMode.get() == Mode.Both)
         .build()
     );
-
     public final Setting<String> discordId = sgGeneral.add(new StringSetting.Builder()
         .name("discord-ID")
         .description("Your discord ID")
@@ -97,80 +82,63 @@ public class HighlightOldLava extends Module
         .visible(() -> logMode.get() == Mode.LogWebhook || logMode.get() == Mode.Both)
         .build()
     );
-
     private final Setting<ShapeMode> shapeMode = sgGeneral.add(new EnumSetting.Builder<ShapeMode>()
         .name("box-render-mode")
         .description("How the shape for the bounding box is rendered.")
         .defaultValue(ShapeMode.Both)
         .build()
     );
-
     private final Setting<SettingColor> sideColor = sgGeneral.add(new ColorSetting.Builder()
         .name("side-color")
         .description("The side color of the bounding box.")
         .defaultValue(new SettingColor(16,106,144, 100))
         .build()
     );
-
     private final Setting<SettingColor> lineColor = sgGeneral.add(new ColorSetting.Builder()
         .name("line-color")
         .description("The line color of the bounding box.")
         .defaultValue(new SettingColor(16,106,144, 255))
         .build()
     );
-
     protected static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
     private HashSet<BlockPos> oldLava;
-
     private HashSet<Vec3d> loadedChunks;
-
     public HighlightOldLava()
     {
         super(Bep.STASH, "highlight-old-lava", "Highlights lava that has already flowed down");
         oldLava = new HashSet<BlockPos>();
         loadedChunks = new HashSet<Vec3d>();
     }
-
     @Override
     public WWidget getWidget(GuiTheme theme)
     {
         WVerticalList list = theme.verticalList();
         WButton clearLog = list.add(theme.button("Clear saved data.")).widget();
-
         clearLog.action = () -> {
             File lavaPosFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "lavaPos.json");
             File loadedChunksFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "loadedChunks.json");
-
             lavaPosFile.delete();
             loadedChunksFile.delete();
         };
-
         return list;
     }
-
     @Override
     public void onActivate()
     {
         oldLava = new HashSet<BlockPos>();
         loadedChunks = new HashSet<Vec3d>();
-
-
         try {
             File lavaPosFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "lavaPos.json");
             FileReader reader = new FileReader(lavaPosFile);
             oldLava = GSON.fromJson(reader, new TypeToken<HashSet<BlockPos>>(){}.getType());
             reader.close();
-
             File loadedChunksFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "loadedChunks.json");
             FileReader reader2 = new FileReader(loadedChunksFile);
             loadedChunks = GSON.fromJson(reader2, new TypeToken<HashSet<Vec3d>>(){}.getType());
             reader2.close();
         } catch (Exception ignored) {
-
         }
     }
-
     @Override
     public void onDeactivate()
     {
@@ -181,7 +149,6 @@ public class HighlightOldLava extends Module
             Writer writer = new FileWriter(lavaPosFile);
             GSON.toJson(oldLava, writer);
             writer.close();
-
             File loadedChunksFile = new File(new File(new File(MeteorClient.FOLDER, "HighlightOldLava"), Utils.getFileWorldName()),  "loadedChunks.json");
             loadedChunksFile.getParentFile().mkdirs();
             Writer writer2 = new FileWriter(loadedChunksFile);
@@ -189,11 +156,8 @@ public class HighlightOldLava extends Module
             writer2.close();
         }
         catch (NullPointerException | IOException e) {
-
         }
     }
-
-
     @EventHandler
     private void onRender(Render3DEvent event) {
         if ((logMode.get() == Mode.Highlight) || (logMode.get() == Mode.Both)) {
@@ -204,13 +168,11 @@ public class HighlightOldLava extends Module
             }
         }
     }
-
     @EventHandler
     private void onChunkData(ChunkDataEvent event)
     {
         Chunk chunk = event.chunk();
         Vec3d chunkPos = chunk.getPos().getStartPos().toCenterPos();
-        // don't check chunks loaded by player
         if (loadedChunks.contains(chunkPos)) return;
         loadedChunks.add(chunkPos);
         HashSet<BlockPos> toAdd = new HashSet<BlockPos>();
@@ -220,17 +182,12 @@ public class HighlightOldLava extends Module
             for (int z = chunk.getPos().getStartZ(); z <= chunk.getPos().getEndZ(); z++)
             {
                 int height = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE).get(x - chunk.getPos().getStartX(), z - chunk.getPos().getStartZ());
-
                 for (int y = height; y > searchAbove.get(); y--)
                 {
                     BlockPos blockPos = new BlockPos(x, y, z);
-
                     BlockState blockState = chunk.getBlockState(blockPos);
-                    // try to prevent bastions or nether fortresses being detected
                     if (blockState.getBlock() == Blocks.POLISHED_BLACKSTONE_BRICKS ||
                         blockState.getBlock() == Blocks.NETHER_BRICKS) return;
-
-
                     if (blockState.getBlock() == Blocks.LAVA)
                     {
                         boolean heightFound = true;
@@ -253,14 +210,10 @@ public class HighlightOldLava extends Module
                             return;
                         }
                     }
-
-
                 }
             }
         }
     }
-
-
     public enum Mode
     {
         Highlight,

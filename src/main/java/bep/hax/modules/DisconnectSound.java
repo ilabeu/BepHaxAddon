@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
@@ -15,12 +14,9 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import bep.hax.Bep;
 import bep.hax.events.DisconnectedScreenEvent;
-
 import java.util.List;
-
 public class DisconnectSound extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
     private final Setting<List<SoundEvent>> sound = sgGeneral.add(new SoundEventListSetting.Builder()
         .name("sound")
         .description("Sound to play.")
@@ -43,23 +39,19 @@ public class DisconnectSound extends Module {
         .sliderRange(0, 1)
         .build()
     );
-
     public DisconnectSound() {
         super(Bep.STASH, "disconnect-sound", "Plays a sound when the Disconnected Screen appears (e.g., when kicked). by Meteorist Addon");
         MeteorClient.EVENT_BUS.subscribe(this);
     }
-
     private void playSound() {
         mc.getSoundManager().play(PositionedSoundInstance.master(sound.get().getFirst(), soundPitch.get().floatValue(), soundVolume.get().floatValue()));
     }
-
     @Override
     public WWidget getWidget(GuiTheme theme) {
         WButton button = theme.button("Preview");
         button.action = this::playSound;
         return button;
     }
-
     @EventHandler
     private void onDisconnectedScreen(DisconnectedScreenEvent event) {
         if (this.isActive()) playSound();

@@ -1,10 +1,8 @@
 package bep.hax.config;
-
 import java.util.List;
 import bep.hax.util.StardustUtil;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.config.Config;
-
 public class StardustConfig {
     public static Setting<Boolean> greenSplashTextSetting = new BoolSetting.Builder().build();
     public static Setting<Boolean> rotateSplashTextSetting = new BoolSetting.Builder().build();
@@ -15,11 +13,8 @@ public class StardustConfig {
     public static Setting<Boolean> ignoreOverlayMessages = new BoolSetting.Builder().build();
     public static Setting<List<String>> overlayMessageFilter = new StringListSetting.Builder().build();
     public static Setting<StardustUtil.IllegalDisconnectMethod> illegalDisconnectMethodSetting = new EnumSetting.Builder<StardustUtil.IllegalDisconnectMethod>().defaultValue(StardustUtil.IllegalDisconnectMethod.Slot).build();
-
     public static void initialize() {
         SettingGroup sgStardust = Config.get().settings.createGroup("Stardust");
-
-        // See SplashTextRendererMixin.java
         greenSplashTextSetting = sgStardust.add(
             new BoolSetting.Builder()
                 .name("green-splash-text")
@@ -27,7 +22,6 @@ public class StardustConfig {
                 .defaultValue(false)
                 .build()
         );
-        // See TitleScreenMixin.java
         rotateSplashTextSetting = sgStardust.add(
             new BoolSetting.Builder()
                 .name("rotate-splash-text")
@@ -42,7 +36,6 @@ public class StardustConfig {
                 .defaultValue(false)
                 .build()
         );
-        // See GameMenuScreenMixin.java
         illegalDisconnectButtonSetting = sgStardust.add(
             new BoolSetting.Builder()
                 .name("illegal-disconnect-button")
@@ -50,7 +43,6 @@ public class StardustConfig {
                 .defaultValue(false)
                 .build()
         );
-        // See StardustUtil.java
         illegalDisconnectMethodSetting = sgStardust.add(
             new EnumSetting.Builder<StardustUtil.IllegalDisconnectMethod>()
                 .name("illegal-disconnect-method")
@@ -58,15 +50,13 @@ public class StardustConfig {
                 .defaultValue(StardustUtil.IllegalDisconnectMethod.Chat)
                 .build()
         );
-        // See OnlinePlayersMixin.java
         disableMeteorClientTelemetry = sgStardust.add(
             new BoolSetting.Builder()
                 .name("disable-meteor-telemetry")
                 .description("Disables sending periodic telemetry pings to meteorclient.com for their online player count api.")
-                .defaultValue(false)
+                .defaultValue(true)
                 .build()
         );
-        // See PacketManager.java
         antiInventoryPacketKick = sgStardust.add(
             new BoolSetting.Builder()
                 .name("anti-packet-spam-kick")

@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import net.minecraft.text.Text;
 import bep.hax.modules.AntiToS;
 import bep.hax.modules.NoHurtCam;
@@ -22,44 +21,34 @@ import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.util.Arm;
-
 @Mixin(InGameHud.class)
 public class InGameHudMixin {
     @Shadow
     private ItemStack currentStack;
-
-    // See AntiToS.java
     @Inject(
         method = "renderHeldItemTooltip",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;contains(Lnet/minecraft/component/ComponentType;)Z")
     )
     private void censorItemTooltip(DrawContext context, CallbackInfo ci, @Local LocalRef<MutableText> itemName) {
         if (this.currentStack.isEmpty()) return;
-
         Modules modules = Modules.get();
         if (modules == null) return;
         AntiToS antiToS = modules.get(AntiToS.class);
         if (!antiToS.isActive()) return;
-
         if (antiToS.containsBlacklistedText(itemName.get().getString())) {
             itemName.set(Text.empty().append(antiToS.censorText(itemName.get().getString())).formatted(this.currentStack.getRarity().getFormatting()));
         }
     }
-
     @Inject(method = "renderHotbar", at = @At("TAIL"))
     private void onRenderHotbar(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         ShulkerOverviewModule module = Modules.get().get(ShulkerOverviewModule.class);
         if (module == null || !module.isActive()) return;
-
         MinecraftClient mc = MinecraftClient.getInstance();
         PlayerEntity player = mc.player;
         if (player == null) return;
-
         int scaledWidth = mc.getWindow().getScaledWidth();
         int scaledHeight = mc.getWindow().getScaledHeight();
         int center = scaledWidth / 2;
-
-        // Hotbar slots 0-8
         int hotbarY = scaledHeight - 19;
         for (int i = 0; i < 9; i++) {
             int posX = center - 90 + i * 20 + 2;
@@ -68,40 +57,24 @@ public class InGameHudMixin {
             if (!(stack.getItem() instanceof BlockItem blockItem) || !(blockItem.getBlock() instanceof ShulkerBoxBlock)) continue;
             module.renderShulkerOverlay(context, posX, hotbarY, stack);
         }
-
-        // Offhand slot
         ItemStack offhandStack = player.getOffHandStack();
         if (!offhandStack.isEmpty() && offhandStack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof ShulkerBoxBlock) {
-            // Offhand slot position calculation
-            // The offhand slot appears at y = scaledHeight - 23 (3 pixels above hotbar)
             int offY = scaledHeight - 23;
             int offX;
-
-            // The offhand slot is positioned differently based on main hand
-            // Left-handed: offhand appears on the right side
-            // Right-handed: offhand appears on the left side
             if (player.getMainArm() == Arm.LEFT) {
-                // When left-handed, offhand slot is on the right side
-                offX = center + 91 + 9; // Right side of hotbar + 9 pixel gap
+                offX = center + 91 + 9;
             } else {
-                // When right-handed, offhand slot is on the left side
-                offX = center - 91 - 29; // Left side of hotbar - 29 pixels (slot width + gap)
+                offX = center - 91 - 29;
             }
-
-            // Add 3 pixels to x and y to account for the item position within the slot
             module.renderShulkerOverlay(context, offX + 3, offY + 3, offhandStack);
         }
     }
-
     @Inject(method = "renderOverlay", at = @At("HEAD"), cancellable = true)
     private void onRenderOverlay(DrawContext context, net.minecraft.util.Identifier texture, float opacity, CallbackInfo ci) {
-        // This handles the red hurt overlay
         Modules modules = Modules.get();
         if (modules == null) return;
-        
         NoHurtCam noHurtCam = modules.get(NoHurtCam.class);
         if (noHurtCam != null && noHurtCam.shouldDisableRedOverlay()) {
-            // Cancel the red overlay rendering when hurt
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.player != null && mc.player.hurtTime > 0) {
                 ci.cancel();

@@ -1,5 +1,4 @@
 package bep.hax.util;
-
 import java.io.File;
 import java.util.Random;
 import java.util.UUID;
@@ -29,16 +28,10 @@ import net.minecraft.network.packet.c2s.common.SyncedClientOptions;
 import net.minecraft.network.packet.c2s.common.ClientOptionsC2SPacket;
 import meteordevelopment.meteorclient.systems.modules.misc.AutoReconnect;
 import meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor;
-
-/**
- * @author Tas [@0xTas] <root@0xTas.dev>
- **/
 public class StardustUtil {
     private static final Random RANDOM = new Random();
-
     public static final boolean XAERO_AVAILABLE = FabricLoader.getInstance().isModLoaded("xaeroworldmap")
         && FabricLoader.getInstance().isModLoaded("xaerominimap");
-
     public enum RainbowColor {
         Reds(new String[]{"§c", "§4"}),
         Yellows(new String[]{"§e", "§6"}),
@@ -46,15 +39,11 @@ public class StardustUtil {
         Cyans(new String[]{"§b", "§3"}),
         Blues(new String[]{"§9", "§1"}),
         Purples(new String[]{"§d", "§5"});
-
         public final String[] labels;
-
         RainbowColor(String[] labels) { this.labels = labels; }
-
         public static RainbowColor getFirst() {
             return RainbowColor.values()[RANDOM.nextInt(RainbowColor.values().length)];
         }
-
         public static RainbowColor getNext(RainbowColor previous) {
             return switch (previous) {
                 case Reds -> Yellows;
@@ -66,53 +55,39 @@ public class StardustUtil {
             };
         }
     }
-
     public enum TextColor {
         Black("§0"), White("§f"), Gray("§8"), Light_Gray("§7"),
         Dark_Green("§2"), Green("§a"), Dark_Aqua("§3"), Aqua("§b"),
         Dark_Blue("§1"), Blue("§9"), Dark_Red("§4"), Red("§c"),
         Dark_Purple("§5"), Purple("§d"), Gold("§6"), Yellow("§e"),
         Random("");
-
         public final String label;
-
         TextColor(String label) {
             this.label = label;
         }
     }
-
     public enum TextFormat {
         Plain(""), Italic("§o"), Bold("§l"),
         Underline("§n"), Strikethrough("§m"),
         Obfuscated("§k");
-
         public final String label;
-
         TextFormat(String label) {
             this.label = label;
         }
     }
-
-    /** Random Color-Code */
     public static String rCC() {
         String color = "§7";
         TextColor[] colors = TextColor.values();
-
-        // Omit gray, light_gray, and black from accent colors.
         while (color.equals("§0") || color.equals("§8") || color.equals("§7")) {
             int luckyIndex = RANDOM.nextInt(colors.length);
             color = colors[luckyIndex].label;
         }
-
         return color;
     }
-
     public static ItemStack chooseMenuIcon() {
         int luckyIndex = RANDOM.nextInt(menuIcons.length);
-
         return menuIcons[luckyIndex];
     }
-
     private static final ItemStack[] discIcons = {
         Items.MUSIC_DISC_5.getDefaultStack(),
         Items.MUSIC_DISC_11.getDefaultStack(),
@@ -191,9 +166,7 @@ public class StardustUtil {
         doorIcons[RANDOM.nextInt(doorIcons.length)],
         getCustomIcons()[RANDOM.nextInt(getCustomIcons().length)]
     };
-
     private static ItemStack[] getCustomIcons() {
-        // Encoded profile textures taken from illegal player head items on 2b2t.org (except for mine.)
         final String tasHeadTexture = "ewogICJ0aW1lc3RhbXAiIDogMTcyODQwNzM3MDc3MiwKICAicHJvZmlsZUlkIiA6ICJjZTA5ODE3NzBkMjc0NmY1YTM3ODUxODg5NzcxYmEyNyIsCiAgInByb2ZpbGVOYW1lIiA6ICIweFRhcyIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8yZGNlNGNlNWVhOWJjNWI1OTI1MmJlNDk1YTA5ZTQ0ZWFmMzc5NmRmNDY5OTU2MTdmZGQ4ZjFmMTBkNjU0ZjQyIgogICAgfQogIH0KfQ==";
         final String popbobHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MTYwOTQxOTU4NTYsInByb2ZpbGVJZCI6IjBmNzVhODFkNzBlNTQzYzViODkyZjMzYzUyNDI4NGYyIiwicHJvZmlsZU5hbWUiOiJwb3Bib2IiLCJpc1B1YmxpYyI6dHJ1ZSwidGV4dHVyZXMiOnsiU0tJTiI6eyJ1cmwiOiJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzEyNTY4ODQ4NWI3MjUxMWFmOWY4NzVjZjQ4NjlmNjYxOTkwNWU2ZjJjNzc3NGIyMjYxNTJjYTY3ODIzODFlNiJ9fX0=";
         final String pyrobyteHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MTYwOTQxOTUxOTUsInByb2ZpbGVJZCI6IjY4YjFiYjExY2ZhMzRlMTZhMDFkYjZkZGRhMGExMDgzIiwicHJvZmlsZU5hbWUiOiJQeXJvYnl0ZSIsImlzUHVibGljIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzhjZTMwODMxYjU1YTI0MTFjMGYzMTI2ZDVhNThlMzE2NDZkNGE4YjZmMzYxZjcyMzc5ZGY0ZTY5OTE0OTkifX19";
@@ -201,40 +174,31 @@ public class StardustUtil {
         final String hausemasterHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MTYwOTQxOTU2NjIsInByb2ZpbGVJZCI6IjhmMmNlNDUzY2VmMjRiM2ViNjg2ZGMyMWI1MTlhMGExIiwicHJvZmlsZU5hbWUiOiJIYXVzZW1hc3RlciIsImlzUHVibGljIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGJiY2IyZTE5OTdjN2NiMWJkZjU2MTNkMTMyZWVjNmQ2NzEzM2EyMTYyMWUwZmFlMTU3YTZhZDhmOWIyIn19fQ==";
         final String jackTheRippaHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MTYwOTQxOTUxOTMsInByb2ZpbGVJZCI6IjdmMTk3NjE4MzJjMjQ4NzY4NDFiY2VhMjliZDU4Y2FlIiwicHJvZmlsZU5hbWUiOiJKYWNrdGhlcmlwcGEiLCJpc1B1YmxpYyI6dHJ1ZSwidGV4dHVyZXMiOnsiU0tJTiI6eyJ1cmwiOiJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlLzExYjk0OWE2MWZhNGNjOGZmZjNkM2I0OTY4MmQyZjk2ZjQxMThmOTI4ZDg2MjIyMmVmNjU2ZTMyYTVmMTIifX19";
         final String cytoToxicTCellHeadTexture = "eyJ0aW1lc3RhbXAiOjE0MDY0MTc0NTE1MDgsInByb2ZpbGVJZCI6ImE0YTVlYmM0OWY0ZTQ3OTVhMjUzN2I4YjA1M2ZiMTdmIiwicHJvZmlsZU5hbWUiOiJDeXRvdG94aWNUY2VsbCIsImlzUHVibGljIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTlkMWU2YzRmNjFkZmNmZGE2NDE3MjJmNjU3NzJiMTI3YmI0NDFkMGViMjU4YTM2Y2MxOTEzYmU3NTkyNGIxIn19fQ==";
-
-        // Get textures for the current player's head item
         Optional<Property> currentPlayerProfileProperties = mc.getGameProfile().getProperties().get("textures").stream().findFirst();
-
         String currentPlayerHeadTexture;
         if (currentPlayerProfileProperties.isPresent()) {
             currentPlayerHeadTexture = currentPlayerProfileProperties.get().value();
         } else {
             currentPlayerHeadTexture = "ewogICJ0aW1lc3RhbXAiIDogMTcyODQ5NzQxNzUwNCwKICAicHJvZmlsZUlkIiA6ICJkMDUwMzNmYzM3N2Q0OGU1ODFiMGJhYTY0NDBmNTIyOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJQYXVsc3RldmUwMDciLAogICJzaWduYXR1cmVSZXF1aXJlZCIgOiB0cnVlLAogICJ0ZXh0dXJlcyIgOiB7CiAgICAiU0tJTiIgOiB7CiAgICAgICJ1cmwiIDogImh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTk1YmQzOWQ5M2ZiYjI4NGVhNGEzYmJiMTljNzRlNTUxOGQwODRiNmZiMGQ5YjE1ZWQ2YzU2NzdmMDhkY2FhYyIKICAgIH0KICB9Cn0=";
         }
-
         String[] playerHeadTextures = {
             currentPlayerHeadTexture, tasHeadTexture, popbobHeadTexture, pyrobyteHeadTexture,
             iTristanHeadTexture, hausemasterHeadTexture, jackTheRippaHeadTexture, cytoToxicTCellHeadTexture
         };
-
         ItemStack playerHead = new ItemStack(Items.PLAYER_HEAD);
         GameProfile profile = new GameProfile(UUID.randomUUID(), "Stardust");
         ProfileComponent profileComponent = new ProfileComponent(profile);
-
-        // Apply a player head texture to the ItemStack
         profileComponent.properties().put(
             "textures",
             new Property(
-                "textures", // Select a random player head texture from the playerHeadTextures array.
+                "textures",
                 playerHeadTextures[RANDOM.nextInt(playerHeadTextures.length)],""
             )
         );
         playerHead.set(DataComponentTypes.PROFILE, profileComponent);
-
         ItemStack enchantedPick = new ItemStack(
             RANDOM.nextInt(2) == 0 ? Items.DIAMOND_PICKAXE : Items.NETHERITE_PICKAXE);
         enchantedPick.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         ItemStack[] enchantedGlass = new ItemStack[] {
             Items.GLASS.getDefaultStack(),
             Items.RED_STAINED_GLASS.getDefaultStack(),
@@ -245,44 +209,34 @@ public class StardustUtil {
             Items.BLACK_STAINED_GLASS.getDefaultStack(),
             Items.LIGHT_BLUE_STAINED_GLASS.getDefaultStack(),
         };
-
         for (ItemStack g : enchantedGlass) {
             g.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         }
-
         ItemStack cgiElytra = new ItemStack(Items.ELYTRA);
         cgiElytra.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         ItemStack sword32k = new ItemStack(
             RANDOM.nextInt(2) == 0 ? Items.DIAMOND_SWORD : Items.WOODEN_SWORD);
         sword32k.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         ItemStack illegalBow = new ItemStack(Items.BOW);
         illegalBow.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         ItemStack bindingPumpkin = new ItemStack(Items.CARVED_PUMPKIN);
         bindingPumpkin.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         ItemStack ripTridentFly = new ItemStack(Items.TRIDENT);
         ripTridentFly.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-
         return new ItemStack[] {
             playerHead,
             enchantedPick, sword32k, illegalBow, bindingPumpkin, cgiElytra, ripTridentFly,
             enchantedGlass[RANDOM.nextInt(enchantedGlass.length)]
         };
     }
-
     public static boolean checkOrCreateFile(MinecraftClient mc, String fileName) {
         File file =FabricLoader.getInstance().getGameDir().resolve(fileName).toFile();
-
         if (!file.exists()) {
             try {
                 if (file.createNewFile()) {
                     if (mc.player != null) {
                         MsgUtil.sendMsg("Created " + file.getName() + " in your meteor-client folder.");
                         Style style = Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file.getAbsolutePath()));
-
                         MsgUtil.sendMsg("Click §2§lhere §r§7to open the file.", style);
                     }
                     return true;
@@ -291,13 +245,10 @@ public class StardustUtil {
                 LogUtil.error("Error creating " + file.getAbsolutePath() + "! - Why:\n" + err, "StardustUtil#checkOrCreateFile");
             }
         } else return true;
-
         return false;
     }
-
     public static void openFile(String fileName) {
         File file = FabricLoader.getInstance().getGameDir().resolve(fileName).toFile();
-
         try {
             Runtime runtime = Runtime.getRuntime();
             if (System.getenv("OS") == null) return;
@@ -311,22 +262,17 @@ public class StardustUtil {
             LogUtil.error("Failed to open " + file.getAbsolutePath() + "! - Why:\n" + err, "StardustUtil#openFile");
         }
     }
-
     public static boolean isIn2b2tQueue() {
         if (mc.player == null || mc.getNetworkHandler() == null) return false;
-
         return PlayerUtils.getDimension().equals(Dimension.End)
             && mc.player.getAbilities().allowFlying && mc.getNetworkHandler().getPlayerList().size() <= 1;
     }
-
     public enum IllegalDisconnectMethod {
         Slot, Chat, Interact, Movement, SequenceBreak, InvalidSettings
     }
-
     public static void illegalDisconnect(boolean disableAutoReconnect, IllegalDisconnectMethod illegalDisconnectMethod) {
         if (!Utils.canUpdate()) return;
         if (disableAutoReconnect) disableAutoReconnect();
-
         Packet<?> illegalPacket = null;
         switch (illegalDisconnectMethod) {
             case Slot -> illegalPacket = new UpdateSelectedSlotC2SPacket(-69);
@@ -352,7 +298,6 @@ public class StardustUtil {
             illegalPacket, null, true
         );
     }
-
     public static void disableAutoReconnect() {
         Modules mods = Modules.get();
         if (mods == null) return;

@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import bep.hax.Bep;
@@ -22,8 +21,6 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.client.MinecraftClient;
 import meteordevelopment.orbit.EventPriority;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import bep.hax.gui.screens.SolitaireScreen;
-import bep.hax.gui.screens.MeteoritesScreen;
 import meteordevelopment.meteorclient.settings.*;
 import net.minecraft.component.DataComponentTypes;
 import meteordevelopment.meteorclient.utils.Utils;
@@ -48,27 +45,20 @@ import meteordevelopment.meteorclient.systems.modules.render.Freecam;
 import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import meteordevelopment.meteorclient.systems.modules.render.FreeLook;
 import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class RocketMan extends Module {
     public RocketMan() {
         super(Bep.STARDUST, "RocketMan", "Enhanced elytra flight using firework rockets.");
     }
-
     public enum KeyModifiers { Alt, Ctrl, Shift, None }
     public enum HoverMode { Off, Hold, Toggle, Creative }
     public enum RocketMode {OnKey, Static, Dynamic, Speed }
     public enum TakeoffMode { None, Full, Partial, DeployElytra, UseRocket, Jump}
-
     private final SettingGroup sgRockets = settings.createGroup("Rocket Usage");
     private final SettingGroup sgBoosts = settings.createGroup("Rocket Boosts");
     private final SettingGroup sgHover = settings.createGroup("Hover Modes");
     private final SettingGroup sgControl = settings.createGroup("Control Modes");
     private final SettingGroup sgScroll = settings.createGroup("Scroll Wheel Speed");
     private final SettingGroup sgSound = settings.createGroup("Sounds & Notifications");
-
     public final Setting<RocketMode> usageMode = sgRockets.add(
         new EnumSetting.Builder<RocketMode>()
             .name("usage-mode")
@@ -76,7 +66,6 @@ public class RocketMan extends Module {
             .defaultValue(RocketMode.OnKey)
             .build()
     );
-
     public final Setting<Keybind> usageKey = sgRockets.add(
         new KeybindSetting.Builder()
             .name("rocket-key")
@@ -85,7 +74,6 @@ public class RocketMan extends Module {
             .visible(() -> usageMode.get().equals(RocketMode.OnKey))
             .build()
     );
-
     private final Setting<Integer> usageCooldown = sgRockets.add(
         new IntSetting.Builder()
             .name("rocket-usage-cooldown")
@@ -94,7 +82,6 @@ public class RocketMan extends Module {
             .visible(() -> usageMode.get().equals(RocketMode.OnKey) || usageMode.get().equals(RocketMode.Speed))
             .build()
     );
-
     private final Setting<Double> usageSpeed = sgRockets.add(
         new DoubleSetting.Builder()
             .name("minimum-speed-threshold-(b/s)")
@@ -103,7 +90,6 @@ public class RocketMan extends Module {
             .visible(() -> usageMode.get().equals(RocketMode.Speed))
             .build()
     );
-
     private final Setting<Integer> usageTickRate = sgRockets.add(
         new IntSetting.Builder()
             .name("rocket-usage-rate")
@@ -112,7 +98,6 @@ public class RocketMan extends Module {
             .visible(() -> usageMode.get().equals(RocketMode.Static))
             .build()
     );
-
     public final Setting<Boolean> yLevelLock = sgRockets.add(
         new BoolSetting.Builder()
             .name("y-level-lock")
@@ -121,7 +106,6 @@ public class RocketMan extends Module {
             .visible(() -> usageMode.get().equals(RocketMode.Dynamic))
             .build()
     );
-
     private final Setting<Boolean> combatAssist = sgRockets.add(
         new BoolSetting.Builder()
             .name("combat-assist")
@@ -130,7 +114,6 @@ public class RocketMan extends Module {
             .onChanged(it -> ticksBusy = 0)
             .build()
     );
-
     public final Setting<Boolean> boostSpeed = sgBoosts.add(
         new BoolSetting.Builder()
             .name("speed-boost")
@@ -138,7 +121,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     public final Setting<Double> speedSetting = sgBoosts.add(
         new DoubleSetting.Builder()
             .name("speed")
@@ -149,7 +131,6 @@ public class RocketMan extends Module {
             .visible(boostSpeed::get)
             .build()
     );
-
     public final Setting<Double> accelerationSetting = sgBoosts.add(
         new DoubleSetting.Builder()
             .name("acceleration")
@@ -160,7 +141,6 @@ public class RocketMan extends Module {
             .visible(boostSpeed::get)
             .build()
     );
-
     private final Setting<Double> rocketSpeedThreshold = sgBoosts.add(
         new DoubleSetting.Builder()
             .name("acceleration-backoff-threshold")
@@ -169,7 +149,6 @@ public class RocketMan extends Module {
             .visible(boostSpeed::get)
             .build()
     );
-
     public final Setting<Boolean> extendRockets = sgBoosts.add(
         new BoolSetting.Builder()
             .name("boost-rocket-duration")
@@ -177,7 +156,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Double> extendedDuration = sgBoosts.add(
         new DoubleSetting.Builder()
             .name("max-duration")
@@ -186,7 +164,6 @@ public class RocketMan extends Module {
             .visible(extendRockets::get)
             .build()
     );
-
     private final Setting<Integer> extensionRange = sgBoosts.add(
         new IntSetting.Builder()
             .name("extension-range")
@@ -195,7 +172,6 @@ public class RocketMan extends Module {
             .visible(extendRockets::get)
             .build()
     );
-
     private final Setting<Boolean> keyboardControl = sgControl.add(
         new BoolSetting.Builder()
             .name("keyboard-control")
@@ -203,7 +179,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> freeLookOnly = sgControl.add(
         new BoolSetting.Builder()
             .name("free-look-only")
@@ -212,7 +187,6 @@ public class RocketMan extends Module {
             .visible(keyboardControl::get)
             .build()
     );
-
     private final Setting<Boolean> invertPitch = sgControl.add(
         new BoolSetting.Builder()
             .name("invert-pitch")
@@ -221,7 +195,6 @@ public class RocketMan extends Module {
             .visible(() -> keyboardControl.get() && !usageMode.get().equals(RocketMode.OnKey))
             .build()
     );
-
     private final Setting<Integer> pitchSpeed = sgControl.add(
         new IntSetting.Builder()
             .name("pitch-speed")
@@ -229,7 +202,6 @@ public class RocketMan extends Module {
             .range(0, 1000).sliderRange(0, 50).defaultValue(10)
             .build()
     );
-
     private final Setting<Integer> yawSpeed = sgControl.add(
         new IntSetting.Builder()
             .name("yaw-speed")
@@ -237,7 +209,6 @@ public class RocketMan extends Module {
             .range(0, 1000).sliderRange(0, 50).defaultValue(20)
             .build()
     );
-
     public final Setting<HoverMode> hoverMode = sgHover.add(
         new EnumSetting.Builder<HoverMode>()
             .name("hover-mode")
@@ -245,7 +216,6 @@ public class RocketMan extends Module {
             .defaultValue(HoverMode.Toggle)
             .build()
     );
-
     public final Setting<Keybind> hoverKey = sgHover.add(
         new KeybindSetting.Builder()
             .name("hover-keybind")
@@ -253,7 +223,6 @@ public class RocketMan extends Module {
             .defaultValue(Keybind.none())
             .build()
     );
-
     private final Setting<KeyModifiers> modifierKey = sgHover.add(
         new EnumSetting.Builder<KeyModifiers>()
             .name("modifier-key")
@@ -261,7 +230,6 @@ public class RocketMan extends Module {
             .defaultValue(KeyModifiers.None)
             .build()
     );
-
     public final Setting<Boolean> forceRocketUsage = sgHover.add(
         new BoolSetting.Builder()
             .name("force-rocket-usage")
@@ -269,7 +237,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     public final Setting<Double> verticalSpeed = sgHover.add(
         new DoubleSetting.Builder()
             .name("vertical-speed")
@@ -277,7 +244,6 @@ public class RocketMan extends Module {
             .min(0.0).max(10.0).defaultValue(0.69)
             .build()
     );
-
     public final Setting<Double> horizontalSpeed = sgHover.add(
         new DoubleSetting.Builder()
             .name("horizontal-speed")
@@ -285,7 +251,6 @@ public class RocketMan extends Module {
             .min(0.0).max(10.0).defaultValue(0.69)
             .build()
     );
-
     private final Setting<Double> maxSpeedScrollSensitivity = sgScroll.add(
         new DoubleSetting.Builder()
             .name("scroll-sensitivity-(Max-Speed)")
@@ -293,7 +258,6 @@ public class RocketMan extends Module {
             .min(0).max(2).defaultValue(.25)
             .build()
     );
-
     private final Setting<Double> accelerationScrollSensitivity = sgScroll.add(
         new DoubleSetting.Builder()
             .name("scroll-sensitivity-(Acceleration)")
@@ -301,7 +265,6 @@ public class RocketMan extends Module {
             .min(0).max(2).defaultValue(.025)
             .build()
     );
-
     private final Setting<Double> verticalScrollSensitivity = sgScroll.add(
         new DoubleSetting.Builder()
             .name("scroll-sensitivity-(Vertical-Hover)")
@@ -309,7 +272,6 @@ public class RocketMan extends Module {
             .min(0).max(2).defaultValue(.025)
             .build()
     );
-
     private final Setting<Double> horizontalScrollSensitivity = sgScroll.add(
         new DoubleSetting.Builder()
             .name("scroll-sensitivity-(Horizontal-Hover)")
@@ -317,7 +279,6 @@ public class RocketMan extends Module {
             .min(0).max(2).defaultValue(.025)
             .build()
     );
-
     private final Setting<Boolean> muteRockets = sgSound.add(
         new BoolSetting.Builder()
             .name("mute-rockets")
@@ -325,7 +286,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> muteElytra = sgSound.add(
         new BoolSetting.Builder()
             .name("mute-elytra")
@@ -333,7 +293,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> notifyOnLow = sgSound.add(
         new BoolSetting.Builder()
             .name("warn-low-rockets")
@@ -341,7 +300,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Integer> notifyVolume = sgSound.add(
         new IntSetting.Builder()
             .name("low-rockets-volume")
@@ -350,7 +308,6 @@ public class RocketMan extends Module {
             .visible(notifyOnLow::get)
             .build()
     );
-
     private final Setting<Integer> notifyAmount = sgSound.add(
         new IntSetting.Builder()
             .name("low-rockets-threshold")
@@ -360,7 +317,6 @@ public class RocketMan extends Module {
             .visible(notifyOnLow::get)
             .build()
     );
-
     private final Setting<Boolean> warnOnLow = sgSound.add(
         new BoolSetting.Builder()
             .name("warn-low-durability")
@@ -368,7 +324,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Integer> warnVolume = sgSound.add(
         new IntSetting.Builder()
             .name("low-durability-volume")
@@ -377,7 +332,6 @@ public class RocketMan extends Module {
             .visible(warnOnLow::get)
             .build()
     );
-
     private final Setting<Integer> durabilityThreshold = sgSound.add(
         new IntSetting.Builder()
             .name("low-durability-threshold-%")
@@ -386,7 +340,6 @@ public class RocketMan extends Module {
             .visible(warnOnLow::get)
             .build()
     );
-
     public final Setting<Boolean> durationFeedback = sgSound.add(
         new BoolSetting.Builder()
             .name("duration-feedback")
@@ -394,7 +347,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     public final Setting<Boolean> scrollSpeedFeedback = sgSound.add(
         new BoolSetting.Builder()
             .name("scroll-speed-feedback")
@@ -402,7 +354,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> antiLagBackFeedback = sgSound.add(
         new BoolSetting.Builder()
             .name("antiLagBack-feedback")
@@ -410,7 +361,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     public final Setting<Boolean> hoverModeFeedback = sgSound.add(
         new BoolSetting.Builder()
             .name("hover-mode-feedback")
@@ -418,7 +368,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> disableOnLand = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("disable-on-land")
@@ -426,7 +375,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Boolean> syncInventory = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("sync-inventory")
@@ -434,7 +382,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> autoEquip = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("auto-equip")
@@ -442,14 +389,12 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<TakeoffMode> takeoff = settings.getDefaultGroup().add(
         new EnumSetting.Builder<TakeoffMode>()
             .name("takeoff-assist-mode")
             .defaultValue(TakeoffMode.Full)
             .build()
     );
-
     private final Setting<Integer> assistCooldown = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("takeoff-assist-cooldown")
@@ -459,7 +404,6 @@ public class RocketMan extends Module {
             .visible(() -> !takeoff.get().equals(TakeoffMode.None))
             .build()
     );
-
     private final Setting<Boolean> autoReplace = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("elytra-replace")
@@ -467,7 +411,6 @@ public class RocketMan extends Module {
             .defaultValue(true)
             .build()
     );
-
     private final Setting<Integer> replaceThreshold = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("durability-%-threshold")
@@ -476,7 +419,6 @@ public class RocketMan extends Module {
             .visible(autoReplace::get)
             .build()
     );
-
     private final Setting<Boolean> escapeLava = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("attempt-escape-lava")
@@ -484,7 +426,6 @@ public class RocketMan extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Integer> lagBackDelay = settings.getDefaultGroup().add(
         new IntSetting.Builder()
             .name("lagBack-delay")
@@ -492,16 +433,14 @@ public class RocketMan extends Module {
             .range(1, 1200).sliderRange(10, 69).defaultValue(37)
             .build()
     );
-
     public final Setting<Boolean> debug = settings.getDefaultGroup().add(
         new BoolSetting.Builder()
             .name("debug")
             .description("Print various debug messages to your chat (useful for configuring & debugging the module.)")
             .defaultValue(false)
-            .visible(() -> false) // toggle via settings command only
+            .visible(() -> false)
             .build()
     );
-
     private int timer = 0;
     private int ticksBusy = 0;
     private int hoverTimer = 0;
@@ -531,23 +470,19 @@ public class RocketMan extends Module {
     public @Nullable BlockPos extensionStartPos = null;
     public @Nullable FireworkRocketEntity currentRocket = null;
     private final ArrayList<CommonPongC2SPacket> pongQueue = new ArrayList<>();
-
     private void useFireworkRocket(String caller) {
         if (mc.player == null) return;
         if (mc.interactionManager == null) return;
         if (debug.get() && chatFeedback) MsgUtil.sendModuleMsg("Caller: " + StardustUtil.rCC() + caller, this.name);
-
         boolean foundRocket = false;
         for (int n = 0; n < 9; n++) {
             Item item = mc.player.getInventory().getStack(n).getItem();
-
             if (item == Items.FIREWORK_ROCKET) {
                 InvUtils.swap(n, true);
                 foundRocket = true;
                 break;
             }
         }
-
         if (foundRocket) {
             timer = 0;
             justUsed = true;
@@ -557,7 +492,6 @@ public class RocketMan extends Module {
             int movedSlot = -1;
             for (int n = 9; n < mc.player.getInventory().main.size(); n++) {
                 Item item = mc.player.getInventory().getStack(n).getItem();
-
                 if (item == Items.FIREWORK_ROCKET) {
                     InvUtils.move().from(n).to(mc.player.getInventory().selectedSlot);
                     movedSlot = n;
@@ -565,19 +499,16 @@ public class RocketMan extends Module {
                     break;
                 }
             }
-
             if (foundRocket) {
                 timer = 0;
                 justUsed = true;
                 mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-                //noinspection ConstantConditions
                 if (movedSlot != -1) {
                     InvUtils.move().from(mc.player.getInventory().selectedSlot).to(movedSlot);
                 }
             }
         }
     }
-
     public void discardCurrentRocket(String source) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
         if (!source.trim().isEmpty() && debug.get() && chatFeedback) {
@@ -587,7 +518,6 @@ public class RocketMan extends Module {
                     + StardustUtil.rCC() + pongQueue.size(), this.name
             );
         }
-
         if (firstRocket) firstRocket = false;
         if (currentRocket != null && durationBoosted) {
             currentRocket.discard();
@@ -595,7 +525,6 @@ public class RocketMan extends Module {
         durationBoosted = false;
         extensionStartPos = null;
         extensionStartTime = null;
-
         if (extendRockets.get() && !pongQueue.isEmpty()) {
             for (CommonPongC2SPacket pong : pongQueue) {
                 mc.getNetworkHandler().sendPacket(pong);
@@ -603,7 +532,6 @@ public class RocketMan extends Module {
             pongQueue.clear();
         }
     }
-
     public boolean hasActiveRocket() {
         if (mc.world == null) return false;
         for (Entity e : mc.world.getEntities()) {
@@ -613,7 +541,6 @@ public class RocketMan extends Module {
         }
         return false;
     }
-
     private boolean replaceElytra() {
         if (mc.player == null) return false;
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
@@ -622,7 +549,6 @@ public class RocketMan extends Module {
                 int max = item.getMaxDamage();
                 int current = max - item.getDamage();
                 double percent = Math.floor((current / (double) max) * 100);
-
                 if (percent <= replaceThreshold.get()) continue;
                 InvUtils.move().from(n).toArmor(2);
                 return true;
@@ -630,23 +556,14 @@ public class RocketMan extends Module {
         }
         return false;
     }
-
-    private boolean isNotPlayingMinigames() {
-        return !(mc.currentScreen instanceof MeteoritesScreen)
-            && !(mc.currentScreen instanceof SolitaireScreen);
-    }
-
     private void handleDurabilityChecks() {
         if (mc.player == null) return;
         if (!warnOnLow.get() && !autoReplace.get()) return;
         if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() != Items.ELYTRA) return;
-
         ItemStack equippedElytra = mc.player.getEquippedStack(EquipmentSlot.CHEST);
-
         int maxDurability = equippedElytra.getMaxDamage();
         int currentDurability = maxDurability - equippedElytra.getDamage();
         double percentDurability = Math.floor((currentDurability / (double) maxDurability) * 100);
-
         if (autoReplace.get()) {
             if (percentDurability <= replaceThreshold.get()) {
                 if (!replaceElytra() && warnOnLow.get()) {
@@ -669,11 +586,9 @@ public class RocketMan extends Module {
             }
         }
     }
-
     private void handleFireworkRocketChecks() {
         if (mc.player == null) return;
         if (!notifyOnLow.get() || rocketStockTicks < 100) return;
-
         int totalRockets = 0;
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
             ItemStack stack = mc.player.getInventory().getStack(n);
@@ -681,7 +596,6 @@ public class RocketMan extends Module {
                 totalRockets += stack.getCount();
             }
         }
-
         if (totalRockets < notifyAmount.get()) {
             float vol = notifyVolume.get() / 100f;
             mc.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, vol, 1f);
@@ -689,7 +603,6 @@ public class RocketMan extends Module {
             rocketStockTicks = 0;
         }
     }
-
     private void assistTakeoff() {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
         if (escapeLava.get() && PlayerUtils.getDimension().equals(Dimension.Nether) && mc.player.isSubmergedIn(FluidTags.LAVA)) {
@@ -757,8 +670,6 @@ public class RocketMan extends Module {
             }
         }
     }
-
-    // See PlayerEntityMixin.java
     public boolean isHoverKeyPressed() {
         return switch (modifierKey.get()) {
             case None -> hoverKey.get().isPressed();
@@ -767,57 +678,41 @@ public class RocketMan extends Module {
             case Ctrl -> Input.isKeyPressed(GLFW.GLFW_KEY_LEFT_CONTROL) && hoverKey.get().isPressed();
         };
     }
-
-    // See EntityMixin.java && LivingEntityMixin.java && PlayerEntityMixin.java
     public boolean shouldLockYLevel() {
         return usageMode.get().equals(RocketMode.Dynamic) && yLevelLock.get();
     }
-
-    // See PlayerEntityMixin.java
     public void setIsHovering(boolean hovering) {
         isHovering = hovering;
         if (hoverModeFeedback.get() && chatFeedback) {
             MsgUtil.updateModuleMsg("Hover Mode " + (hovering ? "§2§oEnabled§7§o." : "§4§oDisabled§7."), this.name, "hoverModeFeedback".hashCode());
         }
     }
-
-    // See MinecraftClientMixin.java
-    // We want to update movement on every frame instead of every tick for that buttery smooth experience
     public boolean shouldTickRotation() {
         if (mc.player == null) return false;
         if (freeLookOnly.get() && !Modules.get().get(FreeLook.class).isActive()) return false;
         return (keyboardControl.get() || isHovering) && mc.player.isGliding();
     }
-
     public boolean shouldInvertPitch() {
         return invertPitch.isVisible() && invertPitch.get();
     }
-
     public MinecraftClient getClientInstance() {
         return mc;
     }
-
     public int getPitchSpeed() {
         return pitchSpeed.get();
     }
-
     public int getYawSpeed() {
         return yawSpeed.get();
     }
-
-    // See ClientPlayerEntityMixin.java && ElytraSoundInstanceMixin.java
     public boolean shouldMuteElytra() {
         if (mc.player == null) return false;
         return muteElytra.get() && mc.player.isGliding();
     }
-
-    // See FireworkRocketEntityMixin.java
     public double getRocketBoostAcceleration() {
         if (isHovering) return 0.0;
         double maxSpeed = speedSetting.get();
         double currentBps = Math.round(Utils.getPlayerSpeed().length() * 100) * .01;
         double increment = shouldLockYLevel() ? accelerationSetting.get() * 2 : accelerationSetting.get();
-
         if (currentBps <= 0.0 || needReset) return Math.min(1.5, maxSpeed);
         if (currentBps >= 33.63) {
             boosted = true;
@@ -836,25 +731,21 @@ public class RocketMan extends Module {
         }
         return rocketBoostSpeed;
     }
-
     @Override
     public void onActivate() {
         if (mc.player == null) return;
-        if (mc.getNetworkHandler() == null || mc.getNetworkHandler().getPlayerList().size() <= 1) return; // Ignore queue
+        if (mc.getNetworkHandler() == null || mc.getNetworkHandler().getPlayerList().size() <= 1) return;
         boolean isWearingElytra = mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() == Items.ELYTRA;
-
         if (!isWearingElytra) {
             if (autoEquip.get()) {
                 boolean foundElytra = false;
                 for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
                     ItemStack stack = mc.player.getInventory().main.get(n);
-
                     if (stack.getItem() == Items.ELYTRA) {
                         if (autoReplace.get()) {
                             int max = stack.getMaxDamage();
                             int current = max - stack.getDamage();
                             double durability = Math.floor((current / (double) max) * 100);
-
                             if (durability <= replaceThreshold.get()) continue;
                         }
                         foundElytra = true;
@@ -870,7 +761,6 @@ public class RocketMan extends Module {
             }
         } else if (!takingOff && !assisted) assistTakeoff();
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -890,7 +780,6 @@ public class RocketMan extends Module {
         discardCurrentRocket("on deactivate");
         rcc = StardustUtil.rCC();
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.getNetworkHandler() == null) return;
@@ -906,7 +795,6 @@ public class RocketMan extends Module {
             }
             return;
         }
-
         if (hasActiveRocket() && currentRocket == null) {
             for (Entity e : mc.world.getEntities()) {
                 if (e instanceof FireworkRocketEntity r && r.getOwner() != null && r.getOwner().equals(mc.player)) {
@@ -915,20 +803,16 @@ public class RocketMan extends Module {
                 }
             }
         }
-
         try {
             if (extendRockets.get() && hasActiveRocket() && extensionStartTime != null && extensionStartPos != null) {
                 BlockPos playerPos = new BlockPos(mc.player.getBlockX(), 0, mc.player.getBlockZ());
                 long elapsed = System.currentTimeMillis() - extensionStartTime;
-
                 String duration = String.valueOf(Math.round((elapsed / 1000f) * 100) * .01);
                 String formatted = duration.substring(0, Math.min(5, duration.length()));
                 if (formatted.length() <= 4) formatted = formatted+"0";
-
                 if (debug.get() || durationFeedback.get() && chatFeedback) MsgUtil.updateModuleMsg(
                     "Duration Boost: §e§o" + formatted + " §7§oseconds.", this.name, "rocketDurationUpdate".hashCode()
                 );
-
                 if (pongQueue.size() >= 1900) {
                     discardCurrentRocket("max packet queue size reached");
                 } else if (elapsed >= extendedDuration.get() * 1000.0) {
@@ -941,15 +825,12 @@ public class RocketMan extends Module {
         } catch (Exception err) {
             LogUtil.error("extensionStartPos should not have been null, but it was! - Why: " + err, this.name);
         }
-
-
         ++setbackTimer;
         if (needReset) {
             if (antiLagBackFeedback.get() || debug.get() && chatFeedback) ((IChatHud) mc.inGameHud.getChatHud()).meteor$add(
                 Text.literal("§8§o["+rcc+"§oAntiLagBack...§8§o]"),
                 "LagBackReset".hashCode()
             );
-
             if (isHovering) {
                 isHovering = false;
                 wasHovering = true;
@@ -968,7 +849,6 @@ public class RocketMan extends Module {
             setbackTimer = 0;
             setbackCounter = 0;
         }
-
         ItemStack activeItem = mc.player.getActiveItem();
         if ((activeItem.contains(DataComponentTypes.FOOD) || Utils.isThrowable(activeItem.getItem())) && mc.player.getItemUseTime() > 0) {
             if (!isHovering || hasActiveRocket()) {
@@ -988,7 +868,6 @@ public class RocketMan extends Module {
             ticksBusy = 0;
             return;
         }
-
         if (assisted && mc.player.isOnGround() && (assistCooldown.get() > 0 || assistCooldown.get() == -1)) {
             --assistTimer;
             if (assistTimer <= 0) {
@@ -996,10 +875,8 @@ public class RocketMan extends Module {
                 assistTimer = assistCooldown.get();
             }
         }
-
         if (mc.player.isGliding() && hasActiveRocket()) takingOff = true;
         boolean needsEscape = escapeLava.get() && PlayerUtils.getDimension().equals(Dimension.Nether) && mc.player.isSubmergedIn(FluidTags.LAVA);
-
         if (!needsEscape && inLava) {
             inLava = false;
             mc.options.jumpKey.setPressed(false);
@@ -1008,7 +885,6 @@ public class RocketMan extends Module {
                 lastPlayerPitch = -420.69f;
             }
         }
-
         if ((!takingOff && !assisted) || needsEscape) assistTakeoff();
         else if (mc.player.isOnGround() || !mc.player.isGliding()) {
             discardCurrentRocket("");
@@ -1026,9 +902,7 @@ public class RocketMan extends Module {
             }
             return;
         }
-
         if (!mc.player.isGliding()) return;
-
         handleDurabilityChecks();
         handleFireworkRocketChecks();
         if (isHovering) {
@@ -1043,7 +917,6 @@ public class RocketMan extends Module {
             } else if (!hasActiveRocket() && forceRocketUsage.get()) useFireworkRocket("hover maintain");
             return;
         } else hoverTimer = 0;
-
         ++timer;
         ++ticksFlying;
         ++rocketStockTicks;
@@ -1065,11 +938,6 @@ public class RocketMan extends Module {
             case Dynamic -> {
                 if (!hasActiveRocket() && !justUsed) useFireworkRocket("dynamic usage");
             }
-            case OnKey -> {
-                if (usageKey.get().isPressed() && !justUsed && isNotPlayingMinigames()) {
-                    useFireworkRocket("key usage");
-                }
-            }
         }
         if (justUsed) {
             ++ticksSinceUsed;
@@ -1079,7 +947,6 @@ public class RocketMan extends Module {
             }
         }
     }
-
     @EventHandler
     private void onSendPacket(PacketEvent.Send event) {
         if (mc.player == null || !mc.player.isGliding()) return;
@@ -1087,10 +954,8 @@ public class RocketMan extends Module {
             event.cancel();
             pongQueue.add(packet);
         }
-
         if (!shouldLockYLevel()) return;
         if (!(event.packet instanceof PlayerMoveC2SPacket packet)) return;
-
         if (mc.player.input.playerInput.jump() && verticalSpeed.get() > 0) {
             if (isHovering) ((PlayerMoveC2SPacketAccessor) packet).setPitch(-90);
             else ((PlayerMoveC2SPacketAccessor) packet).setPitch(-45);
@@ -1099,7 +964,6 @@ public class RocketMan extends Module {
             else ((PlayerMoveC2SPacketAccessor) packet).setPitch(45);
         } else ((PlayerMoveC2SPacketAccessor) packet).setPitch(0);
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onReceivePacket(PacketEvent.Receive event) {
         if (mc.getNetworkHandler() == null) return;
@@ -1133,19 +997,16 @@ public class RocketMan extends Module {
                 mc.getNetworkHandler().onEntitiesDestroy(new EntitiesDestroyS2CPacket(entityIds));
             }
         }
-
         if (!(event.packet instanceof PlaySoundS2CPacket packet)) return;
         if (packet.getSound().value() == SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH) {
             if (muteRockets.get()) event.cancel();
         }
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onScrollWheel(MouseScrollEvent event) {
         Modules mods = Modules.get();
         if (mc.currentScreen != null || !boostSpeed.get()) return;
         if (mods == null || mods.get(Freecam.class).isActive()) return;
-
         if (Input.isKeyPressed(GLFW.GLFW_KEY_LEFT_CONTROL)) {
             if (isHovering) {
                 if (verticalScrollSensitivity.get() <= 0) return;

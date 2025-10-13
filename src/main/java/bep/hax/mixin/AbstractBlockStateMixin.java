@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import bep.hax.modules.BepMine;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.block.AbstractBlock;
@@ -10,7 +9,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 @Mixin(AbstractBlock.AbstractBlockState.class)
 public abstract class AbstractBlockStateMixin {
     @Inject(method = "calcBlockBreakingDelta", at = @At("RETURN"), cancellable = true)
@@ -18,12 +16,10 @@ public abstract class AbstractBlockStateMixin {
         BepMine bepMine = Modules.get().get(BepMine.class);
         if (bepMine != null && bepMine.isActive()) {
             if (bepMine.getModeConfig().get() == BepMine.SpeedmineMode.DAMAGE) {
-                // For damage mode, multiply the breaking speed
                 float originalDelta = info.getReturnValueF();
                 float speedMultiplier = 1.0f / bepMine.getSpeedConfig().get().floatValue();
                 info.setReturnValue(originalDelta * speedMultiplier);
             }
-            // PACKET mode calculates its own progress
         }
     }
 }

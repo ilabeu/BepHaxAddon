@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import java.time.Instant;
 import org.joml.Vector3d;
 import java.time.Duration;
@@ -37,18 +36,11 @@ import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.events.meteor.MouseButtonEvent;
 import meteordevelopment.meteorclient.systems.modules.render.Freecam;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- *     Adds "Click-to-come" functionality to Meteor's built-in Freecam module.
- **/
 @Mixin(value = Freecam.class, remap = false)
 public abstract class FreecamMixin {
     @Shadow
     @Final
     private SettingGroup sgGeneral;
-
     @Shadow
     private Perspective perspective;
     @Shadow
@@ -59,10 +51,8 @@ public abstract class FreecamMixin {
     @Shadow
     @Final
     public Vector3d pos;
-
     @Shadow
     protected abstract boolean checkGuiMove();
-
     @Shadow
     private boolean up;
     @Shadow
@@ -92,7 +82,6 @@ public abstract class FreecamMixin {
     @Unique
     @Nullable
     private Setting<Double> orbitHeight = null;
-
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/Freecam;rotate:Lmeteordevelopment/meteorclient/settings/Setting;"))
     private void addClickToComeSettings(CallbackInfo ci) {
         clickToCome = sgGeneral.add(
@@ -102,7 +91,6 @@ public abstract class FreecamMixin {
                 .defaultValue(false)
                 .build()
         );
-
         doubleClickToCome = sgGeneral.add(
             new BoolSetting.Builder()
                 .name("double-click-only")
@@ -111,7 +99,6 @@ public abstract class FreecamMixin {
                 .visible(() -> clickToCome != null && clickToCome.get())
                 .build()
         );
-
         useBaritoneChat = sgGeneral.add(
             new BoolSetting.Builder()
                 .name("use-baritone-chat")
@@ -120,7 +107,6 @@ public abstract class FreecamMixin {
                 .visible(() -> clickToCome != null && clickToCome.get())
                 .build()
         );
-
         baritoneChatPrefix = sgGeneral.add(
             new StringSetting.Builder()
                 .name("baritone-command-prefix")
@@ -129,7 +115,6 @@ public abstract class FreecamMixin {
                 .visible(() -> clickToCome != null && clickToCome.get() && useBaritoneChat != null && useBaritoneChat.get())
                 .build()
         );
-
         satelliteCameraMode = sgGeneral.add(
             new BoolSetting.Builder()
                 .name("satellite-camera")
@@ -145,7 +130,6 @@ public abstract class FreecamMixin {
                 .build()
         );
     }
-
     @Inject(method = "onTick", at = @At("HEAD"), cancellable = true)
     private void handleClickToCome(CallbackInfo ci) {
         if (mc.player == null || mc.world == null) return;
@@ -161,13 +145,11 @@ public abstract class FreecamMixin {
                     Vec3d cameraPos = mc.gameRenderer.getCamera().getPos();
                     float pitch = mc.gameRenderer.getCamera().getPitch();
                     float yaw = mc.gameRenderer.getCamera().getYaw();
-
                     Vec3d direction = getRotationVector(pitch, yaw);
                     RaycastContext context = new RaycastContext(
                         cameraPos, cameraPos.add(direction.multiply(256)),
                         RaycastContext.ShapeType.VISUAL, RaycastContext.FluidHandling.NONE, mc.getCameraEntity()
                     );
-
                     BlockHitResult rayCast = mc.world.raycast(context);
                     if (rayCast != null && !(mc.world.getBlockState(rayCast.getBlockPos()).getBlock() instanceof AirBlock)) {
                         crosshairPos = rayCast.getBlockPos();
@@ -181,9 +163,7 @@ public abstract class FreecamMixin {
                     side = result.getSide();
                 }
             }
-
             if (side != null) {
-                // Try not to mine the block we clicked on
                 if (side == Direction.DOWN) {
                     crosshairPos = crosshairPos.offset(side, 2);
                 }else if (side == Direction.UP) {
@@ -195,7 +175,6 @@ public abstract class FreecamMixin {
                     }
                 }
             }
-
             if (useBaritoneChat != null && useBaritoneChat.get() && baritoneChatPrefix != null && !baritoneChatPrefix.get().isBlank()) {
                 mc.getNetworkHandler().sendChatMessage(baritoneChatPrefix.get() + "goto "
                     + crosshairPos.getX() + " "
@@ -210,7 +189,6 @@ public abstract class FreecamMixin {
                 MsgUtil.sendMsg("Baritone was not found to be installed. If this is a mistake, please enable the \"Use Baritone Chat\" setting and try again.");
             }
         }
-
         if (mc.currentScreen == null && clicks > 0) {
             ++timer;
             if (timer >= 10) {
@@ -219,38 +197,29 @@ public abstract class FreecamMixin {
                 clickedAt = null;
             }
         }
-
         if (satelliteCameraMode == null || !satelliteCameraMode.get()) return;
         if (mc.cameraEntity == null || mc.getCameraEntity() == null) return;
         ci.cancel();
-
         if (mc.cameraEntity.isInsideWall()) mc.getCameraEntity().noClip = true;
         if (!perspective.isFirstPerson()) mc.options.setPerspective(Perspective.FIRST_PERSON);
-
         double s = 0.5;
         double velY = 0;
         if (mc.options.sprintKey.isPressed()) s = 1;
-
         if (this.up) {
             velY += s * speedValue;
         }
         if (this.down) {
             velY -= s * speedValue;
         }
-
         Vec3d orbitPos = getOrbitPos(velY);
-
         prevPos.set(pos);
         pos.set(orbitPos.x, orbitPos.y, orbitPos.z);
     }
-
-    // Allow RocketMan keyboard control to work & only cancel the shift/space preses for satellite cam
     @Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
     private void hijackOnKey(KeyEvent event, CallbackInfo ci) {
         if (Input.isKeyPressed(GLFW.GLFW_KEY_F3)) return;
         if (checkGuiMove()) return;
         if (satelliteCameraMode == null || !satelliteCameraMode.get()) return;
-
         ci.cancel();
         boolean cancel = true;
         if (mc.options.jumpKey.matchesKey(event.key, 0)) {
@@ -263,10 +232,8 @@ public abstract class FreecamMixin {
         } else {
             cancel = false;
         }
-
         if (cancel) event.cancel();
     }
-
     @Inject(method = "onMouseButton", at = @At("TAIL"))
     private void handleMouseClicks(MouseButtonEvent event, CallbackInfo ci) {
         if (mc.currentScreen != null) return;
@@ -279,14 +246,12 @@ public abstract class FreecamMixin {
             }
         }
     }
-
     @Inject(method = "onDeactivate", at = @At("TAIL"))
     private void resetCounters(CallbackInfo ci) {
         timer = 0;
         clicks = 0;
         clickedAt = null;
     }
-
     @Unique
     private Vec3d getRotationVector(float pitch, float yaw) {
         float f = pitch * ((float)Math.PI / 180);
@@ -297,7 +262,6 @@ public abstract class FreecamMixin {
         float k = MathHelper.sin(f);
         return new Vec3d(i * j, -k, h * j);
     }
-
     @Unique
     private Vec3d getOrbitPos(double velY) {
         if (orbitHeight != null) {

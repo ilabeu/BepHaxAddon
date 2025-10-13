@@ -1,5 +1,4 @@
 package bep.hax.modules;
-
 import java.util.List;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
@@ -28,24 +27,17 @@ import bep.hax.mixin.accessor.DisconnectS2CPacketAccessor;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import net.minecraft.network.packet.s2c.common.DisconnectS2CPacket;
 import meteordevelopment.meteorclient.events.entity.EntityAddedEvent;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 public class RoadTrip extends Module {
     public RoadTrip() {
         super(Bep.STARDUST, "RoadTrip", "Tools for AFK-travelling over long distances.");
     }
-
     @SuppressWarnings("unused")
     public enum ToggleModes {
         Module, Settings, None
     }
-
     private final SettingGroup sgETA = settings.createGroup("ETA Settings (Spoiler)", false);
     private final SettingGroup sgAutoLog = settings.createGroup("AutoLog Settings");
     private final SettingGroup sgNotify = settings.createGroup("Notification Settings");
-
     private final Setting<Boolean> etaSetting = sgETA.add(
         new BoolSetting.Builder()
             .name("display-ETA")
@@ -91,7 +83,6 @@ public class RoadTrip extends Module {
             .onChanged(it -> this.bufferSize = it * 1200)
             .build()
     );
-
     private final Setting<Boolean> forceKick = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("illegal-disconnect")
@@ -106,7 +97,6 @@ public class RoadTrip extends Module {
             .defaultValue(ToggleModes.Module)
             .build()
     );
-
     private final Setting<Boolean> antiTrapAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("anti-trap-autoLog")
@@ -114,7 +104,6 @@ public class RoadTrip extends Module {
             .defaultValue(false)
             .build()
     );
-
     private final Setting<Boolean> etaAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("ETA-autoLog")
@@ -129,7 +118,6 @@ public class RoadTrip extends Module {
             .range(0, 25000).noSlider().defaultValue(150)
             .build()
     );
-
     private final Setting<Boolean> timeoutAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("timer-autoLog")
@@ -151,7 +139,6 @@ public class RoadTrip extends Module {
             })
             .build()
     );
-
     private final Setting<Boolean> lowElytraAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("elytraStock-autoLog")
@@ -166,7 +153,6 @@ public class RoadTrip extends Module {
             .range(0, 40).sliderRange(0, 30).defaultValue(1)
             .build()
     );
-
     private final Setting<Boolean> lowRocketsAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("rocketStock-autoLog")
@@ -203,7 +189,6 @@ public class RoadTrip extends Module {
             .range(0, 1024).sliderRange(0, 128).defaultValue(0)
             .build()
     );
-
     private final Setting<Boolean> yLevelAutoLog = sgAutoLog.add(
         new BoolSetting.Builder()
             .name("y-level-autoLog")
@@ -218,7 +203,6 @@ public class RoadTrip extends Module {
             .range(-69, 30000000).noSlider().defaultValue(-69)
             .build()
     );
-
     private final Setting<Boolean> elytraNotify = sgNotify.add(
         new BoolSetting.Builder()
             .name("elytra-notify")
@@ -239,7 +223,6 @@ public class RoadTrip extends Module {
             .range(0, 5).sliderMin(0).sliderMax(5).defaultValue(.5)
             .build()
     );
-
     private int timer = 0;
     private int ticksNotMoved = 0;
     private int ticksSinceWarned = 0;
@@ -249,7 +232,6 @@ public class RoadTrip extends Module {
     private @Nullable Text disconnectReason = null;
     private int bufferSize = averageSpeedMinutes.get() * 1200;
     private final ArrayDeque<Double> bpsValues = new ArrayDeque<>();
-
     private void setLogOutTimer(int timer) {
         logOutTimer = timer;
         timerTimestamp = System.currentTimeMillis();
@@ -260,7 +242,6 @@ public class RoadTrip extends Module {
     private void disableLogOutTimer() {
         logOutTimer = -69L;
     }
-
     @Override
     public void onActivate() {
         disconnectReason = null;
@@ -269,7 +250,6 @@ public class RoadTrip extends Module {
             MsgUtil.updateModuleMsg("Set Timer AutoLog to disconnect you §a§o" + timeoutAutoLogTimer.get()  + " §7seconds from now.", this.name, "timerAutoLog".hashCode());
         }
     }
-
     @Override
     public void onDeactivate() {
         timer = 0;
@@ -281,48 +261,38 @@ public class RoadTrip extends Module {
         ticksSinceWarned = 0;
         bufferSize = averageSpeedMinutes.get() * 1200;
     }
-
     private void handleDurabilityChecks() {
         if (mc.player == null) return;
         if (ticksSinceWarned < 100) return;
-
         boolean reset = false;
         if (elytraNotify.get()) {
             if (mc.player.getEquippedStack(EquipmentSlot.CHEST).getItem() != Items.ELYTRA) return;
-
             ItemStack equippedElytra = mc.player.getEquippedStack(EquipmentSlot.CHEST);
-
             int maxDurability = equippedElytra.getMaxDamage();
             int currentDurability = maxDurability - equippedElytra.getDamage();
             double percentDurability = Math.floor((currentDurability / (double) maxDurability) * 100);
-
             if (percentDurability <= 5) {
                 mc.player.playSound(SoundEvents.ENTITY_ITEM_BREAK, pingVolume.get().floatValue(), 1f);
                 MsgUtil.updateModuleMsg("Elytra durability: §c" + percentDurability + "§7%", this.name, "roadTripElytraWarn".hashCode());
                 reset = true;
             }
         }
-
         if (lagNotify.get() && ticksNotMoved >= 80) {
             reset = true;
             ticksNotMoved = 0;
             mc.player.playSound(SoundEvents.ENTITY_PHANTOM_SWOOP, pingVolume.get().floatValue(), 1f);
         }
-
         if (reset) ticksSinceWarned = 0;
     }
-
     private boolean hasEnoughElytras() {
         if (mc.player == null) return false;
         ArrayList<Integer> goodSlotsLeft = new ArrayList<>();
         for (int n = 0; n < mc.player.getInventory().main.size(); n++) {
             ItemStack stack = mc.player.getInventory().getStack(n);
-
             if (stack.getItem() == Items.ELYTRA) {
                 int max = stack.getMaxDamage();
                 int curr = max - stack.getDamage();
                 double percent = Math.floor((curr / (double) max) * 100);
-
                 if (percent > 5) {
                     goodSlotsLeft.add(n);
                 }
@@ -330,7 +300,6 @@ public class RoadTrip extends Module {
         }
         return goodSlotsLeft.size() > elytraStock.get();
     }
-
     private boolean hasEnoughRockets() {
         if (mc.player == null) return false;
         int totalRocketsLeft = 0;
@@ -342,7 +311,6 @@ public class RoadTrip extends Module {
         }
         return totalRocketsLeft > rocketStock.get();
     }
-
     private boolean hasEnoughFood() {
         if (mc.player == null) return false;
         int totalFoodLeft = 0;
@@ -354,12 +322,10 @@ public class RoadTrip extends Module {
         }
         return totalFoodLeft > foodStock.get();
     }
-
     private void doForceKick(Text disconnectReason) {
         this.disconnectReason = disconnectReason;
         StardustUtil.illegalDisconnect(true, StardustConfig.illegalDisconnectMethodSetting.get());
     }
-
     private void disconnect(Text reason) {
         if (mc.getNetworkHandler() == null) return;
         StardustUtil.disableAutoReconnect();
@@ -369,7 +335,6 @@ public class RoadTrip extends Module {
             case Settings -> disableAutoLogSettings();
         }
     }
-
     private void disableAutoLogSettings() {
         etaAutoLog.set(false);
         yLevelAutoLog.set(false);
@@ -378,13 +343,11 @@ public class RoadTrip extends Module {
         lowElytraAutoLog.set(false);
         lowRocketsAutoLog.set(false);
     }
-
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (StardustUtil.isIn2b2tQueue()) return;
         if (mc.getNetworkHandler() == null) return;
         if (mc.player == null || mc.world == null) return;
-
         ++timer;
         ++ticksSinceWarned;
         handleDurabilityChecks();
@@ -400,7 +363,6 @@ public class RoadTrip extends Module {
                 }
             }
         }
-
         if (yLevelAutoLog.get() && mc.player.getY() < yLevelThreshold.get()) {
             Text reason = Text.literal("§8[§4RoadTrip§8] §fDisconnected you because your Y level descended below §c"+ yLevelThreshold.get()+"§8!");
             if (forceKick.get()) {
@@ -409,7 +371,6 @@ public class RoadTrip extends Module {
                 disconnect(reason);
             }
         }
-
         if (lowElytraAutoLog.get() && !hasEnoughElytras()) {
             Text reason = Text.literal("§8[§2RoadTrip§8] §fDisconnected you because you are running low on healthy elytras§c!");
             if (forceKick.get()) {
@@ -418,7 +379,6 @@ public class RoadTrip extends Module {
                 disconnect(reason);
             }
         }
-
         if (lowRocketsAutoLog.get() && !hasEnoughRockets()) {
             Text reason = Text.literal("§8[§2RoadTrip§8] §fDisconnected you because you are running low on firework rockets§c!");
             if (forceKick.get()) {
@@ -427,7 +387,6 @@ public class RoadTrip extends Module {
                 disconnect(reason);
             }
         }
-
         if (lowFoodAutoLog.get() && !hasEnoughFood()) {
             Text reason = Text.literal("§8[§2RoadTrip§8] §fDisconnected you because you are running low on food§c!");
             if (forceKick.get()) {
@@ -436,20 +395,15 @@ public class RoadTrip extends Module {
                 disconnect(reason);
             }
         }
-
         BlockPos newPos = mc.player.getBlockPos();
-
         if (lastPos == null) lastPos = newPos;
         else if (lastPos.getManhattanDistance(newPos) <= 1) {
             ++ticksNotMoved;
             lastPos = newPos;
         }
-
         BlockPos destination = new BlockPos(targetX.get(), mc.player.getBlockY(), targetZ.get());
-
         int totalBlocksLeft = newPos.getManhattanDistance(destination);
         double blocksPerSecond = Utils.getPlayerSpeed().horizontalLength();
-
         if (etaAutoLog.get() && totalBlocksLeft <= etaAutoLogThreshold.get()) {
             if (mc.getNetworkHandler().getPlayerList().size() > 1) {
                 Text reason = Text.literal("§8[§2RoadTrip§8] §fDisconnected you because you have reached your destination§2! §5:§3]");
@@ -460,7 +414,6 @@ public class RoadTrip extends Module {
                 }
             }
         }
-
         if (etaSetting.get()) {
             if (bpsValues.size() > bufferSize) {
                 int diff = bpsValues.size() - bufferSize;
@@ -476,7 +429,6 @@ public class RoadTrip extends Module {
                 for (double d : bpsValues) {
                     average += d;
                 }
-
                 if (averageETA.get()) {
                     blocksPerSecond = average / bpsValues.size();
                 }
@@ -485,7 +437,6 @@ public class RoadTrip extends Module {
                         + (Math.floor(average / bpsValues.size()) * 3600) / 1000 + "Km/h", "averageBPSUpdate".hashCode()
                 );
             }
-
             if (timer >= 20) {
                 timer = 0;
                 if (blocksPerSecond == 0) {
@@ -495,19 +446,14 @@ public class RoadTrip extends Module {
                     return;
                 }
                 double totalSeconds = totalBlocksLeft / blocksPerSecond;
-
                 long days = TimeUnit.SECONDS.toDays((long) totalSeconds);
                 totalSeconds -= TimeUnit.DAYS.toSeconds(days);
-
                 long hours = TimeUnit.SECONDS.toHours((long) totalSeconds);
                 totalSeconds -= TimeUnit.HOURS.toSeconds(hours);
-
                 long minutes = TimeUnit.SECONDS.toMinutes((long) totalSeconds);
                 totalSeconds -= TimeUnit.MINUTES.toSeconds(minutes);
-
                 long seconds = TimeUnit.SECONDS.toSeconds((long) totalSeconds);
                 StringBuilder sb = new StringBuilder().append(StardustUtil.rCC()).append("§8<§a§o✨§r§8> §7§oETA: §2§o");
-
                 if (days == 0 && hours == 0 && minutes == 0 && seconds <= 3) {
                     if (totalBlocksLeft <= 69) {
                         sb.append("§2§oYou have arrived at your destination§8§o. §5:§3]");
@@ -520,20 +466,17 @@ public class RoadTrip extends Module {
                     if (minutes != 0) sb.append(minutes).append(" §7§oMinutes, §2§o");
                     if (seconds != 0) sb.append(seconds).append(" §7§oSeconds.");
                 }
-
                 MsgUtil.updateMsg(sb.toString(), "RoadTripETAUpdate".hashCode());
             }
             lastPos = newPos;
         }
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onEntityAddHighPriority(EntityAddedEvent event) {
         if (mc.player == null || mc.world == null) return;
         if (!antiTrapAutoLog.get() || event.entity.getType() != EntityType.TNT_MINECART) return;
         doForceKick(Text.literal("§8[§aRoadTrip§8] §c§oDisconnected you to avoid a trap§8§o! §8§o(§c§oTNT minecarts §7§owere rendered§c§o!§8§o)"));
     }
-
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onPacketReceive(PacketEvent.Receive event) {
         if (!(event.packet instanceof DisconnectS2CPacket packet) || disconnectReason == null) return;

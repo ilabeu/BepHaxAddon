@@ -1,5 +1,4 @@
 package bep.hax.mixin.meteor;
-
 import java.util.List;
 import java.time.Instant;
 import java.time.Duration;
@@ -19,22 +18,14 @@ import meteordevelopment.meteorclient.gui.screens.ModulesScreen;
 import meteordevelopment.meteorclient.gui.widgets.containers.WWindow;
 import meteordevelopment.meteorclient.gui.widgets.containers.WContainer;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- *     Cycles to a new random Stardust category icon every 30 minutes.
- **/
 @Mixin(value = ModulesScreen.class, remap = false)
 public abstract class ModulesScreenMixin extends TabScreen {
     public ModulesScreenMixin(GuiTheme theme, Tab tab) {
         super(theme, tab);
     }
-
     @Unique
     @Nullable
     private Instant createdAt = null;
-
     @Inject(method = "createCategory", at = @At("HEAD"))
     private void cycleCategoryIcons(WContainer c, Category category, List<Module> moduleList, CallbackInfoReturnable<WWindow> cir) {
         if (category.name.equals("Stardust")) {

@@ -1,5 +1,4 @@
 package bep.hax.commands;
-
 import java.util.Locale;
 import java.time.ZoneId;
 import java.time.Instant;
@@ -18,27 +17,18 @@ import meteordevelopment.meteorclient.commands.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- *
- * credit to <a href="https://github.com/rfresh2">rfresh for the 2b api</a>
- **/
 public class Stats2b2t extends Command {
     private final String API_ENDPOINT = "/stats/player?playerName=";
     public Stats2b2t() { super("stats2b2t", "Fetch stats for a 2b2t player from api.2b2t.vc.", "stats"); }
-
     @Override
     public void build(LiteralArgumentBuilder<CommandSource> builder) {
         builder.then(argument("player", StringArgumentType.word()).executes(ctx -> {
             MeteorExecutor.execute(() -> {
                 ClientPlayerEntity player = mc.player;
-
                 if (player == null) return;
                 String playerString = ctx.getArgument("player", String.class);
                 String requestString = ApiHandler.API_2B2T_URL + API_ENDPOINT + playerString.trim();
                 String response = new ApiHandler().fetchResponse(requestString);
-
                 if (response == null) return;
                 if (response.equals("204 Undocumented")) {
                     player.sendMessage(
@@ -51,28 +41,23 @@ public class Stats2b2t extends Command {
                         Gson gson = new Gson();
                         String cc = StardustUtil.rCC();
                         PlayerStats stats = gson.fromJson(response, PlayerStats.class);
-
                         Instant firstInstant = Instant.parse(stats.firstSeen);
                         Instant lastInstant = Instant.parse(stats.lastSeen);
                         ZonedDateTime firstZonedTime = firstInstant.atZone(ZoneId.systemDefault());
                         ZonedDateTime lastZonedTime = lastInstant.atZone(ZoneId.systemDefault());
                         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.US);
-
                         String formattedFirstSeen = firstZonedTime.format(fmt);
                         String formattedLastSeen = lastZonedTime.format(fmt);
-
                         String formattedPlaytime;
                         String formattedPlaytimeInMonth;
                         long playtimeSeconds = stats.playtimeSeconds;
                         long playtimeSecondsInMonth = stats.playtimeSecondsMonth;
-
                         if (playtimeSeconds <= 0) {
                             formattedPlaytime = "none";
                         } else {
                             long days = TimeUnit.SECONDS.toDays(playtimeSeconds);
                             long hours = TimeUnit.SECONDS.toHours(playtimeSeconds);
                             long minutes = TimeUnit.SECONDS.toMinutes(playtimeSeconds);
-
                             if (days >= 60) {
                                 formattedPlaytime = days / 30 + " months";
                             } else if (days >= 30) {
@@ -99,14 +84,12 @@ public class Stats2b2t extends Command {
                                 formattedPlaytime = "1 second";
                             }
                         }
-
                         if (playtimeSecondsInMonth <= 0) {
                             formattedPlaytimeInMonth = "none";
                         } else {
                             long daysInMonth = TimeUnit.SECONDS.toDays(playtimeSecondsInMonth);
                             long hoursInMonth = TimeUnit.SECONDS.toHours(playtimeSecondsInMonth);
                             long minutesInMonth = TimeUnit.SECONDS.toMinutes(playtimeSecondsInMonth);
-
                             if (daysInMonth >= 28) {
                                 formattedPlaytimeInMonth = "1 month";
                             } else if (daysInMonth >= 14) {
@@ -131,7 +114,6 @@ public class Stats2b2t extends Command {
                                 formattedPlaytimeInMonth = "1 second";
                             }
                         }
-
                         String kdRatioString = String.valueOf((float) stats.killCount / (float) stats.deathCount);
                         player.sendMessage(
                             Text.of(
@@ -152,7 +134,6 @@ public class Stats2b2t extends Command {
             return SINGLE_SUCCESS;
         }));
     }
-
     private record PlayerStats(
         int joinCount, int leaveCount, int deathCount, int killCount, String firstSeen,
         String lastSeen, long playtimeSeconds, long playtimeSecondsMonth, int chatsCount, boolean prio) {}

@@ -1,5 +1,4 @@
 package bep.hax.mixin;
-
 import java.util.Arrays;
 import net.minecraft.text.*;
 import bep.hax.util.LogUtil;
@@ -20,19 +19,12 @@ import net.minecraft.client.gui.AbstractParentElement;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-/**
- * @author Tas [0xTas] <root@0xTas.dev>
- **/
 @Mixin(Screen.class)
 public abstract class ScreenMixin extends AbstractParentElement implements Drawable {
-
     @Shadow
     @Final
     @Mutable
     protected Text title;
-
-    // See AntiToS.java
     @Inject(method = "render", at = @At("HEAD"))
     private void censorScreenTitles(CallbackInfo ci) {
         Modules mods = Modules.get();
@@ -42,17 +34,13 @@ public abstract class ScreenMixin extends AbstractParentElement implements Drawa
         MutableText txt = Text.literal(tos.censorText(this.title.getString()));
         this.title = txt.setStyle(this.title.getStyle());
     }
-
-    // See ChatSigns.java
     @Inject(method = "handleTextClick", at = @At("HEAD"), cancellable = true)
     private void handleClickESP(@Nullable Style style, CallbackInfoReturnable<Boolean> cir) {
         if (style == null) return;
         ClickEvent event = style.getClickEvent();
         if (event == null || event.getAction() != ClickEvent.Action.RUN_COMMAND) return;
-
         if (event.getValue().startsWith("clickESP~")) {
             String[] args = event.getValue().split("~");
-
             String mod;
             BlockPos pos;
             try {
@@ -67,7 +55,6 @@ public abstract class ScreenMixin extends AbstractParentElement implements Drawa
             cir.cancel();
             cir.setReturnValue(true);
             long now = System.currentTimeMillis();
-
             switch (mod) {
                 case "chatSigns" -> {
                     Modules mods = Modules.get();
