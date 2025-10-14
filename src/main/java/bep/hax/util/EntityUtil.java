@@ -1,10 +1,13 @@
 package bep.hax.util;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.*;
+import net.minecraft.util.math.BlockPos;
+
 public class EntityUtil {
     public static boolean isMonster(Entity entity) {
         return entity instanceof HostileEntity ||
@@ -110,6 +113,15 @@ public class EntityUtil {
             entity instanceof MinecartEntity ||
             entity instanceof FurnaceMinecartEntity ||
             entity instanceof ChestMinecartEntity;
+    }
+    public static float getHealth(Entity entity) {
+        if (entity instanceof LivingEntity e) {
+            return e.getHealth() + e.getAbsorptionAmount();
+        }
+        return 0.0f;
+    }
+    public static BlockPos getRoundedBlockPos(Entity entity) {
+        return new BlockPos(entity.getBlockX(), (int) Math.round(entity.getY()), entity.getBlockZ());
     }
     public enum EntityCategory {
         PLAYER,

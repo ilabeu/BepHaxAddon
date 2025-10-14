@@ -33,6 +33,7 @@ public class Bep extends MeteorAddon {
         Hud.get().register(MobRateHud.INFO);
         Modules.get().add(new AutoSmith());
         Modules.get().add(new BepMine());
+        Modules.get().add(new BepCrystal());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
         Modules.get().add(new ShulkerOverviewModule());
