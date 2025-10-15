@@ -1107,10 +1107,4 @@ public class BepMine extends Module {
         }
         return bestDir;
     }
-    public BlockPos getLastAutoMineBlock() {
-        return lastAutoMineBlock;
-    }
-    public BlockPos getLastAntiCrawlBlock() {
-        return lastAntiCrawlBlock;
-    }
 }
