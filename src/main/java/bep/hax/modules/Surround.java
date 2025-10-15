@@ -14,6 +14,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
@@ -206,6 +207,63 @@ public class Surround extends PVPModule {
         BlockPos playerPos = mc.player.getBlockPos();
         int footY = playerPos.getY();
         Box box = mc.player.getBoundingBox();
+        int minX = (int) Math.floor(box.minX);
+        int maxX = (int) Math.floor(box.maxX - 0.0001);
+        int minZ = (int) Math.floor(box.minZ);
+        int maxZ = (int) Math.floor(box.maxZ - 0.0001);
+        Set<BlockPos> footBlocks = new HashSet<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                footBlocks.add(new BlockPos(x, footY, z));
+            }
+        }
+        for (BlockPos foot : footBlocks) {
+            positions.add(foot.north());
+            positions.add(foot.south());
+            positions.add(foot.east());
+            positions.add(foot.west());
+        }
+        positions.removeAll(footBlocks);
+        if (headLevel.get()) {
+            Set<BlockPos> headPositions = new HashSet<>();
+            for (BlockPos foot : footBlocks) {
+                BlockPos up = foot.up();
+                headPositions.add(up.north());
+                headPositions.add(up.south());
+                headPositions.add(up.east());
+                headPositions.add(up.west());
+            }
+            for (BlockPos foot : footBlocks) {
+                headPositions.remove(foot.up());
+            }
+            positions.addAll(headPositions);
+        }
+        if (coverHead.get()) {
+            for (BlockPos foot : footBlocks) {
+                positions.add(foot.up(2));
+            }
+        }
+        if (mineExtend.get()) {
+            Set<BlockPos> extended = new HashSet<>();
+            for (BlockPos pos : new ArrayList<>(positions)) {
+                if (mc.world.getBlockState(pos).isReplaceable()) continue;
+                if (mc.world.getBlockState(pos).getHardness(mc.world, pos) < 0) continue;
+                for (Direction dir : Direction.Type.HORIZONTAL) {
+                    BlockPos extPos = pos.offset(dir);
+                    if (!footBlocks.contains(extPos) && !positions.contains(extPos)) {
+                        extended.add(extPos);
+                    }
+                }
+            }
+            positions.addAll(extended);
+        }
+        return new ArrayList<>(positions);
+    }
+    public List<BlockPos> calculateSurround(PlayerEntity player) {
+        Set<BlockPos> positions = new HashSet<>();
+        BlockPos playerPos = player.getBlockPos();
+        int footY = playerPos.getY();
+        Box box = player.getBoundingBox();
         int minX = (int) Math.floor(box.minX);
         int maxX = (int) Math.floor(box.maxX - 0.0001);
         int minZ = (int) Math.floor(box.minZ);
