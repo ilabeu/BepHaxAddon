@@ -1,5 +1,7 @@
 package bep.hax.mixin;
 import bep.hax.util.CapeManager;
+import bep.hax.util.PushFluidsEvent;
+import meteordevelopment.meteorclient.MeteorClient;
 import net.minecraft.world.World;
 import net.minecraft.util.math.Vec3d;
 import bep.hax.modules.RocketMan;
@@ -15,12 +17,25 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import static meteordevelopment.meteorclient.MeteorClient.mc;
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
     @Unique private long toggleTimestamp = System.currentTimeMillis();
+    @Inject(method = "isPushedByFluids", at = @At("HEAD"), cancellable = true)
+    private void hookIsPushedByFluids(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this != mc.player) {
+            return;
+        }
+        PushFluidsEvent pushFluidsEvent = new PushFluidsEvent();
+        MeteorClient.EVENT_BUS.post(pushFluidsEvent);
+        if (pushFluidsEvent.isCanceled()) {
+            cir.setReturnValue(false);
+            cir.cancel();
+        }
+    }
     @SuppressWarnings("UnnecessaryContinue")
     @Inject(method = "travel", at = @At("HEAD"), cancellable = true)
     private void allowRocketHover(CallbackInfo ci) {

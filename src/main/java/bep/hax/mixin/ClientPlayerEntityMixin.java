@@ -46,36 +46,37 @@ public abstract class ClientPlayerEntityMixin {
         if (player == null) return;
         bephax$checkStartEating(player);
     }
-    @Inject(method = "tickMovement", at = @At("TAIL"))
-    private void bephax$multiplyInputAfterSlowdown(CallbackInfo ci) {
+    @Inject(method = "tickMovement", at = @At(value = "FIELD", target = "Lnet/minecraft/client/network/ClientPlayerEntity;input:Lnet/minecraft/client/input/Input;", ordinal = 0, shift = At.Shift.AFTER))
+    private void bephax$multiplyInputAfterInputTick(CallbackInfo ci) {
         ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
-        bephax$handleManualEating(player);
         NoSlow noSlow = Modules.get().get(NoSlow.class);
         if (!noSlow.isActive()) return;
+
         if (bephax$isGrimV3Enabled(noSlow)) {
-            if (player.isUsingItem()) {
-                boolean timingPasses = bephax$checkGrimV3Timing();
-                if (timingPasses) {
-                    float multiplier = bephax$getGrimV3Multiplier();
-                    System.out.println("[BepHax NoSlow] Multiplying input by " + multiplier + " (forward: " + input.movementForward + " -> " + (input.movementForward * multiplier) + ")");
-                    input.movementForward *= multiplier;
-                    input.movementSideways *= multiplier;
-                } else {
-                    System.out.println("[BepHax NoSlow] Timing check failed, allowing slowdown (forward: " + input.movementForward + ")");
-                }
+            if (player.isUsingItem() && bephax$checkGrimV3Timing()) {
+                float multiplier = bephax$getGrimV3Multiplier();
+                input.movementForward *= multiplier;
+                input.movementSideways *= multiplier;
             }
             return;
         }
+
         if (bephax$shouldMultiplyInput(noSlow)) {
             float multiplier = bephax$getInputMultiplier();
             input.movementForward *= multiplier;
             input.movementSideways *= multiplier;
         }
+
         if (noSlow.sneaking() && isSneaking()) {
             float sneakMultiplier = 1.0f / 0.3f;
             input.movementForward *= sneakMultiplier;
             input.movementSideways *= sneakMultiplier;
         }
+    }
+    @Inject(method = "tickMovement", at = @At("TAIL"))
+    private void bephax$handleManualEatingAtTail(CallbackInfo ci) {
+        ClientPlayerEntity player = (ClientPlayerEntity) (Object) this;
+        bephax$handleManualEating(player);
     }
     @Unique
     private boolean bephax$shouldMultiplyInput(NoSlow noSlow) {
@@ -113,15 +114,10 @@ public abstract class ClientPlayerEntityMixin {
             var valueMethod = setting.getClass().getMethod("get");
             Object value = valueMethod.invoke(setting);
             if (value instanceof Number) {
-                float multiplier = ((Number) value).floatValue();
-                System.out.println("[BepHax NoSlow] GrimV3 Multiplier: " + multiplier);
-                return multiplier;
+                return ((Number) value).floatValue();
             }
         } catch (Exception e) {
-            System.out.println("[BepHax NoSlow] Failed to get GrimV3 multiplier: " + e.getMessage());
-            e.printStackTrace();
         }
-        System.out.println("[BepHax NoSlow] Using default GrimV3 multiplier: 5.0");
         return 5.0f;
     }
     @Unique

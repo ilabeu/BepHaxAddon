@@ -99,6 +99,7 @@ public abstract class ExpThrowerMixin extends Module {
     @EventHandler(priority = EventPriority.HIGH)
     private void onSendPacket(PacketEvent.Send event) {
         if (!isActive() || mc.player == null) return;
+        if (inventoryManager == null) inventoryManager = InventoryManager.getInstance();
         if (event.packet instanceof PlayerInteractItemC2SPacket) {
             ItemStack heldItem = mc.player.getMainHandStack();
             if (heldItem.getItem() == Items.EXPERIENCE_BOTTLE) {
@@ -106,12 +107,6 @@ public abstract class ExpThrowerMixin extends Module {
                 inventoryManager.setSlot(currentSlot);
                 inventoryManager.syncToClient();
             }
-        }
-    }
-    @Inject(method = "onDeactivate", at = @At("HEAD"))
-    private void onDeactivateInject(CallbackInfo ci) {
-        if (inventoryManager != null) {
-            inventoryManager.syncToClient();
         }
     }
 }

@@ -58,7 +58,7 @@ public class Spiral extends SearchAreaMode
     @Override
     public void onTick()
     {
-        // autosave every 10 minutes in case of crashes
+
         if (System.nanoTime() - startTime > 6e11)
         {
             startTime = System.nanoTime();
@@ -70,7 +70,6 @@ public class Spiral extends SearchAreaMode
             setPressed(mc.options.forwardKey, false);
             return;
         }
-
 
         if (goingToStart)
         {

@@ -33,6 +33,7 @@ public class Bep extends MeteorAddon {
         Hud.get().register(MobRateHud.INFO);
         Modules.get().add(new AutoSmith());
         Modules.get().add(new BepMine());
+        Modules.get().add(new BepCrystal());
         Modules.get().add(new YawLock());
         Modules.get().add(new UnfocusedFpsLimiter());
         Modules.get().add(new ShulkerOverviewModule());
@@ -51,12 +52,14 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new Replenish());
         Modules.get().add(new GhostMode());
         Modules.get().add(new AutoBreed());
+
         bep.hax.util.CapeManager.getInstance();
         Modules.get().add(new StashMover());
         Commands.add(new bep.hax.commands.SetInput());
         Commands.add(new bep.hax.commands.SetOutput());
         Commands.add(new bep.hax.commands.StashStatus());
         Commands.add(new bep.hax.commands.SetClear());
+        Commands.add(new bep.hax.commands.EnemyCommand());
         Modules.get().add(new KillEffects());
         Modules.get().add(new RespawnPointBlocker());
         Modules.get().add(new MapDuplicator());
@@ -115,6 +118,7 @@ public class Bep extends MeteorAddon {
         Modules.get().add(new AutoDoors());
         Modules.get().add(new AutoMason());
         Modules.get().add(new DisconnectSound());
+        Modules.get().add(new AutoRespond());
         packetManager = new PacketManager();
         StardustConfig.initialize();
     }

@@ -113,7 +113,10 @@ public class RotationUtils {
         mc.player.setPitch(MathHelper.clamp(pitch, -90.0f, 90.0f));
     }
     public void setRotationSilent(float yaw, float pitch) {
-        setRotation(new RotationUtils.Rotation(Integer.MAX_VALUE, yaw, pitch, true));
+        setRotationSilent(yaw, pitch, Integer.MAX_VALUE);
+    }
+    public void setRotationSilent(float yaw, float pitch, int priority) {
+        setRotation(new RotationUtils.Rotation(priority, yaw, pitch, true));
         mc.getNetworkHandler().sendPacket(
             new PlayerMoveC2SPacket.Full(
                 mc.player.getX(),

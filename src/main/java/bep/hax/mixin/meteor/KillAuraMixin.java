@@ -386,6 +386,9 @@ public abstract class KillAuraMixin extends Module {
     }
     @Unique
     private void bephax$handleAttackDelay(Entity target) {
+        if (!bephax$rotated) {
+            return;
+        }
         if (bephax$lastAttackTime == 0) {
             if (bephax$attackTarget(target)) {
                 bephax$lastAttackTime = System.currentTimeMillis();

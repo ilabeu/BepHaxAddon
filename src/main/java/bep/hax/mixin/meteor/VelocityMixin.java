@@ -1,7 +1,12 @@
 package bep.hax.mixin.meteor;
+import bep.hax.mixin.accessor.BundleS2CPacketAccessor;
+import bep.hax.mixin.accessor.ExplosionS2CPacketAccessor;
+import bep.hax.mixin.accessor.AccessorClientWorld;
 import bep.hax.util.RotationUtils;
 import bep.hax.util.PushEntityEvent;
 import bep.hax.util.PushOutOfBlocksEvent;
+import bep.hax.util.PushFluidsEvent;
+import bep.hax.util.InventoryManager;
 import bep.hax.util.InventoryManager.VelocityMode;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -15,15 +20,16 @@ import meteordevelopment.orbit.EventPriority;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.projectile.FishingBobberEntity;
+import net.minecraft.network.packet.BundlePacket;
+import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.s2c.play.EntityDamageS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
+import net.minecraft.network.packet.s2c.play.*;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,7 +37,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 @Mixin(value = Velocity.class, remap = false)
 public abstract class VelocityMixin extends Module {
     public VelocityMixin(Category category, String name, String description) {
@@ -46,15 +56,22 @@ public abstract class VelocityMixin extends Module {
     @Shadow @Final public Setting<Double> explosionsVertical;
     @Unique private SettingGroup bephax$sgAdvancedModes;
     @Unique private Setting<VelocityMode> bephax$mode;
+    @Unique private Setting<Boolean> bephax$conceal;
     @Unique private Setting<Boolean> bephax$wallsGroundOnly;
+    @Unique private Setting<Boolean> bephax$wallsTrapped;
     @Unique private Setting<Boolean> bephax$pushEntities;
     @Unique private Setting<Boolean> bephax$pushBlocks;
+    @Unique private Setting<Boolean> bephax$pushLiquids;
     @Unique private Setting<Boolean> bephax$pushFishhook;
     @Unique private RotationUtils bephax$rotationManager;
+    @Unique private InventoryManager bephax$inventoryManager;
     @Unique private boolean bephax$cancelVelocity = false;
+    @Unique private boolean bephax$concealVelocity = false;
+    @Unique private static final Random RANDOM = new Random();
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onInit(CallbackInfo ci) {
         bephax$rotationManager = RotationUtils.getInstance();
+        bephax$inventoryManager = InventoryManager.getInstance();
         bephax$sgAdvancedModes = settings.createGroup("Advanced Modes");
         bephax$mode = bephax$sgAdvancedModes.add(new EnumSetting.Builder<VelocityMode>()
             .name("mode")
@@ -62,9 +79,22 @@ public abstract class VelocityMixin extends Module {
             .defaultValue(VelocityMode.NORMAL)
             .build()
         );
+        bephax$conceal = bephax$sgAdvancedModes.add(new BoolSetting.Builder()
+            .name("conceal")
+            .description("Fixes velocity on servers with excessive setbacks")
+            .defaultValue(false)
+            .build()
+        );
         bephax$wallsGroundOnly = bephax$sgAdvancedModes.add(new BoolSetting.Builder()
             .name("ground-only")
             .description("Only applies velocity in walls while on ground")
+            .defaultValue(false)
+            .visible(() -> bephax$mode.get() == VelocityMode.WALLS)
+            .build()
+        );
+        bephax$wallsTrapped = bephax$sgAdvancedModes.add(new BoolSetting.Builder()
+            .name("walls-trapped")
+            .description("Applies velocity while player head is trapped in blocks")
             .defaultValue(false)
             .visible(() -> bephax$mode.get() == VelocityMode.WALLS)
             .build()
@@ -77,7 +107,13 @@ public abstract class VelocityMixin extends Module {
         );
         bephax$pushBlocks = bephax$sgAdvancedModes.add(new BoolSetting.Builder()
             .name("nopush-blocks")
-            .description("Prevents being pushed out of blocks")
+            .description("Prevents being pushed out of blocks (WARNING: Can make you stuck inside blocks)")
+            .defaultValue(false)
+            .build()
+        );
+        bephax$pushLiquids = bephax$sgAdvancedModes.add(new BoolSetting.Builder()
+            .name("nopush-liquids")
+            .description("Prevents being pushed by flowing liquids")
             .defaultValue(true)
             .build()
         );
@@ -89,11 +125,17 @@ public abstract class VelocityMixin extends Module {
         );
     }
     @Override
+    public void onActivate() {
+        bephax$cancelVelocity = false;
+        bephax$concealVelocity = false;
+    }
+    @Override
     public void onDeactivate() {
         if (bephax$cancelVelocity && bephax$mode.get() == VelocityMode.GRIM) {
             bephax$sendGrimBypass();
         }
         bephax$cancelVelocity = false;
+        bephax$concealVelocity = false;
     }
     @Inject(method = "onPacketReceive", at = @At("HEAD"), cancellable = true)
     private void cancelMeteorHandler(PacketEvent.Receive event, CallbackInfo ci) {
@@ -105,24 +147,39 @@ public abstract class VelocityMixin extends Module {
     @EventHandler(priority = EventPriority.HIGH)
     private void onReceivePacket(PacketEvent.Receive event) {
         if (mc.player == null || mc.world == null) return;
+        if (event.packet instanceof PlayerPositionLookS2CPacket && bephax$conceal.get()) {
+            bephax$concealVelocity = true;
+        }
         if (event.packet instanceof EntityVelocityUpdateS2CPacket packet && knockback.get()) {
             if (packet.getEntityId() != mc.player.getId()) return;
-            switch (bephax$mode.get()) {
-                case NORMAL -> {
+            if (bephax$concealVelocity && packet.getVelocityX() == 0 && packet.getVelocityY() == 0 && packet.getVelocityZ() == 0) {
+                bephax$concealVelocity = false;
+                return;
+            }
+            if (bephax$mode.get() == VelocityMode.WALLS) {
+                if (!bephax$isPhased() && (!bephax$wallsTrapped.get() || !bephax$isWallsTrapped())) {
                     return;
                 }
-                case WALLS -> {
-                    if (!bephax$isPhased()) return;
-                    if (bephax$wallsGroundOnly.get() && !mc.player.isOnGround()) return;
+                if (bephax$wallsGroundOnly.get() && !mc.player.isOnGround()) {
+                    return;
+                }
+            }
+            switch (bephax$mode.get()) {
+                case NORMAL, WALLS -> {
                     if (knockbackHorizontal.get() == 0.0 && knockbackVertical.get() == 0.0) {
                         event.cancel();
                         return;
                     }
-                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setX((int) (packet.getVelocityX() * knockbackHorizontal.get()));
-                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setY((int) (packet.getVelocityY() * knockbackVertical.get()));
-                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setZ((int) (packet.getVelocityZ() * knockbackHorizontal.get()));
+                    double hMult = knockbackHorizontal.get() / 100.0;
+                    double vMult = knockbackVertical.get() / 100.0;
+                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setX((int) (packet.getVelocityX() * hMult));
+                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setY((int) (packet.getVelocityY() * vMult));
+                    ((EntityVelocityUpdateS2CPacketAccessor) packet).setZ((int) (packet.getVelocityZ() * hMult));
                 }
                 case GRIM -> {
+                    if (!bephax$inventoryManager.hasPassed(100)) {
+                        return;
+                    }
                     event.cancel();
                     bephax$cancelVelocity = true;
                 }
@@ -133,16 +190,20 @@ public abstract class VelocityMixin extends Module {
                 }
             }
         }
-        else if (event.packet instanceof ExplosionS2CPacket && explosions.get()) {
+        else if (event.packet instanceof ExplosionS2CPacket packet && explosions.get()) {
+            if (bephax$mode.get() == VelocityMode.WALLS && !bephax$isPhased()) {
+                return;
+            }
             switch (bephax$mode.get()) {
-                case NORMAL -> {
-                    return;
-                }
-                case WALLS -> {
-                    if (!bephax$isPhased()) return;
-                    event.cancel();
+                case NORMAL, WALLS -> {
+                    if (explosionsHorizontal.get() == 0.0 && explosionsVertical.get() == 0.0) {
+                        event.cancel();
+                    }
                 }
                 case GRIM -> {
+                    if (!bephax$inventoryManager.hasPassed(100)) {
+                        return;
+                    }
                     event.cancel();
                     bephax$cancelVelocity = true;
                 }
@@ -152,6 +213,16 @@ public abstract class VelocityMixin extends Module {
                     }
                 }
             }
+            if (event.isCancelled()) {
+                ExplosionS2CPacket explosionPacket = packet;
+                Vec3d center = ((ExplosionS2CPacketAccessor) (Object) explosionPacket).getCenter();
+                mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(center.x, center.y, center.z,
+                    SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+                    4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
+            }
+        }
+        else if (event.packet instanceof BundlePacket bundlePacket) {
+            bephax$handleBundlePacket(event, bundlePacket);
         }
         else if (event.packet instanceof EntityDamageS2CPacket packet
             && packet.entityId() == mc.player.getId()
@@ -170,9 +241,100 @@ public abstract class VelocityMixin extends Module {
         }
     }
     @Unique
+    private void bephax$handleBundlePacket(PacketEvent.Receive event, BundlePacket bundlePacket) {
+        List<Packet<?>> allowedBundle = new ArrayList<>();
+        for (Object subPacketObj : bundlePacket.getPackets()) {
+            if (!(subPacketObj instanceof Packet<?> subPacket)) {
+                continue;
+            }
+            if (subPacket instanceof ExplosionS2CPacket packet && explosions.get()) {
+                if (bephax$mode.get() == VelocityMode.WALLS && !bephax$isPhased()) {
+                    allowedBundle.add(subPacket);
+                    continue;
+                }
+                boolean shouldCancel = false;
+                switch (bephax$mode.get()) {
+                    case NORMAL, WALLS -> {
+                        if (explosionsHorizontal.get() == 0.0 && explosionsVertical.get() == 0.0) {
+                            shouldCancel = true;
+                        }
+                    }
+                    case GRIM -> {
+                        if (bephax$inventoryManager.hasPassed(100)) {
+                            bephax$cancelVelocity = true;
+                            shouldCancel = true;
+                        }
+                    }
+                    case GRIM_V3 -> {
+                        if (bephax$isPhased()) {
+                            shouldCancel = true;
+                        }
+                    }
+                }
+                if (shouldCancel) {
+                    ExplosionS2CPacket explosionPacket = packet;
+                    Vec3d center = ((ExplosionS2CPacketAccessor) (Object) explosionPacket).getCenter();
+                    mc.executeSync(() -> ((AccessorClientWorld) mc.world).hookPlaySound(center.x, center.y, center.z,
+                        SoundEvents.ENTITY_GENERIC_EXPLODE.value(), SoundCategory.BLOCKS,
+                        4.0f, (1.0f + (RANDOM.nextFloat() - RANDOM.nextFloat()) * 0.2f) * 0.7f, false, RANDOM.nextLong()));
+                    continue;
+                }
+                allowedBundle.add(subPacket);
+            }
+            else if (subPacket instanceof EntityVelocityUpdateS2CPacket packet && knockback.get()) {
+                if (packet.getEntityId() != mc.player.getId()) {
+                    allowedBundle.add(subPacket);
+                    continue;
+                }
+                if (bephax$mode.get() == VelocityMode.WALLS) {
+                    if (!bephax$isPhased() && (!bephax$wallsTrapped.get() || !bephax$isWallsTrapped())) {
+                        allowedBundle.add(subPacket);
+                        continue;
+                    }
+                    if (bephax$wallsGroundOnly.get() && !mc.player.isOnGround()) {
+                        allowedBundle.add(subPacket);
+                        continue;
+                    }
+                }
+                switch (bephax$mode.get()) {
+                    case NORMAL, WALLS -> {
+                        if (knockbackHorizontal.get() == 0.0 && knockbackVertical.get() == 0.0) {
+                            continue;
+                        } else {
+                            double hMult = knockbackHorizontal.get() / 100.0;
+                            double vMult = knockbackVertical.get() / 100.0;
+                            ((EntityVelocityUpdateS2CPacketAccessor) packet).setX((int) (packet.getVelocityX() * hMult));
+                            ((EntityVelocityUpdateS2CPacketAccessor) packet).setY((int) (packet.getVelocityY() * vMult));
+                            ((EntityVelocityUpdateS2CPacketAccessor) packet).setZ((int) (packet.getVelocityZ() * hMult));
+                            allowedBundle.add(subPacket);
+                        }
+                    }
+                    case GRIM -> {
+                        if (!bephax$inventoryManager.hasPassed(100)) {
+                            allowedBundle.add(subPacket);
+                            continue;
+                        }
+                        bephax$cancelVelocity = true;
+                        continue;
+                    }
+                    case GRIM_V3 -> {
+                        if (bephax$isPhased()) {
+                            continue;
+                        }
+                        allowedBundle.add(subPacket);
+                    }
+                }
+            } else {
+                allowedBundle.add(subPacket);
+            }
+        }
+        ((BundleS2CPacketAccessor) bundlePacket).setPackets(allowedBundle);
+    }
+    @Unique
     @EventHandler
     private void onTick(TickEvent.Pre event) {
         if (mc.player == null || mc.world == null) return;
+        bephax$concealVelocity = false;
         if (bephax$cancelVelocity && bephax$mode.get() == VelocityMode.GRIM) {
             bephax$sendGrimBypass();
             bephax$cancelVelocity = false;
@@ -189,6 +351,13 @@ public abstract class VelocityMixin extends Module {
     @EventHandler
     private void onPushOutOfBlocks(PushOutOfBlocksEvent event) {
         if (bephax$pushBlocks.get()) {
+            event.cancel();
+        }
+    }
+    @Unique
+    @EventHandler
+    private void onPushFluids(PushFluidsEvent event) {
+        if (bephax$pushLiquids.get()) {
             event.cancel();
         }
     }
@@ -217,25 +386,29 @@ public abstract class VelocityMixin extends Module {
         ));
     }
     @Unique
+    private boolean bephax$isWallsTrapped() {
+        if (mc.player == null || mc.world == null) return false;
+        BlockPos headPos = mc.player.getBlockPos().up(mc.player.isCrawling() ? 1 : 2);
+        if (mc.world.getBlockState(headPos).isReplaceable()) {
+            return false;
+        }
+        List<BlockPos> surroundPos = bephax$getSurroundNoDown(mc.player.getBlockPos());
+        return surroundPos.stream()
+            .noneMatch(blockPos -> mc.world.getBlockState(mc.player.isCrawling() ? blockPos : blockPos.up()).isReplaceable());
+    }
+    @Unique
+    private List<BlockPos> bephax$getSurroundNoDown(BlockPos center) {
+        List<BlockPos> positions = new ArrayList<>();
+        positions.add(center.north());
+        positions.add(center.south());
+        positions.add(center.east());
+        positions.add(center.west());
+        return positions;
+    }
+    @Unique
     private boolean bephax$isPhased() {
         if (mc.player == null || mc.world == null) return false;
-        Box playerBox = mc.player.getBoundingBox();
-        int minX = (int) Math.floor(playerBox.minX);
-        int maxX = (int) Math.floor(playerBox.maxX);
-        int minY = (int) Math.floor(playerBox.minY);
-        int maxY = (int) Math.floor(playerBox.maxY);
-        int minZ = (int) Math.floor(playerBox.minZ);
-        int maxZ = (int) Math.floor(playerBox.maxZ);
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    if (!mc.world.getBlockState(pos).isReplaceable()) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return bep.hax.util.PositionUtil.getAllInBox(mc.player.getBoundingBox()).stream()
+            .anyMatch(blockPos -> !mc.world.getBlockState(blockPos).isReplaceable());
     }
 }

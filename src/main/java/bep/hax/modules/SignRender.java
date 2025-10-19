@@ -395,10 +395,14 @@ public class SignRender extends Module {
             if (currentSign.onScreen) {
                 renderSignAtPosition(currentSign, textRenderer, currentSign.screenX, currentSign.screenY);
                 if (showClusterCount.get() && allSigns.size() > 1) {
-                    double signHeight = calculateSignHeight(currentSign, textRenderer);
+                    textRenderer.begin(currentSign.scale, false, true);
+                    double lineHeight = textRenderer.getHeight();
+                    textRenderer.end();
+                    double signHeight = (multilineDisplay.get() && !currentSign.lines.isEmpty()) ?
+                        (currentSign.lines.size() * lineHeight + 8) : (lineHeight + 8);
                     String indicator = String.format("[%d/%d]",
                         globalCycleIndex + 1, allSigns.size());
-                    renderTextWithBackground(
+                    renderTextAtScreenPos(
                         indicator,
                         currentSign.screenX,
                         currentSign.screenY + signHeight / 2 + 15,
@@ -425,13 +429,17 @@ public class SignRender extends Module {
             if (count >= maxClusterDisplay.get()) break;
             renderSignAtPosition(sign, textRenderer, baseX, baseY + offsetY);
             rendered.add(sign);
-            double signHeight = calculateSignHeight(sign, textRenderer);
+            textRenderer.begin(sign.scale, false, true);
+            double lineHeight = textRenderer.getHeight();
+            textRenderer.end();
+            double signHeight = (multilineDisplay.get() && !sign.lines.isEmpty()) ?
+                (sign.lines.size() * lineHeight + 8) : (lineHeight + 8);
             offsetY += signHeight + stackSpacing.get();
             count++;
         }
         if (showClusterCount.get() && cluster.signs.size() > maxClusterDisplay.get()) {
             String countText = "+" + (cluster.signs.size() - maxClusterDisplay.get()) + " more";
-            renderTextWithBackground(
+            renderTextAtScreenPos(
                 countText,
                 baseX,
                 baseY + offsetY,
@@ -447,10 +455,14 @@ public class SignRender extends Module {
             renderSignAtPosition(currentSign, textRenderer, cluster.centerX, cluster.centerY);
             rendered.addAll(cluster.signs);
             if (showClusterCount.get() && cluster.signs.size() > 1) {
-                double signHeight = calculateSignHeight(currentSign, textRenderer);
+                textRenderer.begin(currentSign.scale, false, true);
+                double lineHeight = textRenderer.getHeight();
+                textRenderer.end();
+                double signHeight = (multilineDisplay.get() && !currentSign.lines.isEmpty()) ?
+                    (currentSign.lines.size() * lineHeight + 8) : (lineHeight + 8);
                 String indicator = String.format("[%d/%d]",
                     cluster.cycleIndex + 1, cluster.signs.size());
-                renderTextWithBackground(
+                renderTextAtScreenPos(
                     indicator,
                     cluster.centerX,
                     cluster.centerY + signHeight / 2 + 15,
@@ -466,9 +478,13 @@ public class SignRender extends Module {
         renderSignAtPosition(primary, textRenderer, cluster.centerX, cluster.centerY);
         rendered.addAll(cluster.signs);
         if (cluster.signs.size() > 1) {
-            double signHeight = calculateSignHeight(primary, textRenderer);
+            textRenderer.begin(primary.scale, false, true);
+            double lineHeight = textRenderer.getHeight();
+            textRenderer.end();
+            double signHeight = (multilineDisplay.get() && !primary.lines.isEmpty()) ?
+                (primary.lines.size() * lineHeight + 8) : (lineHeight + 8);
             String countText = "(" + cluster.signs.size() + " signs)";
-            renderTextWithBackground(
+            renderTextAtScreenPos(
                 countText,
                 cluster.centerX,
                 cluster.centerY + signHeight / 2 + 10,
@@ -498,7 +514,7 @@ public class SignRender extends Module {
             }
             if (showClusterCount.get() && cluster.signs.size() > displayCount) {
                 String countText = "+" + (cluster.signs.size() - displayCount);
-                renderTextWithBackground(
+                renderTextAtScreenPos(
                     countText,
                     cluster.centerX,
                     cluster.centerY,
@@ -517,34 +533,22 @@ public class SignRender extends Module {
         }
     }
     private void renderMultilineSign(SignRenderData sign, TextRenderer textRenderer, double centerX, double centerY) {
-        textRenderer.begin(sign.scale);
-        double lineHeight = textRenderer.getHeight(true);
+        textRenderer.begin(sign.scale, false, true);
+        double lineHeight = textRenderer.getHeight();
         List<Double> lineWidths = new ArrayList<>();
         double maxWidth = 0;
         for (String line : sign.lines) {
-            double width = line.isEmpty() ? 0 : textRenderer.getWidth(line, true);
+            double width = line.isEmpty() ? 0 : textRenderer.getWidth(line);
             lineWidths.add(width);
             maxWidth = Math.max(maxWidth, width);
         }
-        textRenderer.end();
-        double scaledWidth = maxWidth * sign.scale;
-        double scaledLineHeight = lineHeight * sign.scale;
-        double totalHeight = sign.lines.size() * scaledLineHeight;
+        double totalHeight = sign.lines.size() * lineHeight;
         double bgPadding = 4;
-        double bgWidth = scaledWidth + bgPadding * 2;
+        double bgWidth = maxWidth + bgPadding * 2;
         double bgHeight = totalHeight + bgPadding * 2;
         double bgLeft = centerX - bgWidth / 2;
         double bgTop = centerY - bgHeight / 2;
-        double bgCenterX = bgLeft + bgWidth / 2;
-        List<Double> textXPositions = new ArrayList<>();
-        List<Double> textYPositions = new ArrayList<>();
-        for (int i = 0; i < sign.lines.size(); i++) {
-            double lineWidth = lineWidths.get(i);
-            double textX = (bgCenterX - lineWidth * sign.scale / 2) / sign.scale;
-            double textY = (bgTop + bgPadding + i * scaledLineHeight) / sign.scale;
-            textXPositions.add(textX);
-            textYPositions.add(textY);
-        }
+        textRenderer.end();
         if (showBackground.get()) {
             Color bgColor = new Color(
                 backgroundColor.get().r,
@@ -556,28 +560,31 @@ public class SignRender extends Module {
             Renderer2D.COLOR.quad(bgLeft, bgTop, bgWidth, bgHeight, bgColor);
             Renderer2D.COLOR.render(null);
         }
-        textRenderer.begin(sign.scale);
+        textRenderer.begin(sign.scale, false, true);
         for (int i = 0; i < sign.lines.size(); i++) {
             String line = sign.lines.get(i);
             if (!line.isEmpty()) {
-                textRenderer.render(line, textXPositions.get(i), textYPositions.get(i), sign.color, true);
+                double lineWidth = lineWidths.get(i);
+                double textX = centerX - lineWidth / 2;
+                double textY = bgTop + bgPadding + i * lineHeight;
+                textRenderer.render(line, textX, textY, sign.color);
             }
         }
         textRenderer.end();
     }
     private void renderSingleLineSign(SignRenderData sign, TextRenderer textRenderer, double centerX, double centerY) {
-        renderTextWithBackground(sign.fullText, centerX, centerY, sign.scale, sign.color, textRenderer);
+        renderTextAtScreenPos(sign.fullText, centerX, centerY, sign.scale, sign.color, textRenderer);
     }
-    private void renderTextWithBackground(String text, double centerX, double centerY, double scale, Color color, TextRenderer textRenderer) {
-        textRenderer.begin(scale);
-        double textWidth = textRenderer.getWidth(text, true);
-        double textHeight = textRenderer.getHeight(true);
-        textRenderer.end();
+    private void renderTextAtScreenPos(String text, double screenX, double screenY, double scale, Color color, TextRenderer textRenderer) {
+        textRenderer.begin(scale, false, true);
+        double textWidth = textRenderer.getWidth(text);
+        double textHeight = textRenderer.getHeight();
         double bgPadding = 4;
-        double elementWidth = textWidth * scale + bgPadding * 2;
-        double elementHeight = textHeight * scale + bgPadding * 2;
-        double elementLeft = centerX - elementWidth / 2;
-        double elementTop = centerY - elementHeight / 2;
+        double elementWidth = textWidth + bgPadding * 2;
+        double elementHeight = textHeight + bgPadding * 2;
+        double elementLeft = screenX - elementWidth / 2;
+        double elementTop = screenY - elementHeight / 2;
+        textRenderer.end();
         if (showBackground.get()) {
             Color bgColor = new Color(
                 backgroundColor.get().r,
@@ -589,21 +596,9 @@ public class SignRender extends Module {
             Renderer2D.COLOR.quad(elementLeft, elementTop, elementWidth, elementHeight, bgColor);
             Renderer2D.COLOR.render(null);
         }
-        textRenderer.begin(scale);
-        double textX = elementLeft + bgPadding;
-        double textY = elementTop + bgPadding;
-        textRenderer.render(text, textX, textY, color, true);
+        textRenderer.begin(scale, false, true);
+        textRenderer.render(text, elementLeft + bgPadding, elementTop + bgPadding, color);
         textRenderer.end();
-    }
-    private double calculateSignHeight(SignRenderData sign, TextRenderer textRenderer) {
-        textRenderer.begin(sign.scale);
-        double lineHeight = textRenderer.getHeight(true);
-        textRenderer.end();
-        if (multilineDisplay.get() && !sign.lines.isEmpty()) {
-            return sign.lines.size() * lineHeight * sign.scale + 8;
-        } else {
-            return lineHeight * sign.scale + 8;
-        }
     }
     private List<String> extractSignLines(BlockEntity blockEntity) {
         List<String> lines = new ArrayList<>();

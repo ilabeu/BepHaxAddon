@@ -201,8 +201,6 @@ public class Phase extends Module {
         if (pearlSlot == -1 || mc.player.getItemCooldownManager().isCoolingDown(Items.ENDER_PEARL.getDefaultStack())) {
             return;
         }
-        float prevYaw = mc.player.getYaw();
-        float prevPitch = mc.player.getPitch();
         final Vec3d pearlTargetVec = new Vec3d(Math.floor(mc.player.getX()) + 0.5, 0.0, Math.floor(mc.player.getZ()) + 0.5);
         float[] rotations = RotationUtils.getRotationsTo(mc.player.getEyePos(), pearlTargetVec);
         float yaw = rotations[0] + 180.0f;
@@ -213,7 +211,6 @@ public class Phase extends Module {
             handleSelfFill(yaw);
         }
         RotationUtils rotationManager = RotationUtils.getInstance();
-        rotationManager.setRotationClient(yaw, pitch.get());
         int targetSlot;
         if (swapAlternative.get()) {
             targetSlot = mc.player.getInventory().selectedSlot;
@@ -236,7 +233,6 @@ public class Phase extends Module {
         }
         inventoryManager.syncToClient();
         rotationManager.setRotationSilentSync();
-        rotationManager.setRotationClient(prevYaw, prevPitch);
     }
     private void handlePearlAttacks(float yaw) {
         BlockHitResult hitResult = (BlockHitResult) mc.player.raycast(3.0, 0, false);

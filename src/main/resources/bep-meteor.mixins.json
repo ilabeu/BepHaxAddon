@@ -3,9 +3,7 @@
   "package": "bep.hax.mixin.meteor",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "PeekScreenMixin",
-    "ModuleScreenMixin",
-    "ModulesScreenMixin"
+    "PeekScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 0
@@ -14,14 +12,11 @@
     "AutoEatMixin",
     "AutoLogMixin",
     "AutoTrapMixin",
-    "CrystalAuraMixin",
+    "BetterTabMixin",
     "KillAuraMixin",
     "FreecamMixin",
-    "WHeaderMixin",
-    "WWindowMixin",
-    "GuiThemeMixin",
-    "NametagsMixin",
     "AutoMendMixin",
+    "NametagsMixin",
     "NoRenderMixin",
     "NotifierMixin",
     "ExpThrowerMixin",
@@ -29,9 +24,9 @@
     "VelocityMixin",
     "OnlinePlayersMixin",
     "BetterTooltipsMixin",
-    "MeteorGuiThemeMixin",
     "PacketCancellerMixin",
     "NoSlowMixin",
+    "PlayerUtilsMixin",
     "ClientPlayerEntityGrimV3Mixin",
     "accessor.SettingAccessor",
     "accessor.CategoryAccessor"

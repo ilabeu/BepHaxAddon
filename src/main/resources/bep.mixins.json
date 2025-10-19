@@ -15,6 +15,7 @@
     "ChatMentionMixin",
     "ChatScreenMixin",
     "ClientPlayerEntityMixin",
+    "ConfigMixin",
     "ClientPlayerInteractionManagerMixin",
     "DisconnectedScreenMixin",
     "DrawContextMixin",
@@ -51,6 +52,7 @@
     "accessor.BookEditScreenAccessor",
     "accessor.BookScreenContentsAccessor",
     "accessor.ClientConnectionAccessor",
+    "accessor.AccessorClientWorld",
     "accessor.DisconnectS2CPacketAccessor",
     "accessor.EntityTrackerUpdateS2CPacketAccessor",
     "accessor.GameOptionsAccessor",
@@ -62,6 +64,8 @@
     "accessor.SourceManagerAccessor",
     "accessor.StyleAccessor",
     "accessor.UpdateSelectedSlotS2CPacketAccessor",
+    "accessor.BundleS2CPacketAccessor",
+    "accessor.ExplosionS2CPacketAccessor",
     "XaeroDrawingMixin"
 
   ],

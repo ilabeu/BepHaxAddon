@@ -21,7 +21,6 @@
   },
   "mixins": [
     "bep.mixins.json",
-    "bep-xaero.mixins.json",
     "bep-meteor.mixins.json"
   ],
   "custom": {

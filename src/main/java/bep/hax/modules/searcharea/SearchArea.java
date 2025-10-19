@@ -18,7 +18,6 @@ public class SearchArea extends Module {
 
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
-
     public final Setting<SearchAreaModes> chunkLoadMode = sgGeneral.add(new EnumSetting.Builder<SearchAreaModes>()
         .name("mode")
         .description("The mode chunks are loaded.")
@@ -67,7 +66,6 @@ public class SearchArea extends Module {
         .visible(() -> chunkLoadMode.get() == SearchAreaModes.Rectangle)
         .build()
     );
-
 
     public SearchArea() {
         super(Bep.STASH, "search-area", "Either loads chunks in a rectangle to a certain point from you, or spirals endlessly from you. Useful with Stash Finder or other map saving mods.");

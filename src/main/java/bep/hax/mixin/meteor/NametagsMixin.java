@@ -1,14 +1,13 @@
 package bep.hax.mixin.meteor;
-import bep.hax.util.CapeManager;
-import bep.hax.util.PearlInfo;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import bep.hax.util.EnemyManager;
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
-import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.renderer.Renderer2D;
-import meteordevelopment.meteorclient.renderer.Renderer3D;
+import meteordevelopment.meteorclient.systems.config.Config;
+import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.systems.modules.render.BetterTab;
 import meteordevelopment.meteorclient.utils.render.NametagUtils;
-import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
+import meteordevelopment.meteorclient.utils.render.color.Color;
 import meteordevelopment.orbit.EventHandler;
 import org.joml.Vector3d;
 import org.spongepowered.asm.mixin.Final;
@@ -33,8 +32,6 @@ import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import meteordevelopment.meteorclient.systems.modules.render.Nametags;
 import meteordevelopment.meteorclient.renderer.text.VanillaTextRenderer;
-import java.util.ArrayList;
-import java.util.List;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 @Mixin(value = Nametags.class, remap = false)
 public abstract class NametagsMixin extends Module {
@@ -65,14 +62,9 @@ public abstract class NametagsMixin extends Module {
     @Unique
     private @Nullable Setting<Double> bephax$pearlCullingDotValue = null;
     @Unique
-    private CapeManager bephax$capeManager;
-    @Unique
     private final Vector3d bephax$pearlPos = new Vector3d();
-    @Unique
-    private final List<PearlInfo> bephax$pearlsToRender = new ArrayList<>();
     @Inject(method = "<init>", at = @At(value = "FIELD", target = "Lmeteordevelopment/meteorclient/systems/modules/render/Nametags;scale:Lmeteordevelopment/meteorclient/settings/Setting;", shift = At.Shift.AFTER))
     private void addDefaultFontSettings(CallbackInfo ci) {
-        bephax$capeManager = CapeManager.getInstance();
         forceDefaultFont = sgGeneral.add(
             new BoolSetting.Builder()
                 .name("force-default-font")
@@ -157,31 +149,27 @@ public abstract class NametagsMixin extends Module {
             .build()
         );
     }
-    @Inject(method = "renderNametagPlayer", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/utils/render/NametagUtils;begin(Lorg/joml/Vector3d;Lnet/minecraft/client/gui/DrawContext;)V", shift = At.Shift.AFTER))
-    private void injectDefaultFont(CallbackInfo ci, @Local LocalRef<TextRenderer> text, @Local(argsOnly = true) LocalBooleanRef shadow) {
+    @Inject(method = "renderNametagPlayer", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;get()Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;", shift = At.Shift.AFTER))
+    private void injectDefaultFont(Render2DEvent event, PlayerEntity player, boolean shadow, CallbackInfo ci, @Local(ordinal = 0) LocalRef<TextRenderer> text) {
         if (forceDefaultFont != null && forceDefaultFont.get()) {
-            shadow.set(false);
             text.set(VanillaTextRenderer.INSTANCE);
         }
     }
-    @Inject(method = "renderNametagItem", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/utils/render/NametagUtils;begin(Lorg/joml/Vector3d;)V"))
-    private void injectDefaultFontForItemNametags(CallbackInfo ci, @Local LocalRef<TextRenderer> text, @Local(argsOnly = true) LocalBooleanRef shadow) {
+    @Inject(method = "renderNametagItem", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;get()Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;", shift = At.Shift.AFTER))
+    private void injectDefaultFontForItemNametags(net.minecraft.item.ItemStack stack, boolean shadow, CallbackInfo ci, @Local(ordinal = 0) LocalRef<TextRenderer> text) {
         if (forceDefaultFont != null && forceDefaultFont.get()) {
-            shadow.set(false);
             text.set(VanillaTextRenderer.INSTANCE);
         }
     }
-    @Inject(method = "renderGenericNametag", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/utils/render/NametagUtils;begin(Lorg/joml/Vector3d;)V"))
-    private void injectDefaultFontForGenericNametags(CallbackInfo ci, @Local LocalRef<TextRenderer> text, @Local(argsOnly = true) LocalBooleanRef shadow) {
+    @Inject(method = "renderGenericNametag", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;get()Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;", shift = At.Shift.AFTER))
+    private void injectDefaultFontForGenericNametags(net.minecraft.entity.Entity entity, boolean shadow, CallbackInfo ci, @Local(ordinal = 0) LocalRef<TextRenderer> text) {
         if (forceDefaultFont != null && forceDefaultFont.get()) {
-            shadow.set(false);
             text.set(VanillaTextRenderer.INSTANCE);
         }
     }
-    @Inject(method = "renderTntNametag", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/utils/render/NametagUtils;begin(Lorg/joml/Vector3d;)V"))
-    private void injectDefaultFontForTNTNametags(CallbackInfo ci, @Local LocalRef<TextRenderer> text, @Local(argsOnly = true) LocalBooleanRef shadow) {
+    @Inject(method = "renderTntNametag", at = @At(value = "INVOKE", target = "Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;get()Lmeteordevelopment/meteorclient/renderer/text/TextRenderer;", shift = At.Shift.AFTER))
+    private void injectDefaultFontForTNTNametags(String fuseText, boolean shadow, CallbackInfo ci, @Local(ordinal = 0) LocalRef<TextRenderer> text) {
         if (forceDefaultFont != null && forceDefaultFont.get()) {
-            shadow.set(false);
             text.set(VanillaTextRenderer.INSTANCE);
         }
     }
@@ -190,11 +178,13 @@ public abstract class NametagsMixin extends Module {
     private void onRender2DPearls(Render2DEvent event) {
         if (!isActive() || mc.world == null || mc.player == null) return;
         if (bephax$pearlOwner == null || !bephax$pearlOwner.get()) return;
-        bephax$pearlsToRender.clear();
+        if (bephax$pearlScale == null) return;
+
         for (Entity entity : mc.world.getEntities()) {
             if (!(entity instanceof EnderPearlEntity pearl)) continue;
             double distance = mc.player.distanceTo(pearl);
             if (bephax$pearlMaxDistance != null && distance > bephax$pearlMaxDistance.get()) continue;
+
             if (bephax$pearlCulling != null && bephax$pearlCulling.get()) {
                 Vec3d cameraPos = mc.gameRenderer.getCamera().getPos();
                 Vec3d pearlPos = pearl.getPos();
@@ -203,34 +193,50 @@ public abstract class NametagsMixin extends Module {
                 double dot = cameraDirection.dotProduct(cameraToEntity);
                 if (bephax$pearlCullingDotValue != null && dot < bephax$pearlCullingDotValue.get()) continue;
             }
+
             Entity owner = pearl.getOwner();
             if (owner == null) continue;
+
             String ownerName = owner.getName().getString();
             if (bephax$pearlShowDistance != null && bephax$pearlShowDistance.get()) {
                 ownerName += String.format(" [%.1fm]", distance);
             }
+
             bephax$pearlPos.set(pearl.getX(), pearl.getY() + pearl.getHeight() + 0.5, pearl.getZ());
-            if (bephax$pearlScale != null && NametagUtils.to2D(bephax$pearlPos, bephax$pearlScale.get())) {
-                bephax$pearlsToRender.add(new PearlInfo(ownerName, bephax$pearlPos.x, bephax$pearlPos.y));
-            }
-        }
-        for (PearlInfo info : bephax$pearlsToRender) {
-            bephax$renderPearlNametag(info.text, info.x, info.y);
+            bephax$renderPearlNametag(ownerName);
         }
     }
+
     @Unique
-    private void bephax$renderPearlNametag(String text, double x, double y) {
-        if (bephax$pearlScale == null || bephax$pearlNameColor == null || bephax$pearlBackgroundColor == null) return;
-        TextRenderer textRenderer = TextRenderer.get();
-        double textWidth = textRenderer.getWidth(text, true);
-        double textHeight = textRenderer.getHeight(true);
-        x -= textWidth / 2;
-        y -= textHeight / 2;
+    private void bephax$renderPearlNametag(String text) {
+        if (bephax$pearlNameColor == null || bephax$pearlBackgroundColor == null || bephax$pearlScale == null) return;
+
+        TextRenderer textRenderer;
+        boolean shadow;
+        if (forceDefaultFont != null && forceDefaultFont.get()) {
+            textRenderer = VanillaTextRenderer.INSTANCE;
+            shadow = false;
+        } else {
+            textRenderer = TextRenderer.get();
+            shadow = Config.get().customFont.get();
+        }
+
+        if (!NametagUtils.to2D(bephax$pearlPos, bephax$pearlScale.get())) return;
+
+        NametagUtils.begin(bephax$pearlPos);
+
+        double textWidth = textRenderer.getWidth(text, shadow);
+        double textHeight = textRenderer.getHeight(shadow);
+        double widthHalf = textWidth / 2;
+
         Renderer2D.COLOR.begin();
-        Renderer2D.COLOR.quad(x - 2, y - 2, textWidth + 4, textHeight + 4, bephax$pearlBackgroundColor.get());
+        Renderer2D.COLOR.quad(-widthHalf - 1, -textHeight, textWidth + 2, textHeight + 2, bephax$pearlBackgroundColor.get());
         Renderer2D.COLOR.render(null);
-        textRenderer.begin(bephax$pearlScale.get());
-        textRenderer.render(text, x, y, bephax$pearlNameColor.get(), true);
+
+        textRenderer.beginBig();
+        textRenderer.render(text, -widthHalf, -textHeight, bephax$pearlNameColor.get(), shadow);
         textRenderer.end();
+
+        NametagUtils.end();
     }
 }

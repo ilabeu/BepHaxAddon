@@ -2,6 +2,8 @@ package bep.hax.mixin;
 import bep.hax.modules.AntiToS;
 import bep.hax.modules.ElytraFlyPlusPlus;
 import bep.hax.util.CapeManager;
+import bep.hax.util.PushEntityEvent;
+import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.render.NoRender;
 import net.minecraft.client.render.Frustum;
@@ -40,7 +42,9 @@ public class EntityMixin {
         }
         @Inject(at = @At("HEAD"), method = "pushAwayFrom", cancellable = true)
         private void pushAwayFrom(Entity entity, CallbackInfo ci) {
-            if (mc.player != null && this.uuid == mc.player.getUuid() && efly != null && efly.enabled() && !entity.getUuid().equals(this.uuid)) {
+            PushEntityEvent pushEntityEvent = new PushEntityEvent((Entity) (Object) this, entity);
+            MeteorClient.EVENT_BUS.post(pushEntityEvent);
+            if (pushEntityEvent.isCanceled()) {
                 ci.cancel();
             }
         }

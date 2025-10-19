@@ -3,13 +3,18 @@ import bep.hax.mixin.accessor.UpdateSelectedSlotS2CPacketAccessor;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.orbit.EventHandler;
+import meteordevelopment.orbit.EventPriority;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.*;
 import net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
+import net.minecraft.network.packet.s2c.common.CommonPingS2CPacket;
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Arrays;
 import java.util.List;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 public class InventoryManager {
@@ -18,8 +23,13 @@ public class InventoryManager {
     private int serverSlot = -1;
     private boolean sendingPacket = false;
     private boolean isEating = false;
+    private long lastSetbackTime = -1;
+    private final int[] transactions = new int[4];
+    private int transactionIndex = 0;
+    private boolean isGrim = false;
     private InventoryManager() {
         MeteorClient.EVENT_BUS.subscribe(this);
+        Arrays.fill(transactions, -1);
     }
     public static InventoryManager getInstance() {
         if (INSTANCE == null) {
@@ -39,10 +49,24 @@ public class InventoryManager {
             serverSlot = packetSlot;
         }
     }
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPacketReceive(PacketEvent.Receive event) {
         if (event.packet instanceof UpdateSelectedSlotS2CPacket packet) {
             serverSlot = ((UpdateSelectedSlotS2CPacketAccessor) (Object) packet).getSlot();
+        }
+        else if (event.packet instanceof CommonPingS2CPacket packet) {
+            if (transactionIndex > 3) {
+                return;
+            }
+            final int uid = packet.getParameter();
+            transactions[transactionIndex] = uid;
+            ++transactionIndex;
+            if (transactionIndex == 4) {
+                grimCheck();
+            }
+        }
+        else if (event.packet instanceof PlayerPositionLookS2CPacket) {
+            lastSetbackTime = System.currentTimeMillis();
         }
     }
     @EventHandler
@@ -52,9 +76,35 @@ public class InventoryManager {
         }
         swapData.removeIf(PreSwapData::isExpired);
     }
+    @EventHandler
+    public void onDisconnect(GameLeftEvent event) {
+        Arrays.fill(transactions, -1);
+        transactionIndex = 0;
+        isGrim = false;
+        lastSetbackTime = -1;
+    }
+    private void grimCheck() {
+        for (int i = 0; i < 4; ++i) {
+            if (transactions[i] != -i) {
+                return;
+            }
+        }
+        isGrim = true;
+        LogUtil.info("Server is running GrimAC.");
+    }
+    public boolean isGrim() {
+        return isGrim;
+    }
+    public boolean hasPassed(final long timeMS) {
+        return lastSetbackTime != -1 && (System.currentTimeMillis() - lastSetbackTime) >= timeMS;
+    }
     public void setSlot(final int barSlot) {
+        setSlot(barSlot, false);
+    }
+
+    public void setSlot(final int barSlot, boolean highPriority) {
         if (mc.player == null || mc.getNetworkHandler() == null) return;
-        if (isEating) return;
+        if (isEating && !highPriority) return;
         if (serverSlot == -1) {
             serverSlot = mc.player.getInventory().selectedSlot;
         }
